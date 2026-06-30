@@ -1,0 +1,22 @@
+// Pagination
+export const POSTS_PER_PAGE = 9;
+export const ADMIN_POSTS_PER_PAGE = 10;
+export const ADMIN_SUBSCRIBERS_PER_PAGE = 20;
+
+// Search
+export const SEARCH_DEBOUNCE_MS = 350;
+
+// Validation limits — must mirror the backend exactly
+export const MAX_META_TITLE_LENGTH = 60;
+export const MAX_META_DESCRIPTION_LENGTH = 160;
+export const MAX_CATEGORY_NAME_LENGTH = 100;
+export const MAX_TAG_NAME_LENGTH = 100;
+export const MAX_CONTACT_MESSAGE_LENGTH = 5000;
+export const MAX_CONTACT_NAME_LENGTH = 100;
+
+// Media upload
+export const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+export const MAX_IMAGE_SIZE_MB = 5;
+
+// Preview tokens
+export const PREVIEW_TOKEN_EXPIRY_MINUTES = 60;
