@@ -8,9 +8,8 @@ const SESSION_COOKIE_NAME = "ca_roshan_session";
 // Once the admin login flow sets a real session cookie, either:
 //   (a) switch to the `jose` library to verify the JWT signature here, or
 //   (b) keep this as a lightweight gate and perform full validation
-//       in each Server Component / API route via the backend's
-//       GET /api/v1/auth/me endpoint.
-export function middleware(request: NextRequest) {
+//       in each Server Component via the backend GET /api/v1/auth/me endpoint.
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAdminRoute = pathname.startsWith(ADMIN_PATH_PREFIX);
@@ -27,7 +26,9 @@ export function middleware(request: NextRequest) {
   }
 
   if (isLoginRoute && hasSession) {
-    return NextResponse.redirect(new URL(ADMIN_PATH_PREFIX, request.url));
+    return NextResponse.redirect(
+      new URL(ADMIN_PATH_PREFIX, request.url),
+    );
   }
 
   return NextResponse.next();
