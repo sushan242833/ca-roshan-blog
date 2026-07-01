@@ -2,6 +2,7 @@ import Link from "next/link";
 import FeaturedPostCard from "@/components/posts/featured-post-card";
 import PostSummaryCard from "@/components/posts/post-summary-card";
 import { apiRequest } from "@/lib/api";
+import { ArrowRightIcon } from "@/components/icons";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 
 const HERO_HEADING = "Clear thinking on tax, finance, and policy";
@@ -90,21 +91,7 @@ export default async function HomePage() {
                 className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-6 py-2.5 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-200"
               >
                 View all posts
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width={14}
-                  height={14}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1={5} y1={12} x2={19} y2={12} />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
+                <ArrowRightIcon size={14} />
               </Link>
             </div>
           </div>

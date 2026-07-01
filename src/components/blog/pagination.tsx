@@ -6,8 +6,9 @@ interface PaginationProps {
   currentPage: number;
   totalCount: number;
   limit: number;
-  currentSearch: string;
-  activeCategory: string;
+  currentSearch?: string;
+  activeCategory?: string;
+  basePath?: string;
 }
 
 function getPageNumbers(current: number, total: number): (number | "…")[] {
@@ -21,13 +22,14 @@ export default function Pagination({
   currentPage,
   totalCount,
   limit,
-  currentSearch,
-  activeCategory,
+  currentSearch = "",
+  activeCategory = "",
+  basePath = "/blog",
 }: PaginationProps) {
   const router = useRouter();
   const totalPages = Math.ceil(totalCount / limit);
 
-  if (totalPages <= 1) return null;
+  if (!totalPages || isNaN(totalPages) || totalPages <= 1) return null;
 
   function navigate(page: number) {
     const params = new URLSearchParams();
@@ -35,7 +37,7 @@ export default function Pagination({
     if (currentSearch) params.set("search", currentSearch);
     if (activeCategory) params.set("category", activeCategory);
     const qs = params.toString();
-    router.push(`/blog${qs ? `?${qs}` : ""}`);
+    router.push(`${basePath}${qs ? `?${qs}` : ""}`);
   }
 
   const pages = getPageNumbers(currentPage, totalPages);

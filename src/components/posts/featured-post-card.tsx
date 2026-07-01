@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import PostImagePlaceholder from "@/components/posts/post-image-placeholder";
+import { ClockIcon, ArrowRightIcon } from "@/components/icons";
 import type { PostSummaryResponse } from "@/types/post";
 
 interface FeaturedPostCardProps {
@@ -50,21 +51,7 @@ export default function FeaturedPostCard({
             </span>
           )}
           <span className="flex items-center gap-1 text-xs text-gray-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width={12}
-              height={12}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx={12} cy={12} r={10} />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
+            <ClockIcon size={12} />
             {post.readingTime} min read
           </span>
         </div>
@@ -84,21 +71,7 @@ export default function FeaturedPostCard({
         {/* CTA */}
         <span className="mt-auto flex items-center gap-1 text-sm font-medium text-brand-teal">
           Read Article
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={14}
-            height={14}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <line x1={5} y1={12} x2={19} y2={12} />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
+          <ArrowRightIcon size={14} />
         </span>
       </div>
     </Link>

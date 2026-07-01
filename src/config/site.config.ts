@@ -5,6 +5,7 @@ export interface NavLink {
 
 export const SITE_NAME = "CA Roshan";
 export const SITE_TAGLINE = "Clear thinking on tax, finance, and policy";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const CONTACT_EMAIL = "contact@caroshan.com";
 export const LINKEDIN_URL = "https://www.linkedin.com/in/ca-roshan"; // TODO: replace with the real LinkedIn profile URL
 

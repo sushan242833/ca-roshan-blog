@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 
-import { SITE_NAME, SITE_TAGLINE } from "@/config/site.config";
+import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/config/site.config";
 import QueryProvider from "@/components/providers/query-provider";
 import ToastProvider from "@/components/providers/toast-provider";
 
@@ -19,8 +19,16 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: SITE_NAME,
   description: SITE_TAGLINE,
+  openGraph: {
+    siteName: SITE_NAME,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

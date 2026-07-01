@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { NAV_LINKS, SITE_NAME } from "@/config/site.config";
+import { SearchIcon, MenuIcon, XIcon } from "@/components/icons";
 
 export default function Header() {
   const pathname = usePathname();
@@ -59,19 +60,7 @@ export default function Header() {
             onClick={() => {}} // TODO: wire up search overlay
             className="text-gray-500 hover:text-brand-teal"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width={20}
-              height={20}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <circle cx={11} cy={11} r={8} />
-              <line x1={21} y1={21} x2={16.65} y2={16.65} />
-            </svg>
+            <SearchIcon size={20} />
           </button>
 
           {/* Hamburger / Close — mobile only */}
@@ -81,36 +70,7 @@ export default function Header() {
             onClick={() => setIsMenuOpen((prev) => !prev)}
             className="md:hidden text-brand-navy"
           >
-            {isMenuOpen ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={24}
-                height={24}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                aria-hidden="true"
-              >
-                <line x1={18} y1={6} x2={6} y2={18} />
-                <line x1={6} y1={6} x2={18} y2={18} />
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={24}
-                height={24}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                aria-hidden="true"
-              >
-                <line x1={3} y1={6} x2={21} y2={6} />
-                <line x1={3} y1={12} x2={21} y2={12} />
-                <line x1={3} y1={18} x2={21} y2={18} />
-              </svg>
-            )}
+            {isMenuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}
           </button>
         </div>
       </div>
