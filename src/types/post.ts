@@ -40,9 +40,14 @@ export interface PostDetailResponse extends PostSummaryResponse {
   metaDescription: string | null;
 }
 
-export interface PaginatedResponse<T> {
-  items: T[];
+export interface PaginationMeta {
   page: number;
   limit: number;
-  count: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: PaginationMeta;
 }
