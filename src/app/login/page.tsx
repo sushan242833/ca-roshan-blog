@@ -37,14 +37,14 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isLoading && admin) {
-      router.replace("/admin/dashboard");
+      router.replace("/admin");
     }
   }, [isLoading, admin, router]);
 
   async function onSubmit(data: LoginFormValues) {
     try {
       await login(data.email, data.password);
-      router.replace("/admin/dashboard");
+      router.replace("/admin");
     } catch (err) {
       setError("root", {
         message:

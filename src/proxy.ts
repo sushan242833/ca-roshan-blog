@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/constants";
 
 const ADMIN_PATH_PREFIX = "/admin";
-const ADMIN_DEFAULT_PATH = "/admin/dashboard";
+const ADMIN_DEFAULT_PATH = "/admin/";
 const LOGIN_PATH = "/login";
 
 // TODO: presence-only check — any truthy cookie value passes, valid or not.

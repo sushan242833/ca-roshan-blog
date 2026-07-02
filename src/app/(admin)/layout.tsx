@@ -27,12 +27,27 @@ interface AdminNavItem {
 // TODO: wire up Manage Posts, Categories, Tags, Media, and Subscribers once
 // their respective admin pages are built in later phases.
 const ADMIN_NAV_ITEMS: AdminNavItem[] = [
-  { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "Manage Posts", href: "/admin/posts", icon: FileText, disabled: true },
-  { label: "Categories", href: "/admin/categories", icon: FolderTree, disabled: true },
+  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  {
+    label: "Manage Posts",
+    href: "/admin/posts",
+    icon: FileText,
+    disabled: true,
+  },
+  {
+    label: "Categories",
+    href: "/admin/categories",
+    icon: FolderTree,
+    disabled: true,
+  },
   { label: "Tags", href: "/admin/tags", icon: Tag, disabled: true },
   { label: "Media", href: "/admin/media", icon: ImageIcon, disabled: true },
-  { label: "Subscribers", href: "/admin/subscribers", icon: Users, disabled: true },
+  {
+    label: "Subscribers",
+    href: "/admin/subscribers",
+    icon: Users,
+    disabled: true,
+  },
   { label: "Settings", href: "/admin/settings/about", icon: Settings },
 ];
 
