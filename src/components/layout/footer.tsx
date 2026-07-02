@@ -18,12 +18,14 @@ export default function Footer({
     initialNewsletterState,
   );
   const [email, setEmail] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const currentYear = new Date().getFullYear();
 
   async function handleSubscribe(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
     setNewsletterState("loading");
+    setErrorMessage("");
     try {
       await apiRequest("/v1/subscribers", {
         method: "POST",
@@ -33,7 +35,9 @@ export default function Footer({
       setNewsletterState("sent");
     } catch (err) {
       if (err instanceof ApiRequestError) {
-        console.error(err.message);
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage("Something went wrong. Please try again.");
       }
       setNewsletterState("error");
     }
@@ -112,7 +116,7 @@ export default function Footer({
         {isError && (
           <div className="rounded-lg border border-red-500/40 bg-red-950/30 p-4">
             <p className="text-sm text-red-300">
-              Something went wrong. Please try again.
+              {errorMessage || "Something went wrong. Please try again."}
             </p>
           </div>
         )}
