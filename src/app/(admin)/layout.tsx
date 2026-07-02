@@ -26,7 +26,7 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: "Manage Posts", href: "/posts", icon: FileText, disabled: true },
   { label: "Categories", href: "/admin/categories", icon: FolderTree, disabled: true },
   { label: "Subscribers", href: "/subscribers", icon: Users, disabled: true },
-  { label: "Settings", href: "/settings/about", icon: Settings },
+  { label: "Settings", href: "/admin/about", icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
