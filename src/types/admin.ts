@@ -1,8 +1,6 @@
-export interface AuthenticatedAdminResponse {
+import type { AboutPageResponse } from "./about";
+
+export interface AuthenticatedAdminResponse extends AboutPageResponse {
   id: string;
-  name: string;
   email: string;
-  title: string | null;
-  bio: string | null;
-  avatarUrl: string | null;
 }
