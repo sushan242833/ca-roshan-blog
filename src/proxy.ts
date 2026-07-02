@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE_NAME } from "@/lib/constants";
 
-const ADMIN_PATH_PREFIX = "/dashboard";
+const ADMIN_PATH_PREFIX = "/admin";
+const ADMIN_DEFAULT_PATH = "/admin/dashboard";
 const LOGIN_PATH = "/login";
-const SESSION_COOKIE_NAME = "ca_roshan_session";
 
-// TODO: This currently only checks for cookie presence, not validity.
-// Once the admin login flow sets a real session cookie, either:
-//   (a) switch to the `jose` library to verify the JWT signature here, or
-//   (b) keep this as a lightweight gate and perform full validation
-//       in each Server Component via the backend GET /api/v1/auth/me endpoint.
+// TODO: presence-only check — any truthy cookie value passes, valid or not.
+// Real auth is enforced by the backend's JWT-verified tokens; this is just an
+// edge-level UX gate. To harden: verify a signed session JWT here with the
+// `jose` library (Edge-compatible), or keep this lightweight and rely on
+// AdminGuard + the backend for actual verification.
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -26,14 +27,12 @@ export function proxy(request: NextRequest) {
   }
 
   if (isLoginRoute && hasSession) {
-    return NextResponse.redirect(
-      new URL(ADMIN_PATH_PREFIX, request.url),
-    );
+    return NextResponse.redirect(new URL(ADMIN_DEFAULT_PATH, request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/admin/:path*", "/login"],
 };

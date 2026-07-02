@@ -30,6 +30,7 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
@@ -50,4 +51,20 @@ export async function apiRequest<T>(
   }
 
   return body.data;
+}
+
+// Injects the Authorization header for authenticated admin calls — the one
+// place that ever builds this header, so callers never build it by hand.
+export function authenticatedApiRequest<T>(
+  path: string,
+  accessToken: string | null,
+  options: RequestInit & { next?: { revalidate?: number | false } } = {},
+): Promise<T> {
+  return apiRequest<T>(path, {
+    ...options,
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...options.headers,
+    },
+  });
 }

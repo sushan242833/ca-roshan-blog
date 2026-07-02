@@ -20,3 +20,7 @@ export const MAX_IMAGE_SIZE_MB = 5;
 
 // Preview tokens
 export const PREVIEW_TOKEN_EXPIRY_MINUTES = 60;
+
+// Auth session — presence-only cookie checked by proxy.ts
+export const SESSION_COOKIE_NAME = "ca_roshan_session";
+export const SESSION_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // mirrors backend refresh token lifetime
