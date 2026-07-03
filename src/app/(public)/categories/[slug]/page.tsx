@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import PostSummaryCard from "@/components/posts/post-summary-card";
+import PostCard from "@/components/posts/post-card";
 import Pagination from "@/components/blog/pagination";
 import { apiRequest } from "@/lib/api";
 import { POSTS_PER_PAGE } from "@/lib/constants";
@@ -89,7 +89,7 @@ export default async function CategoryArchivePage({
           {postsData.items.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               {postsData.items.map((post) => (
-                <PostSummaryCard key={post.id} post={post} />
+                <PostCard key={post.id} post={post} variant="summary" />
               ))}
             </div>
           ) : (

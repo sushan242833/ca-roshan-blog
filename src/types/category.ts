@@ -4,4 +4,6 @@ export interface CategoryResponse {
   slug: string;
   description: string | null;
   postCount: number;
+  createdAt: string;
+  updatedAt: string;
 }

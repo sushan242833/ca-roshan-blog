@@ -1,6 +1,5 @@
 import Link from "next/link";
-import FeaturedPostCard from "@/components/posts/featured-post-card";
-import PostSummaryCard from "@/components/posts/post-summary-card";
+import PostCard from "@/components/posts/post-card";
 import { apiRequest } from "@/lib/api";
 import { ArrowRightIcon } from "@/components/icons";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
@@ -59,9 +58,10 @@ export default async function HomePage() {
             </div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {featuredPosts.map((post, index) => (
-                <FeaturedPostCard
+                <PostCard
                   key={post.id}
                   post={post}
+                  variant="featured"
                   priority={index === 0}
                 />
               ))}
@@ -82,7 +82,7 @@ export default async function HomePage() {
             </div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               {recentPosts.map((post) => (
-                <PostSummaryCard key={post.id} post={post} />
+                <PostCard key={post.id} post={post} variant="summary" />
               ))}
             </div>
             <div className="mt-10 flex justify-center">

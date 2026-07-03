@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import PostSummaryCard from "@/components/posts/post-summary-card";
+import PostCard from "@/components/posts/post-card";
 import CategoryFilterPills from "@/components/blog/category-filter-pills";
 import SearchBar from "@/components/blog/search-bar";
 import Pagination from "@/components/blog/pagination";
@@ -91,7 +91,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
           {postsData.items.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               {postsData.items.map((post) => (
-                <PostSummaryCard key={post.id} post={post} />
+                <PostCard key={post.id} post={post} variant="summary" />
               ))}
             </div>
           ) : (

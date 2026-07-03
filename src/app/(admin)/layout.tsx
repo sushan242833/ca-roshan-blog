@@ -24,8 +24,8 @@ interface AdminNavItem {
   disabled?: boolean;
 }
 
-// TODO: wire up Manage Posts, Categories, Tags, Media, and Subscribers once
-// their respective admin pages are built in later phases.
+// TODO: wire up Manage Posts, Media, and Subscribers once their respective
+// admin pages are built in later phases.
 const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   {
@@ -38,9 +38,8 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     label: "Categories",
     href: "/admin/categories",
     icon: FolderTree,
-    disabled: true,
   },
-  { label: "Tags", href: "/admin/tags", icon: Tag, disabled: true },
+  { label: "Tags", href: "/admin/tags", icon: Tag },
   { label: "Media", href: "/admin/media", icon: ImageIcon, disabled: true },
   {
     label: "Subscribers",
@@ -104,7 +103,12 @@ function AdminShell({ children }: { children: ReactNode }) {
               );
             }
 
-            const active = pathname?.startsWith(item.href);
+            // "/admin" is a prefix of every admin route, so Dashboard needs
+            // an exact match to avoid staying highlighted on sibling pages.
+            const active =
+              item.href === "/admin"
+                ? pathname === "/admin"
+                : pathname?.startsWith(item.href);
             return (
               <Link
                 key={item.href}

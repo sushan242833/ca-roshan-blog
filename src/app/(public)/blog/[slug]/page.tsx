@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import DOMPurify from "isomorphic-dompurify";
-import RecommendedPostCard from "@/components/blog/recommended-post-card";
+import PostCard from "@/components/posts/post-card";
 import ShareArticle from "@/components/blog/share-article";
 import PostImagePlaceholder from "@/components/posts/post-image-placeholder";
 import { apiRequest, ApiRequestError } from "@/lib/api";
@@ -178,7 +178,7 @@ export default async function ArticlePage({ params }: PageProps) {
           </h2>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {relatedPosts.map((p) => (
-              <RecommendedPostCard key={p.id} post={p} />
+              <PostCard key={p.id} post={p} variant="recommended" />
             ))}
           </div>
         </section>

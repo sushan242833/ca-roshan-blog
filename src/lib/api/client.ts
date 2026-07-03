@@ -37,6 +37,12 @@ export async function apiRequest<T>(
     },
   });
 
+  // 204 No Content (e.g. DELETE) has no JSON body to unwrap — treat it as
+  // success with no data instead of failing on res.json().
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
   let body: ApiResponse<T>;
   try {
     body = (await res.json()) as ApiResponse<T>;
