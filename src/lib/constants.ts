@@ -2,6 +2,10 @@
 export const POSTS_PER_PAGE = 9;
 export const ADMIN_POSTS_PER_PAGE = 10;
 export const ADMIN_SUBSCRIBERS_PER_PAGE = 20;
+// The admin post list endpoint only sorts by createdAt — fetch a larger pool
+// and re-sort by updatedAt client-side, then trim to the display count.
+export const ADMIN_DASHBOARD_ACTIVITY_FETCH_LIMIT = 20;
+export const ADMIN_DASHBOARD_ACTIVITY_DISPLAY_LIMIT = 5;
 
 // Search
 export const SEARCH_DEBOUNCE_MS = 350;

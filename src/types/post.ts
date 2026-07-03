@@ -1,3 +1,5 @@
+export type PostStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
 export interface TaxonomyResponse {
   id: string;
   name: string;
@@ -22,6 +24,10 @@ export interface PostSummaryResponse {
   title: string;
   slug: string;
   excerpt: string | null;
+  status: PostStatus;
+  featured: boolean;
+  metaTitle: string | null;
+  metaDescription: string | null;
   featuredImage: FeaturedImageResponse | null;
   category: TaxonomyResponse | null;
   categories: TaxonomyResponse[];
