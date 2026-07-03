@@ -11,7 +11,7 @@ interface PaginationProps {
   basePath?: string;
 }
 
-function getPageNumbers(current: number, total: number): (number | "…")[] {
+export function getPageNumbers(current: number, total: number): (number | "…")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   if (current <= 3) return [1, 2, 3, "…", total];
   if (current >= total - 2) return [1, "…", total - 2, total - 1, total];

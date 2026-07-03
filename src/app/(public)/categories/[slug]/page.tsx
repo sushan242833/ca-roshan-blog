@@ -20,7 +20,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!category) return { title: "Category | CA Roshan" };
     return {
       title: `${category.name} | CA Roshan`,
-      description: category.description ?? undefined,
     };
   } catch {
     return { title: "Category | CA Roshan" };
@@ -71,11 +70,6 @@ export default async function CategoryArchivePage({
           <h1 className="font-serif text-4xl font-bold text-brand-navy md:text-5xl">
             {category.name}
           </h1>
-          {category.description && (
-            <p className="mt-3 max-w-xl text-gray-500">
-              {category.description}
-            </p>
-          )}
         </div>
       </section>
 

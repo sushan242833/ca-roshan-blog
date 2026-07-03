@@ -14,6 +14,7 @@ import {
   MAX_META_DESCRIPTION_LENGTH,
 } from "@/lib/constants";
 import { useAuth } from "@/components/providers/auth-provider";
+import { revalidatePublicContent } from "@/lib/revalidate";
 import type { ExpertiseItem } from "@/types/about";
 
 // Mirrors the backend's validateUpdateProfile limits.
@@ -190,6 +191,7 @@ export default function AdminAboutSettingsPage() {
           ogImageUrl: data.ogImageUrl || null,
         }),
       });
+      await revalidatePublicContent("about", accessToken);
       toast.success("Profile updated successfully");
       reset({ ...data, expertise: cleanedExpertise });
     } catch (err) {

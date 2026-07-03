@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { FileText, CheckCircle2, PenLine, Users, Loader2 } from "lucide-react";
 import { authenticatedApiRequest, ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -188,13 +189,12 @@ export default function AdminDashboardPage() {
             )}
 
             <div className="border-t border-gray-200 px-6 py-4 text-center">
-              <span
-                title="Coming soon"
-                aria-disabled="true"
-                className="inline-block cursor-not-allowed rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-gray-300"
+              <Link
+                href="/admin/posts"
+                className="inline-block rounded-md border border-gray-200 px-4 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-50"
               >
                 View All Activity
-              </span>
+              </Link>
             </div>
           </div>
         </>

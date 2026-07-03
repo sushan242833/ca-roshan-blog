@@ -46,6 +46,11 @@ export interface PostDetailResponse extends PostSummaryResponse {
   metaDescription: string | null;
 }
 
+export interface PreviewTokenResponse {
+  token: string;
+  expiresAt: string;
+}
+
 export interface PaginationMeta {
   page: number;
   limit: number;

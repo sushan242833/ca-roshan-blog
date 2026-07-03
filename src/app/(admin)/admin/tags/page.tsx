@@ -13,6 +13,7 @@ export default function AdminTagsPage() {
       title="Tags"
       subtitle="Manage the tags used to group related content."
       nameMaxLength={MAX_TAG_NAME_LENGTH}
+      revalidateScope="tags"
     />
   );
 }

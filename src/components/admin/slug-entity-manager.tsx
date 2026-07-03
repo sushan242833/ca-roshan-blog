@@ -7,6 +7,10 @@ import { authenticatedApiRequest, ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { formatPostDate } from "@/lib/format";
 import {
+  revalidatePublicContent,
+  type RevalidateScope,
+} from "@/lib/revalidate";
+import {
   Table,
   TableBody,
   TableCell,
@@ -39,6 +43,8 @@ interface SlugEntityManagerProps<T extends SlugEntityBase> {
   title: string;
   subtitle: string;
   nameMaxLength: number;
+  /** Public-page cache scope purged after each successful mutation. */
+  revalidateScope: RevalidateScope;
   /** Extra columns rendered between Slug and Created. */
   extraColumns?: SlugEntityColumn<T>[];
   /** Caution line for the delete confirmation, e.g. attached post count. */
@@ -57,6 +63,7 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
   title,
   subtitle,
   nameMaxLength,
+  revalidateScope,
   extraColumns = [],
   getDeleteWarning,
 }: SlugEntityManagerProps<T>) {
@@ -111,12 +118,14 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
         accessToken,
         { method: "PATCH", body: JSON.stringify(values) },
       );
+      await revalidatePublicContent(revalidateScope, accessToken);
       toast.success(`${entityLabel} updated successfully`);
     } else {
       await authenticatedApiRequest<T>(apiPath, accessToken, {
         method: "POST",
         body: JSON.stringify(values),
       });
+      await revalidatePublicContent(revalidateScope, accessToken);
       toast.success(`${entityLabel} created successfully`);
     }
     setDialogState(null);
@@ -131,6 +140,7 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
         accessToken,
         { method: "DELETE" },
       );
+      await revalidatePublicContent(revalidateScope, accessToken);
       toast.success(`${entityLabel} deleted successfully`);
       setDeleteTarget(null);
       refreshItems();

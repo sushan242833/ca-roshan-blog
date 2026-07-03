@@ -134,7 +134,9 @@ export default function SlugEntityDialog({
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-800 focus:border-brand-teal focus:outline-none focus:ring-1 focus:ring-brand-teal"
             />
             <p className="mt-1 text-xs text-gray-400">
-              Leave blank to auto-generate from name.
+              {isEdit
+                ? "Leave blank to keep the current slug."
+                : "Leave blank to auto-generate from name."}
             </p>
           </div>
 

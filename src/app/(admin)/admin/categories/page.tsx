@@ -26,6 +26,7 @@ export default function AdminCategoriesPage() {
       title="Categories"
       subtitle="Manage the categories used to organize your posts."
       nameMaxLength={MAX_CATEGORY_NAME_LENGTH}
+      revalidateScope="categories"
       extraColumns={CATEGORY_COLUMNS}
       getDeleteWarning={(category) =>
         category.postCount > 0

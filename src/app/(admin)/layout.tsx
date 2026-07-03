@@ -24,15 +24,14 @@ interface AdminNavItem {
   disabled?: boolean;
 }
 
-// TODO: wire up Manage Posts, Media, and Subscribers once their respective
-// admin pages are built in later phases.
+// TODO: wire up Media and Subscribers once their respective admin pages are
+// built in later phases.
 const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   {
     label: "Manage Posts",
     href: "/admin/posts",
     icon: FileText,
-    disabled: true,
   },
   {
     label: "Categories",
