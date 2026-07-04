@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { authenticatedApiRequest, ApiRequestError } from "@/lib/api";
+import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { formatPostDate } from "@/lib/format";
 import {
@@ -67,7 +67,7 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
   extraColumns = [],
   getDeleteWarning,
 }: SlugEntityManagerProps<T>) {
-  const { accessToken } = useAuth();
+  const { authedFetch, getAccessToken } = useAuth();
   const [items, setItems] = useState<T[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -85,7 +85,7 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
     async function load() {
       try {
         // The API already returns items sorted by name ascending — render as-is.
-        const data = await authenticatedApiRequest<T[]>(apiPath, accessToken);
+        const data = await authedFetch<T[]>(apiPath);
         if (cancelled) return;
         setItems(data);
         setError("");
@@ -105,7 +105,7 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
     return () => {
       cancelled = true;
     };
-  }, [apiPath, accessToken, lowerPlural, refreshNonce]);
+  }, [apiPath, authedFetch, lowerPlural, refreshNonce]);
 
   const refreshItems = () => setRefreshNonce((nonce) => nonce + 1);
 
@@ -113,19 +113,18 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
   // "slug already exists" conflict) inline and stay open.
   async function handleSave(values: SlugEntityFormValues) {
     if (dialogState?.mode === "edit") {
-      await authenticatedApiRequest<T>(
-        `${apiPath}/${dialogState.item.id}`,
-        accessToken,
-        { method: "PATCH", body: JSON.stringify(values) },
-      );
-      await revalidatePublicContent(revalidateScope, accessToken);
+      await authedFetch<T>(`${apiPath}/${dialogState.item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(values),
+      });
+      await revalidatePublicContent(revalidateScope, getAccessToken());
       toast.success(`${entityLabel} updated successfully`);
     } else {
-      await authenticatedApiRequest<T>(apiPath, accessToken, {
+      await authedFetch<T>(apiPath, {
         method: "POST",
         body: JSON.stringify(values),
       });
-      await revalidatePublicContent(revalidateScope, accessToken);
+      await revalidatePublicContent(revalidateScope, getAccessToken());
       toast.success(`${entityLabel} created successfully`);
     }
     setDialogState(null);
@@ -135,12 +134,10 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
   async function handleDelete() {
     if (!deleteTarget) return;
     try {
-      await authenticatedApiRequest<void>(
-        `${apiPath}/${deleteTarget.id}`,
-        accessToken,
-        { method: "DELETE" },
-      );
-      await revalidatePublicContent(revalidateScope, accessToken);
+      await authedFetch<void>(`${apiPath}/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      await revalidatePublicContent(revalidateScope, getAccessToken());
       toast.success(`${entityLabel} deleted successfully`);
       setDeleteTarget(null);
       refreshItems();

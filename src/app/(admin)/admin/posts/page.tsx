@@ -14,14 +14,14 @@ import {
   Search,
   Send,
   Trash2,
-  TriangleAlert,
   Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { authenticatedApiRequest, ApiRequestError } from "@/lib/api";
+import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { formatPostDate } from "@/lib/format";
 import { revalidatePublicContent } from "@/lib/revalidate";
+import { openPostPreview } from "@/lib/post-preview";
 import { ADMIN_POSTS_PER_PAGE, SEARCH_DEBOUNCE_MS } from "@/lib/constants";
 import {
   Table,
@@ -32,14 +32,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -48,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import DeleteEntityDialog from "@/components/admin/delete-entity-dialog";
+import PublishPostDialog from "@/components/admin/publish-post-dialog";
 import { getPageNumbers } from "@/components/blog/pagination";
 import type { DashboardStatsResponse } from "@/types/dashboard";
 import type {
@@ -56,7 +49,6 @@ import type {
   PostDetailResponse,
   PostStatus,
   PostSummaryResponse,
-  PreviewTokenResponse,
 } from "@/types/post";
 
 type StatusTab = PostStatus | "ALL";
@@ -102,82 +94,10 @@ function parseStatusParam(value: string | null): StatusTab {
     : "ALL";
 }
 
-interface PublishPostDialogProps {
-  post: PostSummaryResponse;
-  onOpenChange: (open: boolean) => void;
-  /** Performs the publish; the caller closes the dialog on success. */
-  onConfirm: () => Promise<void>;
-}
-
-function PublishPostDialog({
-  post,
-  onOpenChange,
-  onConfirm,
-}: PublishPostDialogProps) {
-  const [isPublishing, setIsPublishing] = useState(false);
-
-  async function handleConfirm() {
-    setIsPublishing(true);
-    try {
-      await onConfirm();
-    } finally {
-      setIsPublishing(false);
-    }
-  }
-
-  return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-serif text-lg font-bold text-brand-navy">
-            Publish post?
-          </DialogTitle>
-          <DialogDescription>
-            <span className="font-semibold text-brand-navy">{post.title}</span>{" "}
-            will be publicly visible on the blog immediately.
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* The backend queues the newsletter only for DRAFT → PUBLISHED;
-            re-publishing an archived post does not email subscribers. */}
-        {post.status === "DRAFT" && (
-          <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-700">
-            <TriangleAlert size={16} className="mt-0.5 shrink-0" />
-            Publishing this draft will queue the newsletter announcement to all
-            active subscribers.
-          </div>
-        )}
-
-        <DialogFooter>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            disabled={isPublishing}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-50 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              void handleConfirm();
-            }}
-            disabled={isPublishing}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-brand-teal-dark px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-teal disabled:opacity-60"
-          >
-            {isPublishing && <Loader2 size={16} className="animate-spin" />}
-            {isPublishing ? "Publishing…" : "Publish Post"}
-          </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function ManagePosts() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { accessToken } = useAuth();
+  const { authedFetch, getAccessToken } = useAuth();
 
   const [statusTab, setStatusTab] = useState<StatusTab>(() =>
     parseStatusParam(searchParams.get("status")),
@@ -248,9 +168,9 @@ function ManagePosts() {
         ]
           .filter(Boolean)
           .join("&");
-        const data = await authenticatedApiRequest<
-          PaginatedResponse<PostSummaryResponse>
-        >(`/v1/posts/admin/list?${query}`, accessToken);
+        const data = await authedFetch<PaginatedResponse<PostSummaryResponse>>(
+          `/v1/posts/admin/list?${query}`,
+        );
         if (cancelled) return;
 
         // Deleting the last row of the final page leaves it empty — snap
@@ -279,16 +199,13 @@ function ManagePosts() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, statusTab, search, page, listNonce]);
+  }, [authedFetch, statusTab, search, page, listNonce]);
 
   // Tab counts are non-critical — the tabs render without them on failure.
   useEffect(() => {
     let cancelled = false;
 
-    authenticatedApiRequest<DashboardStatsResponse>(
-      "/v1/posts/admin/stats",
-      accessToken,
-    )
+    authedFetch<DashboardStatsResponse>("/v1/posts/admin/stats")
       .then((data) => {
         if (!cancelled) setStats(data);
       })
@@ -297,7 +214,7 @@ function ManagePosts() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, statsNonce]);
+  }, [authedFetch, statsNonce]);
 
   // Mutations move posts between tabs, so both the list and counts refresh.
   const refreshAfterMutation = () => {
@@ -319,12 +236,10 @@ function ManagePosts() {
   ) {
     setPendingId(post.id);
     try {
-      await authenticatedApiRequest<PostDetailResponse>(
-        `/v1/posts/${post.id}/${action}`,
-        accessToken,
-        { method: "POST" },
-      );
-      await revalidatePublicContent("posts", accessToken);
+      await authedFetch<PostDetailResponse>(`/v1/posts/${post.id}/${action}`, {
+        method: "POST",
+      });
+      await revalidatePublicContent("posts", getAccessToken());
       toast.success(successMessage);
       refreshAfterMutation();
     } finally {
@@ -372,12 +287,10 @@ function ManagePosts() {
     try {
       // The backend responds 200 { success: true } with no data field —
       // apiRequest resolves that to undefined, which <void> accepts.
-      await authenticatedApiRequest<void>(
-        `/v1/posts/${deleteTarget.id}`,
-        accessToken,
-        { method: "DELETE" },
-      );
-      await revalidatePublicContent("posts", accessToken);
+      await authedFetch<void>(`/v1/posts/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      await revalidatePublicContent("posts", getAccessToken());
       toast.success("Post deleted successfully");
       setDeleteTarget(null);
       refreshAfterMutation();
@@ -393,12 +306,7 @@ function ManagePosts() {
   async function handlePreview(post: PostSummaryResponse) {
     setPendingId(post.id);
     try {
-      const { token } = await authenticatedApiRequest<PreviewTokenResponse>(
-        `/v1/posts/${post.id}/preview-token`,
-        accessToken,
-        { method: "POST" },
-      );
-      window.open(`/blog/preview/${encodeURIComponent(token)}`, "_blank");
+      await openPostPreview(post.id, authedFetch);
     } catch (err) {
       toast.error(
         err instanceof ApiRequestError
@@ -419,8 +327,6 @@ function ManagePosts() {
     ? Math.min(pagination.page * pagination.limit, pagination.total)
     : 0;
 
-  // The post editor ships in the next phase — /admin/posts/new and
-  // /admin/posts/[id]/edit will 404 until then.
   const newPostButton = (
     <Link
       href="/admin/posts/new"
@@ -749,7 +655,8 @@ function ManagePosts() {
 
       {publishTarget && (
         <PublishPostDialog
-          post={publishTarget}
+          postTitle={publishTarget.title}
+          showNewsletterWarning={publishTarget.status === "DRAFT"}
           onOpenChange={(open) => {
             if (!open) setPublishTarget(null);
           }}

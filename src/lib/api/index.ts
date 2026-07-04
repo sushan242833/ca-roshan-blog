@@ -1,1 +1,7 @@
-export { apiRequest, authenticatedApiRequest, ApiRequestError } from "./client";
+export {
+  apiRequest,
+  authenticatedApiRequest,
+  authenticatedUploadRequest,
+  ApiRequestError,
+  type ApiRequestOptions,
+} from "./client";

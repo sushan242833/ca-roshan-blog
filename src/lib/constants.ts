@@ -13,6 +13,8 @@ export const SEARCH_DEBOUNCE_MS = 350;
 // Validation limits — must mirror the backend exactly
 export const MAX_META_TITLE_LENGTH = 60;
 export const MAX_META_DESCRIPTION_LENGTH = 160;
+// Frontend-only soft cap; the backend accepts any excerpt length.
+export const MAX_EXCERPT_LENGTH = 300;
 export const MAX_CATEGORY_NAME_LENGTH = 100;
 export const MAX_TAG_NAME_LENGTH = 100;
 export const MAX_CONTACT_MESSAGE_LENGTH = 5000;

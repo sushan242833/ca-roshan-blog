@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FileText, CheckCircle2, PenLine, Users, Loader2 } from "lucide-react";
-import { authenticatedApiRequest, ApiRequestError } from "@/lib/api";
+import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { formatRelativeTime } from "@/lib/format";
 import {
@@ -33,7 +33,7 @@ interface StatCard {
 }
 
 export default function AdminDashboardPage() {
-  const { accessToken } = useAuth();
+  const { authedFetch } = useAuth();
   const [stats, setStats] = useState<DashboardStatsResponse | null>(null);
   const [recentPosts, setRecentPosts] = useState<PostSummaryResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,13 +45,9 @@ export default function AdminDashboardPage() {
     async function load() {
       try {
         const [statsData, postsData] = await Promise.all([
-          authenticatedApiRequest<DashboardStatsResponse>(
-            "/v1/posts/admin/stats",
-            accessToken,
-          ),
-          authenticatedApiRequest<PaginatedResponse<PostSummaryResponse>>(
+          authedFetch<DashboardStatsResponse>("/v1/posts/admin/stats"),
+          authedFetch<PaginatedResponse<PostSummaryResponse>>(
             `/v1/posts/admin/list?page=1&limit=${ADMIN_DASHBOARD_ACTIVITY_FETCH_LIMIT}`,
-            accessToken,
           ),
         ]);
         if (cancelled) return;
@@ -80,7 +76,7 @@ export default function AdminDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken]);
+  }, [authedFetch]);
 
   const statCards: StatCard[] = stats
     ? [

@@ -5,8 +5,7 @@ import Image from "next/image";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
-import { authenticatedApiRequest, ApiRequestError } from "@/lib/api";
-import { API_BASE_URL } from "@/config/site.config";
+import { ApiRequestError } from "@/lib/api";
 import {
   ALLOWED_IMAGE_TYPES,
   MAX_IMAGE_SIZE_MB,
@@ -58,35 +57,9 @@ const EMPTY_FORM_VALUES: ProfileFormValues = {
   ogImageUrl: "",
 };
 
-async function uploadImage(file: File, token: string | null): Promise<string> {
-  // Raw fetch instead of apiRequest — apiRequest always forces a JSON
-  // Content-Type header, which breaks multipart/form-data uploads.
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await fetch(`${API_BASE_URL}/v1/media/upload`, {
-    method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    body: formData,
-  });
-
-  let body: { success: boolean; message?: string; data?: { url: string } };
-  try {
-    body = await res.json();
-  } catch {
-    throw new ApiRequestError("Invalid response from server.", res.status);
-  }
-
-  if (!res.ok || !body.success || !body.data) {
-    throw new ApiRequestError(body.message ?? "Failed to upload image.", res.status);
-  }
-
-  return body.data.url;
-}
-
 export default function AdminAboutSettingsPage() {
   // AdminGuard only renders this page once `admin` is populated.
-  const { admin, accessToken } = useAuth();
+  const { admin, authedFetch, authedUpload, getAccessToken } = useAuth();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingOgImage, setIsUploadingOgImage] = useState(false);
 
@@ -155,8 +128,13 @@ export default function AdminAboutSettingsPage() {
 
     setUploading(true);
     try {
-      const url = await uploadImage(file, accessToken);
-      setValue(field, url, { shouldDirty: true });
+      const formData = new FormData();
+      formData.append("file", file);
+      const media = await authedUpload<{ url: string }>(
+        "/v1/media/upload",
+        formData,
+      );
+      setValue(field, media.url, { shouldDirty: true });
     } catch (err) {
       toast.error(
         err instanceof ApiRequestError ? err.message : "Failed to upload image.",
@@ -172,7 +150,7 @@ export default function AdminAboutSettingsPage() {
     );
 
     try {
-      await authenticatedApiRequest("/v1/auth/profile", accessToken, {
+      await authedFetch("/v1/auth/profile", {
         method: "PATCH",
         body: JSON.stringify({
           title: data.title || null,
@@ -191,7 +169,7 @@ export default function AdminAboutSettingsPage() {
           ogImageUrl: data.ogImageUrl || null,
         }),
       });
-      await revalidatePublicContent("about", accessToken);
+      await revalidatePublicContent("about", getAccessToken());
       toast.success("Profile updated successfully");
       reset({ ...data, expertise: cleanedExpertise });
     } catch (err) {
