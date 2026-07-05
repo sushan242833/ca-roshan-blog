@@ -21,11 +21,8 @@ interface AdminNavItem {
   label: string;
   href: string;
   icon: typeof Settings;
-  disabled?: boolean;
 }
 
-// TODO: wire up Media and Subscribers once their respective admin pages are
-// built in later phases.
 const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   {
@@ -39,12 +36,11 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     icon: FolderTree,
   },
   { label: "Tags", href: "/admin/tags", icon: Tag },
-  { label: "Media", href: "/admin/media", icon: ImageIcon, disabled: true },
+  { label: "Media", href: "/admin/media", icon: ImageIcon },
   {
     label: "Subscribers",
     href: "/admin/subscribers",
     icon: Users,
-    disabled: true,
   },
   { label: "Settings", href: "/admin/settings/about", icon: Settings },
 ];
@@ -87,20 +83,6 @@ function AdminShell({ children }: { children: ReactNode }) {
         <nav className="flex flex-1 flex-col gap-1 px-3 py-3">
           {ADMIN_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-
-            if (item.disabled) {
-              return (
-                <span
-                  key={item.href}
-                  title="Coming soon"
-                  aria-disabled="true"
-                  className="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm text-gray-300"
-                >
-                  <Icon size={18} />
-                  {item.label}
-                </span>
-              );
-            }
 
             // "/admin" is a prefix of every admin route, so Dashboard needs
             // an exact match to avoid staying highlighted on sibling pages.

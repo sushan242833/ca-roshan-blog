@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { Loader2, Upload } from "lucide-react";
-import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB } from "@/lib/constants";
+import { useMediaUpload } from "@/components/admin/use-media-upload";
+import MediaGridItem from "@/components/admin/media-grid-item";
 import {
   Dialog,
   DialogContent,
@@ -22,16 +22,17 @@ interface MediaPickerDialogProps {
   onSelect: (media: MediaResponse) => void;
 }
 
-// Media chooser shared by the post editor's featured-image field; built to be
-// reused by the Media Library screen in the next phase.
+// Media chooser for the post editor's featured-image field. Upload and grid
+// rendering are shared with the Media Library (use-media-upload,
+// media-grid-item).
 export default function MediaPickerDialog({
   onOpenChange,
   onSelect,
 }: MediaPickerDialogProps) {
-  const { authedFetch, authedUpload } = useAuth();
+  const { authedFetch } = useAuth();
+  const { uploadFiles, isUploading } = useMediaUpload();
   const [items, setItems] = useState<MediaResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,38 +63,12 @@ export default function MediaPickerDialog({
     };
   }, [authedFetch]);
 
-  async function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      toast.error("Please choose a PNG, JPG, or WEBP image.");
-      return;
-    }
-    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
-      toast.error(`Image must be ${MAX_IMAGE_SIZE_MB}MB or smaller.`);
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const media = await authedUpload<MediaResponse>(
-        "/v1/media/upload",
-        formData,
-      );
-      onSelect(media);
-    } catch (err) {
-      toast.error(
-        err instanceof ApiRequestError
-          ? err.message
-          : "Failed to upload image.",
-      );
-    } finally {
-      setIsUploading(false);
-    }
+    // A fresh upload is auto-selected as the featured image.
+    void uploadFiles([file], onSelect);
   }
 
   return (
@@ -127,9 +102,7 @@ export default function MediaPickerDialog({
             ref={fileInputRef}
             type="file"
             accept={ALLOWED_IMAGE_TYPES.join(",")}
-            onChange={(event) => {
-              void handleUpload(event);
-            }}
+            onChange={handleFileChange}
             className="hidden"
           />
         </div>
@@ -152,25 +125,11 @@ export default function MediaPickerDialog({
         ) : (
           <div className="grid max-h-96 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 md:grid-cols-4">
             {items.map((media) => (
-              <button
+              <MediaGridItem
                 key={media.id}
-                type="button"
+                media={media}
                 onClick={() => onSelect(media)}
-                className="group overflow-hidden rounded-md border border-gray-200 text-left transition-colors hover:border-brand-teal focus:outline-none focus:ring-1 focus:ring-brand-teal"
-              >
-                <div className="relative aspect-square w-full bg-gray-100">
-                  <Image
-                    src={media.url}
-                    alt={media.originalName}
-                    fill
-                    sizes="(max-width: 640px) 50vw, 160px"
-                    className="object-cover"
-                  />
-                </div>
-                <p className="truncate px-2 py-1.5 text-xs text-gray-500 group-hover:text-brand-navy">
-                  {media.originalName}
-                </p>
-              </button>
+              />
             ))}
           </div>
         )}
