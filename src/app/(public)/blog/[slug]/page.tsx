@@ -27,6 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {
       title,
       description,
+      alternates: { canonical: `/blog/${slug}` },
       openGraph: {
         type: "article",
         title,
@@ -43,7 +44,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
     };
   } catch {
-    return { title: `Article | ${SITE_NAME}` };
+    return {
+      title: `Article | ${SITE_NAME}`,
+      alternates: { canonical: `/blog/${slug}` },
+    };
   }
 }
 

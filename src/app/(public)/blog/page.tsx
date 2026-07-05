@@ -18,6 +18,7 @@ export function generateMetadata(): Metadata {
   return {
     title: "All Articles | CA Roshan",
     description: PAGE_SUBTITLE,
+    alternates: { canonical: "/blog" },
   };
 }
 

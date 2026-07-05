@@ -30,7 +30,7 @@ import type {
   PostStatus,
 } from "@/types/post";
 
-const postFormSchema = z.object({
+export const postFormSchema = z.object({
   title: z.string().trim().min(1, "Title is required."),
   slug: z.string(),
   content: z

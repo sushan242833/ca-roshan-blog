@@ -239,3 +239,60 @@
   background: none;
   padding: 0;
 }
+.article-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+.article-body th,
+.article-body td {
+  border: 1px solid #d1d5db;
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  vertical-align: top;
+}
+.article-body th {
+  font-weight: 700;
+  color: #0D1B2A;
+  background: #f9fafb;
+}
+.article-body tbody tr:nth-child(odd) {
+  background: #fcfcfd;
+}
+/* ArticleView wraps each table in .table-scroll so wide tables scroll
+   horizontally on small screens instead of breaking the mobile layout. */
+.article-body .table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1.5rem 0;
+}
+.article-body .table-scroll table {
+  margin: 0;
+}
+.article-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  border-radius: 0.5rem;
+}
+
+/* Editor-only affordances — these classes are added by Tiptap/ProseMirror
+   inside the admin editor and never appear in sanitised public output. */
+.article-body .tableWrapper {
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+.article-body .tableWrapper table {
+  margin: 0;
+}
+.article-body td.selectedCell,
+.article-body th.selectedCell {
+  background: rgba(26, 107, 90, 0.12);
+}
+.article-body img.ProseMirror-selectednode {
+  outline: 2px solid #1A6B5A;
+  outline-offset: 2px;
+}

@@ -31,6 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: about?.seoTitle ?? `About | ${SITE_NAME}`,
     description,
+    alternates: { canonical: "/about" },
     openGraph: about?.ogImageUrl
       ? { images: [{ url: about.ogImageUrl }] }
       : undefined,

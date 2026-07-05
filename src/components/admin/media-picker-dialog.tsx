@@ -20,14 +20,17 @@ interface MediaPickerDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Called with the chosen (or freshly uploaded) media; caller closes. */
   onSelect: (media: MediaResponse) => void;
+  /** Dialog heading; defaults to the featured-image wording. */
+  title?: string;
 }
 
-// Media chooser for the post editor's featured-image field. Upload and grid
-// rendering are shared with the Media Library (use-media-upload,
-// media-grid-item).
+// Media chooser for the post editor's featured-image field and inline
+// editor images. Upload and grid rendering are shared with the Media
+// Library (use-media-upload, media-grid-item).
 export default function MediaPickerDialog({
   onOpenChange,
   onSelect,
+  title = "Select Featured Image",
 }: MediaPickerDialogProps) {
   const { authedFetch } = useAuth();
   const { uploadFiles, isUploading } = useMediaUpload();
@@ -76,7 +79,7 @@ export default function MediaPickerDialog({
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-serif text-lg font-bold text-brand-navy">
-            Select Featured Image
+            {title}
           </DialogTitle>
           <DialogDescription>
             Pick an existing image or upload a new one (PNG, JPG, WEBP — max{" "}

@@ -15,8 +15,14 @@ interface ArticleViewProps {
 // The article presentation shared by the public post page and the admin
 // draft preview — header, featured image, sanitised body, and tags.
 export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
-  // Sanitise HTML content before rendering
-  const cleanContent = DOMPurify.sanitize(post.content ?? "");
+  // Sanitise HTML content before rendering. Tables are then wrapped in a
+  // scroll container (.table-scroll, globals.css) so wide tables scroll
+  // horizontally on small screens instead of breaking the layout. The
+  // replace is safe post-sanitisation: DOMPurify emits well-formed HTML, so
+  // every "<table"/"</table>" is a real, balanced tag.
+  const cleanContent = DOMPurify.sanitize(post.content ?? "")
+    .replace(/<table(?=[\s>])/g, '<div class="table-scroll"><table')
+    .replace(/<\/table>/g, "</table></div>");
 
   const authorInitial = post.author?.name?.charAt(0).toUpperCase() ?? "A";
   const publishDate = formatPostDate(post.publishedAt ?? post.createdAt);

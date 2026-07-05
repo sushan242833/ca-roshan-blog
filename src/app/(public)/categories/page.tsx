@@ -10,6 +10,7 @@ const PAGE_SUBTITLE =
 export const metadata: Metadata = {
   title: `Categories | CA Roshan`,
   description: PAGE_SUBTITLE,
+  alternates: { canonical: "/categories" },
 };
 
 export default async function CategoriesPage() {

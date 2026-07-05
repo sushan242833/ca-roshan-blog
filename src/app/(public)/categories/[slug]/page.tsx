@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!category) return { title: "Category | CA Roshan" };
     return {
       title: `${category.name} | CA Roshan`,
+      alternates: { canonical: `/categories/${slug}` },
     };
   } catch {
     return { title: "Category | CA Roshan" };

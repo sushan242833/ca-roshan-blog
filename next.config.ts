@@ -74,8 +74,13 @@ if (apiOrigin) connectSources.push(apiOrigin);
 
 const csp = [
   "default-src 'self'",
+  // 'unsafe-inline' is required in production too: the App Router bootstraps
+  // every page through inline RSC-payload scripts, so `script-src 'self'`
+  // alone blocks hydration entirely (pages freeze on their SSR output).
+  // Dropping it would require per-request nonces via middleware, which forces
+  // all pages — including the static/ISR public pages — to render dynamically.
   isProduction
-    ? "script-src 'self'"
+    ? "script-src 'self' 'unsafe-inline'"
     : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",

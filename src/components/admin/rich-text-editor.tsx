@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { Table } from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableHeader from "@tiptap/extension-table-header";
+import TableCell from "@tiptap/extension-table-cell";
+import TiptapImage from "@tiptap/extension-image";
 import {
   Bold,
+  Captions,
   Heading2,
   Heading3,
+  Image as ImageIcon,
   Italic,
   Link2,
   List,
@@ -14,9 +21,12 @@ import {
   Pilcrow,
   Quote,
   Redo2,
+  Table as TableIcon,
   Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
+import MediaPickerDialog from "@/components/admin/media-picker-dialog";
+import type { MediaResponse } from "@/types/media";
 
 interface RichTextEditorProps {
   /** HTML string, e.g. from react-hook-form's Controller. */
@@ -60,6 +70,36 @@ function ToolbarButton({
   );
 }
 
+interface TableMenuButtonProps {
+  onClick: () => void;
+  active?: boolean;
+  children: React.ReactNode;
+}
+
+// Compact text button for the contextual table controls row.
+function TableMenuButton({
+  onClick,
+  active = false,
+  children,
+}: TableMenuButtonProps) {
+  return (
+    <button
+      type="button"
+      // Keep focus (and thus the selection) inside the editor on click.
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+        active
+          ? "bg-brand-teal/10 text-brand-teal"
+          : "text-gray-500 hover:bg-gray-100 hover:text-brand-navy"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 function promptForLink(editor: Editor) {
   const previousUrl = editor.getAttributes("link").href as string | undefined;
   const input = window.prompt(
@@ -82,10 +122,23 @@ function promptForLink(editor: Editor) {
   editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
 }
 
+// Alt text matters for a professional blog — keep it one prompt away while
+// an image is selected. Mirrors the promptForLink idiom.
+function promptForImageAlt(editor: Editor) {
+  const currentAlt = (editor.getAttributes("image").alt as string | null) ?? "";
+  const input = window.prompt(
+    "Image alt text (describes the image for screen readers and search engines)",
+    currentAlt,
+  );
+  if (input === null) return;
+  editor.chain().focus().updateAttributes("image", { alt: input.trim() }).run();
+}
+
 // HTML in, HTML out — plugs into react-hook-form via Controller. The editor
 // body reuses the public .article-body typography so authors see what
 // readers will see.
 export default function RichTextEditor({ value, onChange }: RichTextEditorProps) {
+  const [showImagePicker, setShowImagePicker] = useState(false);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -96,6 +149,13 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           defaultProtocol: "https",
         },
       }),
+      // Fixed column widths only — resizable adds drag handles and inline
+      // colwidth styles that aren't worth the complexity here.
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      TiptapImage,
     ],
     content: value,
     // The admin shell is prerendered; rendering on mount avoids SSR
@@ -206,6 +266,37 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
         <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />
 
         <ToolbarButton
+          label="Insert table"
+          active={editor.isActive("table")}
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+              .run()
+          }
+        >
+          <TableIcon size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Insert image"
+          active={editor.isActive("image")}
+          onClick={() => setShowImagePicker(true)}
+        >
+          <ImageIcon size={16} />
+        </ToolbarButton>
+        {editor.isActive("image") && (
+          <ToolbarButton
+            label="Edit image alt text"
+            onClick={() => promptForImageAlt(editor)}
+          >
+            <Captions size={16} />
+          </ToolbarButton>
+        )}
+
+        <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />
+
+        <ToolbarButton
           label="Undo"
           disabled={!editor.can().undo()}
           onClick={() => editor.chain().focus().undo().run()}
@@ -221,7 +312,67 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
         </ToolbarButton>
       </div>
 
+      {/* Contextual table controls — only while the caret is inside a table. */}
+      {editor.isActive("table") && (
+        <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 px-2 py-1.5">
+          <span className="px-1 text-xs uppercase tracking-wide text-gray-400">
+            Table
+          </span>
+          <TableMenuButton
+            onClick={() => editor.chain().focus().addRowAfter().run()}
+          >
+            + Row below
+          </TableMenuButton>
+          <TableMenuButton
+            onClick={() => editor.chain().focus().addColumnAfter().run()}
+          >
+            + Column after
+          </TableMenuButton>
+          <TableMenuButton
+            onClick={() => editor.chain().focus().deleteRow().run()}
+          >
+            − Row
+          </TableMenuButton>
+          <TableMenuButton
+            onClick={() => editor.chain().focus().deleteColumn().run()}
+          >
+            − Column
+          </TableMenuButton>
+          <TableMenuButton
+            onClick={() => editor.chain().focus().toggleHeaderRow().run()}
+          >
+            Header row
+          </TableMenuButton>
+          <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => editor.chain().focus().deleteTable().run()}
+            className="rounded px-2 py-1 text-xs font-medium text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
+          >
+            Delete table
+          </button>
+        </div>
+      )}
+
       <EditorContent editor={editor} />
+
+      {showImagePicker && (
+        <MediaPickerDialog
+          title="Insert Image"
+          onOpenChange={(open) => {
+            if (!open) setShowImagePicker(false);
+          }}
+          onSelect={(media: MediaResponse) => {
+            editor
+              .chain()
+              .focus()
+              .setImage({ src: media.url, alt: media.originalName })
+              .run();
+            setShowImagePicker(false);
+          }}
+        />
+      )}
     </div>
   );
 }

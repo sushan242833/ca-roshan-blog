@@ -6,13 +6,20 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@hookform/resolvers": "^5.4.0",
     "@tanstack/react-query": "^5.101.2",
+    "@tiptap/extension-image": "3.27.1",
     "@tiptap/extension-link": "3.27.1",
+    "@tiptap/extension-table": "3.27.1",
+    "@tiptap/extension-table-cell": "3.27.1",
+    "@tiptap/extension-table-header": "3.27.1",
+    "@tiptap/extension-table-row": "3.27.1",
     "@tiptap/react": "3.27.1",
     "@tiptap/starter-kit": "3.27.1",
     "class-variance-authority": "^0.7.1",
@@ -31,13 +38,19 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
     "@types/dompurify": "^3.0.5",
     "@types/node": "^20.19.43",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "5.2.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "jsdom": "29.1.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "4.1.9"
   }
 }

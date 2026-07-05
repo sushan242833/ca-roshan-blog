@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: `Contact | ${SITE_NAME}`,
   description:
     "Get in touch with CA Roshan for expert tax and financial advisory services in Nepal.",
+  alternates: { canonical: "/contact" },
 };
 
 // TODO: replace with the real office phone number once available.

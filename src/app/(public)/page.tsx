@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import PostCard from "@/components/posts/post-card";
 import { apiRequest } from "@/lib/api";
 import { ArrowRightIcon } from "@/components/icons";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 const HERO_HEADING = "Clear thinking on tax, finance, and policy";
 const HERO_SUBTEXT =

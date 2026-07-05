@@ -119,6 +119,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
           { method: "POST" },
         );
         applyAccessToken(refreshed.accessToken);
+        // Re-establish the presence cookie checked by proxy.ts. Without this,
+        // a session restored purely from the refresh cookie (e.g. after the
+        // presence cookie expired) leaves /login's redirect to /admin bouncing
+        // straight back — an endless spinner on /login.
+        setSessionCookie();
         return refreshed.accessToken;
       } catch {
         // The session cookie only marks "was logged in" for proxy.ts's edge
