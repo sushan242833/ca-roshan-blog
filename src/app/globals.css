@@ -256,7 +256,8 @@
 .article-body th {
   font-weight: 700;
   color: #0D1B2A;
-  background: #f9fafb;
+  /* brand-teal tint */
+  background: rgba(26, 107, 90, 0.08);
 }
 .article-body tbody tr:nth-child(odd) {
   background: #fcfcfd;
@@ -295,4 +296,52 @@
 .article-body img.ProseMirror-selectednode {
   outline: 2px solid #1A6B5A;
   outline-offset: 2px;
+}
+/* Inline placeholder shown while a dragged/pasted image uploads; flips to an
+   error state on failure. Never written into the saved document. */
+.article-body .image-upload-placeholder {
+  display: inline-block;
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.875rem;
+  border: 1px dashed #d1d5db;
+  border-radius: 0.375rem;
+  background: #f9fafb;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+.article-body .image-upload-placeholder.is-error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Callout / note boxes — shared by the editor and public rendering (both use
+   .article-body). Colours use the site's brand-teal (note) and the amber tone
+   already used across the admin UI (warning). */
+.article-body .callout {
+  margin: 1.5rem 0;
+  padding: 0.875rem 1.25rem;
+  border-left: 4px solid;
+  border-radius: 0 0.375rem 0.375rem 0;
+}
+.article-body .callout > :first-child {
+  margin-top: 0;
+}
+.article-body .callout > :last-child {
+  margin-bottom: 0;
+}
+.article-body .callout-note {
+  border-left-color: #1A6B5A;
+  background: rgba(26, 107, 90, 0.06);
+}
+.article-body .callout-warning {
+  border-left-color: #d97706;
+  background: rgba(217, 119, 6, 0.08);
+}
+
+/* Offset in-content headings so TOC jumps clear the sticky site header
+   (h-14 mobile / h-16 desktop). */
+.article-body h2,
+.article-body h3 {
+  scroll-margin-top: 5rem;
 }

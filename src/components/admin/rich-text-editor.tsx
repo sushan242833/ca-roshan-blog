@@ -14,6 +14,7 @@ import {
   Heading2,
   Heading3,
   Image as ImageIcon,
+  Info,
   Italic,
   Link2,
   List,
@@ -21,11 +22,16 @@ import {
   Pilcrow,
   Quote,
   Redo2,
+  SquareX,
   Table as TableIcon,
+  TriangleAlert,
   Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import MediaPickerDialog from "@/components/admin/media-picker-dialog";
+import { useMediaUpload } from "@/components/admin/use-media-upload";
+import { ImageUpload } from "@/lib/tiptap/image-upload-extension";
+import { Callout } from "@/lib/tiptap/callout-extension";
 import type { MediaResponse } from "@/types/media";
 
 interface RichTextEditorProps {
@@ -134,11 +140,25 @@ function promptForImageAlt(editor: Editor) {
   editor.chain().focus().updateAttributes("image", { alt: input.trim() }).run();
 }
 
+// One control per variant: switch the variant in place when the caret is
+// already inside a callout, otherwise wrap the selection/current block.
+function applyCallout(editor: Editor, variant: "note" | "warning") {
+  if (editor.isActive("callout")) {
+    editor.chain().focus().updateAttributes("callout", { variant }).run();
+  } else {
+    editor.chain().focus().setCallout({ variant }).run();
+  }
+}
+
 // HTML in, HTML out — plugs into react-hook-form via Controller. The editor
 // body reuses the public .article-body typography so authors see what
 // readers will see.
 export default function RichTextEditor({ value, onChange }: RichTextEditorProps) {
   const [showImagePicker, setShowImagePicker] = useState(false);
+  // uploadFile is referentially stable (its whole dependency chain in the
+  // auth provider is ref-backed), so the editor can capture it once.
+  const { uploadFile } = useMediaUpload();
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -156,6 +176,9 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
       TableHeader,
       TableCell,
       TiptapImage,
+      // Drag-drop / paste uploads share the picker's upload primitive.
+      ImageUpload.configure({ upload: uploadFile }),
+      Callout,
     ],
     content: value,
     // The admin shell is prerendered; rendering on mount avoids SSR
@@ -291,6 +314,31 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
             onClick={() => promptForImageAlt(editor)}
           >
             <Captions size={16} />
+          </ToolbarButton>
+        )}
+
+        <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />
+
+        <ToolbarButton
+          label="Note callout"
+          active={editor.isActive("callout", { variant: "note" })}
+          onClick={() => applyCallout(editor, "note")}
+        >
+          <Info size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Warning callout"
+          active={editor.isActive("callout", { variant: "warning" })}
+          onClick={() => applyCallout(editor, "warning")}
+        >
+          <TriangleAlert size={16} />
+        </ToolbarButton>
+        {editor.isActive("callout") && (
+          <ToolbarButton
+            label="Remove callout"
+            onClick={() => editor.chain().focus().unsetCallout().run()}
+          >
+            <SquareX size={16} />
           </ToolbarButton>
         )}
 

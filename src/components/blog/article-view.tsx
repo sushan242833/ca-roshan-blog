@@ -1,8 +1,10 @@
 import Image from "next/image";
+import Link from "next/link";
 import DOMPurify from "isomorphic-dompurify";
 import ShareArticle from "@/components/blog/share-article";
-import PostImagePlaceholder from "@/components/posts/post-image-placeholder";
+import ArticleToc from "@/components/blog/article-toc";
 import { formatPostDate } from "@/lib/format";
+import { buildToc } from "@/lib/toc";
 import { SITE_NAME } from "@/config/site.config";
 import type { PostDetailResponse } from "@/types/post";
 
@@ -13,14 +15,15 @@ interface ArticleViewProps {
 }
 
 // The article presentation shared by the public post page and the admin
-// draft preview — header, featured image, sanitised body, and tags.
+// draft preview — header, sanitised body, and tags.
 export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
-  // Sanitise HTML content before rendering. Tables are then wrapped in a
-  // scroll container (.table-scroll, globals.css) so wide tables scroll
-  // horizontally on small screens instead of breaking the layout. The
-  // replace is safe post-sanitisation: DOMPurify emits well-formed HTML, so
-  // every "<table"/"</table>" is a real, balanced tag.
-  const cleanContent = DOMPurify.sanitize(post.content ?? "")
+  // Sanitise first, then derive the TOC and inject heading ids from the
+  // sanitised HTML (a single parse in buildToc, so ids and links agree), and
+  // finally wrap tables in a horizontal-scroll container. All post-sanitise
+  // string work is safe because DOMPurify emits well-formed, balanced HTML.
+  const sanitized = DOMPurify.sanitize(post.content ?? "");
+  const { html: withHeadingIds, headings } = buildToc(sanitized);
+  const cleanContent = withHeadingIds
     .replace(/<table(?=[\s>])/g, '<div class="table-scroll"><table')
     .replace(/<\/table>/g, "</table></div>");
 
@@ -29,6 +32,40 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
 
   return (
     <article className="mx-auto max-w-180 px-6 pt-12">
+      {/* Breadcrumb */}
+      <nav aria-label="Breadcrumb" className="mb-6 text-xs text-gray-400">
+        <ol className="flex flex-wrap items-center gap-1.5">
+          <li>
+            <Link href="/" className="hover:text-brand-teal">
+              Home
+            </Link>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li>
+            <Link href="/blog" className="hover:text-brand-teal">
+              Blog
+            </Link>
+          </li>
+          {post.category && (
+            <>
+              <li aria-hidden="true">/</li>
+              <li>
+                <Link
+                  href={`/categories/${post.category.slug}`}
+                  className="hover:text-brand-teal"
+                >
+                  {post.category.name}
+                </Link>
+              </li>
+            </>
+          )}
+          <li aria-hidden="true">/</li>
+          <li className="text-gray-500" aria-current="page">
+            {post.title}
+          </li>
+        </ol>
+      </nav>
+
       {/* Header */}
       <header className="mb-8">
         {post.category && (
@@ -66,25 +103,12 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
         </div>
       </header>
 
-      {/* Featured image */}
-      <div className="mb-8 overflow-hidden rounded-lg border border-gray-100 shadow-sm">
-        {post.featuredImage ? (
-          <div className="relative aspect-video w-full">
-            <Image
-              src={post.featuredImage.url}
-              alt={post.title}
-              fill
-              sizes="(max-width: 720px) 100vw, 720px"
-              className="object-cover"
-              priority
-            />
-          </div>
-        ) : (
-          <div className="aspect-video w-full">
-            <PostImagePlaceholder className="h-full w-full" />
-          </div>
-        )}
-      </div>
+      {/* Featured image intentionally omitted here — it serves only as the
+          listing thumbnail and the social-share/OG image, not the article
+          body (see generateMetadata in the blog page). */}
+
+      {/* Table of contents — only worth showing with a couple of sections */}
+      {headings.length >= 2 && <ArticleToc headings={headings} />}
 
       {/* Body */}
       <div

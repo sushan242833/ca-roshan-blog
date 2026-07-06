@@ -19,7 +19,11 @@ import {
   MAX_META_DESCRIPTION_LENGTH,
 } from "@/lib/constants";
 import RichTextEditor from "@/components/admin/rich-text-editor";
+import WordImport, {
+  type WordImportResult,
+} from "@/components/admin/word-import";
 import MediaPickerDialog from "@/components/admin/media-picker-dialog";
+import TagCombobox from "@/components/admin/tag-combobox";
 import PublishPostDialog from "@/components/admin/publish-post-dialog";
 import type { CategoryResponse } from "@/types/category";
 import type { TagResponse } from "@/types/tag";
@@ -133,6 +137,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isCreatingTag, setIsCreatingTag] = useState(false);
 
   const {
     register,
@@ -140,6 +145,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
     control,
     reset,
     setValue,
+    getValues,
     formState: { errors, isDirty, isSubmitting },
   } = useForm<PostFormValues>({
     resolver: zodResolver(postFormSchema),
@@ -301,6 +307,70 @@ export default function PostEditor({ postId }: PostEditorProps) {
     setValue("tagIds", next, { shouldDirty: true });
   }
 
+  // Read the current selection via getValues (not the closed-over watch value)
+  // so async callbacks always append to the latest set.
+  function selectTag(tagId: string) {
+    const current = getValues("tagIds");
+    if (current.includes(tagId)) return;
+    setValue("tagIds", [...current, tagId], { shouldDirty: true });
+  }
+
+  // Inline tag creation: POST /v1/tags, then add the tag to the local list and
+  // the selection. On a 409 (someone created a same-named tag between load and
+  // now) re-fetch the list and select the existing match instead of erroring.
+  async function createTag(name: string) {
+    setIsCreatingTag(true);
+    try {
+      const created = await authedFetch<TagResponse>("/v1/tags", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      });
+      setTags((prev) =>
+        [...prev, created].sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      selectTag(created.id);
+    } catch (err) {
+      if (err instanceof ApiRequestError && err.status === 409) {
+        try {
+          const fresh = await authedFetch<TagResponse[]>("/v1/tags");
+          setTags(fresh);
+          const match = fresh.find(
+            (tag) => tag.name.toLowerCase() === name.trim().toLowerCase(),
+          );
+          if (match) {
+            selectTag(match.id);
+          } else {
+            toast.error("That tag already exists but could not be found.");
+          }
+        } catch {
+          toast.error("Failed to refresh tags.");
+        }
+      } else {
+        toast.error(
+          err instanceof ApiRequestError ? err.message : "Failed to create tag.",
+        );
+      }
+    } finally {
+      setIsCreatingTag(false);
+    }
+  }
+
+  // True when the content field holds visible text (mirrors the zod check),
+  // used to warn before a Word import overwrites an in-progress draft.
+  function hasContent() {
+    return getValues("content").replace(/<[^>]*>/g, " ").trim().length > 0;
+  }
+
+  // Populate the form from a converted Word document, exactly as if typed:
+  // setValue on content flows through the Controller into the editor's
+  // setContent command. A leading H1 becomes the title, if present.
+  function applyWordImport({ title, html }: WordImportResult) {
+    setValue("content", html, { shouldDirty: true, shouldValidate: true });
+    if (title) {
+      setValue("title", title, { shouldDirty: true, shouldValidate: true });
+    }
+  }
+
   function selectFeaturedImage(media: MediaResponse) {
     setFeaturedImage({
       id: media.id,
@@ -373,6 +443,17 @@ export default function PostEditor({ postId }: PostEditorProps) {
       {formError && (
         <div className="mt-6 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-600">
           {formError}
+        </div>
+      )}
+
+      {/* Word import only populates the create form; editing an existing post
+          starts from its saved content, so there is nothing to import into. */}
+      {!isEditMode && (
+        <div className="mt-6">
+          <WordImport
+            onImport={applyWordImport}
+            hasExistingContent={hasContent}
+          />
         </div>
       )}
 
@@ -517,30 +598,13 @@ export default function PostEditor({ postId }: PostEditorProps) {
             <h2 className="font-serif text-base font-bold text-brand-navy">
               Tags
             </h2>
-            {tags.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-400">No tags yet.</p>
-            ) : (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {tags.map((tag) => {
-                  const selected = selectedTagIds.includes(tag.id);
-                  return (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      onClick={() => toggleTag(tag.id)}
-                      aria-pressed={selected}
-                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                        selected
-                          ? "border-brand-teal bg-brand-teal/10 text-brand-teal"
-                          : "border-gray-300 text-gray-600 hover:border-brand-teal hover:text-brand-teal"
-                      }`}
-                    >
-                      {tag.name}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <TagCombobox
+              tags={tags}
+              selectedTagIds={selectedTagIds}
+              onToggle={toggleTag}
+              onCreate={createTag}
+              isCreating={isCreatingTag}
+            />
           </div>
 
           <div className={cardClass}>
