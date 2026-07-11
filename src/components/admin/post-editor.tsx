@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +13,7 @@ import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { revalidatePublicContent } from "@/lib/revalidate";
+import { queryKeys } from "@/lib/query-keys";
 import { openPostPreview } from "@/lib/post-preview";
 import {
   MAX_EXCERPT_LENGTH,
@@ -123,13 +125,9 @@ function formValuesFromPost(post: PostDetailResponse): PostFormValues {
 export default function PostEditor({ postId }: PostEditorProps) {
   const router = useRouter();
   const { authedFetch, getAccessToken } = useAuth();
+  const queryClient = useQueryClient();
   const isEditMode = Boolean(postId);
 
-  const [post, setPost] = useState<PostDetailResponse | null>(null);
-  const [categories, setCategories] = useState<CategoryResponse[]>([]);
-  const [tags, setTags] = useState<TagResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
   // Backend 400/409 messages surfaced above the form.
   const [formError, setFormError] = useState("");
   const [featuredImage, setFeaturedImage] =
@@ -158,44 +156,57 @@ export default function PostEditor({ postId }: PostEditorProps) {
   const metaDescriptionValue = useWatch({ control, name: "metaDescription" });
   const selectedTagIds = useWatch({ control, name: "tagIds" });
 
+  // Reference lists share the SAME query keys as the Manage Categories/Tags
+  // screens (see src/lib/query-keys.ts), so a create/edit there shows here
+  // without a reload, and inline tag creation here shows there.
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: () => authedFetch<CategoryResponse[]>("/v1/categories"),
+  });
+  const tagsQuery = useQuery({
+    queryKey: queryKeys.tags,
+    queryFn: () => authedFetch<TagResponse[]>("/v1/tags"),
+  });
+  const postQuery = useQuery({
+    queryKey: queryKeys.post(postId ?? ""),
+    queryFn: () =>
+      authedFetch<PostDetailResponse>(`/v1/posts/admin/${postId}`),
+    enabled: isEditMode,
+  });
+
+  const categories = categoriesQuery.data ?? [];
+  const tags = tagsQuery.data ?? [];
+  const post = postQuery.data ?? null;
+
+  // The editor renders only once its reference data (and, in edit mode, the
+  // post) has loaded — same gate as the old single Promise.all.
+  const isLoading =
+    categoriesQuery.isPending ||
+    tagsQuery.isPending ||
+    (isEditMode && postQuery.isPending);
+
+  const loadErrorSource =
+    categoriesQuery.error ??
+    tagsQuery.error ??
+    (isEditMode ? postQuery.error : null);
+  const loadError = loadErrorSource
+    ? loadErrorSource instanceof ApiRequestError
+      ? loadErrorSource.message
+      : "Failed to load the editor."
+    : "";
+
+  // Seed the form from the fetched post exactly once per loaded post. Guarded
+  // by id so a background refetch (refetchOnWindowFocus is on) never discards
+  // unsaved edits by re-running reset — matching the old one-shot fetch.
+  const appliedPostIdRef = useRef<string | null>(null);
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const [categoriesData, tagsData, postData] = await Promise.all([
-          authedFetch<CategoryResponse[]>("/v1/categories"),
-          authedFetch<TagResponse[]>("/v1/tags"),
-          postId
-            ? authedFetch<PostDetailResponse>(`/v1/posts/admin/${postId}`)
-            : Promise.resolve(null),
-        ]);
-        if (cancelled) return;
-
-        setCategories(categoriesData);
-        setTags(tagsData);
-        if (postData) {
-          setPost(postData);
-          setFeaturedImage(postData.featuredImage);
-          reset(formValuesFromPost(postData));
-        }
-      } catch (err) {
-        if (cancelled) return;
-        setLoadError(
-          err instanceof ApiRequestError
-            ? err.message
-            : "Failed to load the editor.",
-        );
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
+    const data = postQuery.data;
+    if (data && appliedPostIdRef.current !== data.id) {
+      appliedPostIdRef.current = data.id;
+      setFeaturedImage(data.featuredImage);
+      reset(formValuesFromPost(data));
     }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [authedFetch, postId, reset]);
+  }, [postQuery.data, reset]);
 
   // Warn before the tab closes with unsaved changes. Client-side router
   // navigations are deliberately not intercepted (kept simple on purpose).
@@ -228,8 +239,41 @@ export default function PostEditor({ postId }: PostEditorProps) {
     };
   }
 
+  const createPostMutation = useMutation({
+    mutationFn: (
+      payload: ReturnType<typeof buildPayload> & { status: PostStatus },
+    ) =>
+      authedFetch<PostDetailResponse>("/v1/posts", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+  });
+
+  // Status is never sent on updates — it is managed by the transition
+  // endpoints so the newsletter logic stays in one backend path.
+  const updatePostMutation = useMutation({
+    mutationFn: (vars: { id: string; payload: ReturnType<typeof buildPayload> }) =>
+      authedFetch<PostDetailResponse>(`/v1/posts/${vars.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(vars.payload),
+      }),
+  });
+
+  const publishPostMutation = useMutation({
+    mutationFn: (id: string) =>
+      authedFetch<PostDetailResponse>(`/v1/posts/${id}/publish`, {
+        method: "POST",
+      }),
+  });
+
   async function finishSave(successMessage: string) {
+    // Purge the PUBLIC site's Next.js cache exactly as before — React Query
+    // does not know about it and does not replace it.
     await revalidatePublicContent("posts", getAccessToken());
+    // Refresh the admin's own list and stats so Manage Posts / Dashboard
+    // reflect the change if the admin navigates back to them.
+    queryClient.invalidateQueries({ queryKey: queryKeys.postsAll });
+    queryClient.invalidateQueries({ queryKey: queryKeys.postStats });
     toast.success(successMessage);
     reset(undefined, { keepValues: true });
     router.push("/admin/posts");
@@ -245,10 +289,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
   async function submitCreate(data: PostFormValues, status: PostStatus) {
     setFormError("");
     try {
-      await authedFetch<PostDetailResponse>("/v1/posts", {
-        method: "POST",
-        body: JSON.stringify({ ...buildPayload(data), status }),
-      });
+      await createPostMutation.mutateAsync({ ...buildPayload(data), status });
       await finishSave(
         status === "PUBLISHED"
           ? "Post published successfully"
@@ -259,20 +300,16 @@ export default function PostEditor({ postId }: PostEditorProps) {
     }
   }
 
-  // Status is never sent on updates — it is managed by the transition
-  // endpoints so the newsletter logic stays in one backend path.
   async function submitEdit(data: PostFormValues, publishAfterSave: boolean) {
     if (!postId) return;
     setFormError("");
     try {
-      await authedFetch<PostDetailResponse>(`/v1/posts/${postId}`, {
-        method: "PATCH",
-        body: JSON.stringify(buildPayload(data)),
+      await updatePostMutation.mutateAsync({
+        id: postId,
+        payload: buildPayload(data),
       });
       if (publishAfterSave) {
-        await authedFetch<PostDetailResponse>(`/v1/posts/${postId}/publish`, {
-          method: "POST",
-        });
+        await publishPostMutation.mutateAsync(postId);
       }
       await finishSave(
         publishAfterSave
@@ -315,9 +352,10 @@ export default function PostEditor({ postId }: PostEditorProps) {
     setValue("tagIds", [...current, tagId], { shouldDirty: true });
   }
 
-  // Inline tag creation: POST /v1/tags, then add the tag to the local list and
-  // the selection. On a 409 (someone created a same-named tag between load and
-  // now) re-fetch the list and select the existing match instead of erroring.
+  // Inline tag creation: POST /v1/tags, then add the tag to the shared
+  // ["tags"] cache (so Manage Tags reflects it too) and the selection. On a
+  // 409 (someone created a same-named tag between load and now) re-fetch the
+  // list and select the existing match instead of erroring.
   async function createTag(name: string) {
     setIsCreatingTag(true);
     try {
@@ -325,15 +363,18 @@ export default function PostEditor({ postId }: PostEditorProps) {
         method: "POST",
         body: JSON.stringify({ name }),
       });
-      setTags((prev) =>
-        [...prev, created].sort((a, b) => a.name.localeCompare(b.name)),
+      queryClient.setQueryData<TagResponse[]>(queryKeys.tags, (prev) =>
+        [...(prev ?? []), created].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
       );
+      queryClient.invalidateQueries({ queryKey: queryKeys.tags });
       selectTag(created.id);
     } catch (err) {
       if (err instanceof ApiRequestError && err.status === 409) {
         try {
           const fresh = await authedFetch<TagResponse[]>("/v1/tags");
-          setTags(fresh);
+          queryClient.setQueryData<TagResponse[]>(queryKeys.tags, fresh);
           const match = fresh.find(
             (tag) => tag.name.toLowerCase() === name.trim().toLowerCase(),
           );

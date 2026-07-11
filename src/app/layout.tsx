@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/config/site.config";
-import QueryProvider from "@/components/providers/query-provider";
 import ToastProvider from "@/components/providers/toast-provider";
 
 import "./globals.css";
@@ -40,10 +39,8 @@ export default function RootLayout({
       className={`h-full antialiased ${playfair.variable} ${inter.variable}`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <QueryProvider>
-          {children}
-          <ToastProvider />
-        </QueryProvider>
+        {children}
+        <ToastProvider />
       </body>
     </html>
   );

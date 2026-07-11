@@ -14,6 +14,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { SITE_NAME } from "@/config/site.config";
+import QueryProvider from "@/components/providers/query-provider";
 import AuthProvider, { useAuth } from "@/components/providers/auth-provider";
 import AdminGuard from "@/components/admin/admin-guard";
 
@@ -133,11 +134,15 @@ export default function AdminLayoutClient({
 }: {
   children: ReactNode;
 }) {
+  // QueryProvider is scoped here (and not in the root layout) so the public
+  // route group never carries the admin query client.
   return (
-    <AuthProvider>
-      <AdminGuard>
-        <AdminShell>{children}</AdminShell>
-      </AdminGuard>
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <AdminGuard>
+          <AdminShell>{children}</AdminShell>
+        </AdminGuard>
+      </AuthProvider>
+    </QueryProvider>
   );
 }

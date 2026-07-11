@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link as LinkIcon, Loader2, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { revalidatePublicContent } from "@/lib/revalidate";
+import { queryKeys } from "@/lib/query-keys";
 import { formatFileSize, formatPostDate } from "@/lib/format";
 import { ALLOWED_IMAGE_TYPES } from "@/lib/constants";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
@@ -16,52 +18,46 @@ import type { MediaResponse } from "@/types/media";
 
 export default function AdminMediaPage() {
   const { authedFetch, getAccessToken } = useAuth();
+  const queryClient = useQueryClient();
   const { uploadFiles, isUploading, progress } = useMediaUpload();
-  const [items, setItems] = useState<MediaResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
   // The backend has no search param on GET /v1/media — filtering is
   // client-side over the full list.
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<MediaResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  // The API returns media newest-first (createdAt DESC) — no client sort
+  // needed. Shares the ["media"] key with the picker dialog, so an upload
+  // from either surface shows in both.
+  const mediaQuery = useQuery({
+    queryKey: queryKeys.media,
+    queryFn: () => authedFetch<MediaResponse[]>("/v1/media"),
+  });
 
-    async function load() {
-      try {
-        // The API returns media newest-first (createdAt DESC) — no client
-        // sort needed.
-        const data = await authedFetch<MediaResponse[]>("/v1/media");
-        if (cancelled) return;
-        setItems(data);
-        setError("");
-      } catch (err) {
-        if (cancelled) return;
-        setError(
-          err instanceof ApiRequestError
-            ? err.message
-            : "Failed to load media.",
-        );
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
+  const items = mediaQuery.data ?? [];
+  const isLoading = mediaQuery.isPending;
+  const error = mediaQuery.isError
+    ? mediaQuery.error instanceof ApiRequestError
+      ? mediaQuery.error.message
+      : "Failed to load media."
+    : "";
 
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [authedFetch]);
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) =>
+      authedFetch<void>(`/v1/media/${id}`, { method: "DELETE" }),
+  });
 
   function handleFilesChange(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
     if (files.length === 0) return;
-    // Each finished upload lands in the grid immediately, newest first.
+    // Each finished upload lands in the grid immediately, newest first, by
+    // prepending to the shared ["media"] cache (which the picker also reads).
     void uploadFiles(files, (media) => {
-      setItems((previous) => [media, ...previous]);
+      queryClient.setQueryData<MediaResponse[]>(queryKeys.media, (previous) => [
+        media,
+        ...(previous ?? []),
+      ]);
     });
   }
 
@@ -77,15 +73,11 @@ export default function AdminMediaPage() {
   async function handleDeleteConfirm() {
     if (!deleteTarget) return;
     try {
-      await authedFetch<void>(`/v1/media/${deleteTarget.id}`, {
-        method: "DELETE",
-      });
+      await deleteMutation.mutateAsync(deleteTarget.id);
       // Public pages may render the removed image on cards/articles.
       await revalidatePublicContent("posts", getAccessToken());
       toast.success("Media deleted successfully");
-      setItems((previous) =>
-        previous.filter((media) => media.id !== deleteTarget.id),
-      );
+      queryClient.invalidateQueries({ queryKey: queryKeys.media });
       setDeleteTarget(null);
     } catch (err) {
       toast.error(

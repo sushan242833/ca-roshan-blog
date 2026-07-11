@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { FileText, CheckCircle2, PenLine, Users, Loader2 } from "lucide-react";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { formatRelativeTime } from "@/lib/format";
+import { queryKeys } from "@/lib/query-keys";
 import {
   ADMIN_DASHBOARD_ACTIVITY_FETCH_LIMIT,
   ADMIN_DASHBOARD_ACTIVITY_DISPLAY_LIMIT,
@@ -34,49 +35,38 @@ interface StatCard {
 
 export default function AdminDashboardPage() {
   const { authedFetch } = useAuth();
-  const [stats, setStats] = useState<DashboardStatsResponse | null>(null);
-  const [recentPosts, setRecentPosts] = useState<PostSummaryResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
+  // Stats share the ["postStats"] key with Manage Posts and the editor, so a
+  // publish/transition anywhere refetches this card together with them.
+  const statsQuery = useQuery({
+    queryKey: queryKeys.postStats,
+    queryFn: () => authedFetch<DashboardStatsResponse>("/v1/posts/admin/stats"),
+  });
+  const recentQuery = useQuery({
+    queryKey: queryKeys.dashboardRecent,
+    queryFn: () =>
+      authedFetch<PaginatedResponse<PostSummaryResponse>>(
+        `/v1/posts/admin/list?page=1&limit=${ADMIN_DASHBOARD_ACTIVITY_FETCH_LIMIT}`,
+      ),
+  });
 
-    async function load() {
-      try {
-        const [statsData, postsData] = await Promise.all([
-          authedFetch<DashboardStatsResponse>("/v1/posts/admin/stats"),
-          authedFetch<PaginatedResponse<PostSummaryResponse>>(
-            `/v1/posts/admin/list?page=1&limit=${ADMIN_DASHBOARD_ACTIVITY_FETCH_LIMIT}`,
-          ),
-        ]);
-        if (cancelled) return;
+  const stats = statsQuery.data ?? null;
+  const recentPosts = recentQuery.data
+    ? [...recentQuery.data.items]
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        )
+        .slice(0, ADMIN_DASHBOARD_ACTIVITY_DISPLAY_LIMIT)
+    : [];
 
-        const sortedByRecentlyEdited = [...postsData.items].sort(
-          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-        );
-
-        setStats(statsData);
-        setRecentPosts(
-          sortedByRecentlyEdited.slice(0, ADMIN_DASHBOARD_ACTIVITY_DISPLAY_LIMIT),
-        );
-      } catch (err) {
-        if (cancelled) return;
-        setError(
-          err instanceof ApiRequestError
-            ? err.message
-            : "Failed to load dashboard data.",
-        );
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [authedFetch]);
+  const isLoading = statsQuery.isPending || recentQuery.isPending;
+  const errorSource = statsQuery.error ?? recentQuery.error;
+  const error = errorSource
+    ? errorSource instanceof ApiRequestError
+      ? errorSource.message
+      : "Failed to load dashboard data."
+    : "";
 
   const statCards: StatCard[] = stats
     ? [

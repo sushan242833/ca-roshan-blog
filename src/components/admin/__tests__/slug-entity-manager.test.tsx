@@ -1,7 +1,9 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AuthProvider from "@/components/providers/auth-provider";
+import { useAuthStore } from "@/store/auth-store";
 import SlugEntityManager from "@/components/admin/slug-entity-manager";
 
 vi.mock("next/navigation", () => ({
@@ -87,20 +89,32 @@ function stubCategoryApi() {
 }
 
 function renderManager() {
+  // Fresh client per render; retries off so failures surface immediately.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   return render(
-    <AuthProvider>
-      <SlugEntityManager<CategoryRow>
-        entityLabel="Category"
-        entityLabelPlural="Categories"
-        apiPath="/v1/categories"
-        title="Categories"
-        subtitle="Organize your content."
-        nameMaxLength={100}
-        revalidateScope="categories"
-      />
-    </AuthProvider>,
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <SlugEntityManager<CategoryRow>
+          entityLabel="Category"
+          entityLabelPlural="Categories"
+          apiPath="/v1/categories"
+          title="Categories"
+          subtitle="Organize your content."
+          nameMaxLength={100}
+          revalidateScope="categories"
+        />
+      </AuthProvider>
+    </QueryClientProvider>,
   );
 }
+
+// The Zustand auth store is a module singleton — reset it so each test starts
+// from a clean, unauthenticated state and re-runs session restore.
+beforeEach(() => {
+  useAuthStore.setState({ admin: null, accessToken: null, isLoading: true });
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();

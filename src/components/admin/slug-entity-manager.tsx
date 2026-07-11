@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api";
@@ -68,79 +69,86 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
   getDeleteWarning,
 }: SlugEntityManagerProps<T>) {
   const { authedFetch, getAccessToken } = useAuth();
-  const [items, setItems] = useState<T[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
   const [dialogState, setDialogState] = useState<DialogState<T>>(null);
   const [deleteTarget, setDeleteTarget] = useState<T | null>(null);
-  // Bumped after each mutation to re-run the list fetch effect.
-  const [refreshNonce, setRefreshNonce] = useState(0);
 
   const lowerLabel = entityLabel.toLowerCase();
   const lowerPlural = entityLabelPlural.toLowerCase();
 
-  useEffect(() => {
-    let cancelled = false;
+  // Shared cache key: categories/tags read from the SAME key here and in the
+  // post editor (["categories"] / ["tags"] — see src/lib/query-keys.ts,
+  // where queryKeys.categories/tags equal [revalidateScope]). A create/edit/
+  // delete here therefore updates the editor's dropdowns without a reload,
+  // and vice versa.
+  const queryKey = [revalidateScope];
 
-    async function load() {
-      try {
-        // The API already returns items sorted by name ascending — render as-is.
-        const data = await authedFetch<T[]>(apiPath);
-        if (cancelled) return;
-        setItems(data);
-        setError("");
-      } catch (err) {
-        if (cancelled) return;
-        setError(
-          err instanceof ApiRequestError
-            ? err.message
-            : `Failed to load ${lowerPlural}.`,
-        );
-      } finally {
-        if (!cancelled) setIsLoading(false);
+  const {
+    data: items = [],
+    isPending,
+    isError,
+    error: queryError,
+    // The API already returns items sorted by name ascending — render as-is.
+  } = useQuery({
+    queryKey,
+    queryFn: () => authedFetch<T[]>(apiPath),
+  });
+
+  const loadError = isError
+    ? queryError instanceof ApiRequestError
+      ? queryError.message
+      : `Failed to load ${lowerPlural}.`
+    : "";
+
+  const saveMutation = useMutation({
+    mutationFn: async (values: SlugEntityFormValues) => {
+      if (dialogState?.mode === "edit") {
+        await authedFetch<T>(`${apiPath}/${dialogState.item.id}`, {
+          method: "PATCH",
+          body: JSON.stringify(values),
+        });
+      } else {
+        await authedFetch<T>(apiPath, {
+          method: "POST",
+          body: JSON.stringify(values),
+        });
       }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [apiPath, authedFetch, lowerPlural, refreshNonce]);
-
-  const refreshItems = () => setRefreshNonce((nonce) => nonce + 1);
+      await revalidatePublicContent(revalidateScope, getAccessToken());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
 
   // Throws on failure so the dialog can surface the message (e.g. the 409
   // "slug already exists" conflict) inline and stay open.
   async function handleSave(values: SlugEntityFormValues) {
-    if (dialogState?.mode === "edit") {
-      await authedFetch<T>(`${apiPath}/${dialogState.item.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(values),
-      });
-      await revalidatePublicContent(revalidateScope, getAccessToken());
-      toast.success(`${entityLabel} updated successfully`);
-    } else {
-      await authedFetch<T>(apiPath, {
-        method: "POST",
-        body: JSON.stringify(values),
-      });
-      await revalidatePublicContent(revalidateScope, getAccessToken());
-      toast.success(`${entityLabel} created successfully`);
-    }
+    const isEdit = dialogState?.mode === "edit";
+    await saveMutation.mutateAsync(values);
+    toast.success(
+      `${entityLabel} ${isEdit ? "updated" : "created"} successfully`,
+    );
     setDialogState(null);
-    refreshItems();
   }
+
+  const deleteMutation = useMutation({
+    mutationFn: async (item: T) => {
+      await authedFetch<void>(`${apiPath}/${item.id}`, {
+        method: "DELETE",
+      });
+      await revalidatePublicContent(revalidateScope, getAccessToken());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
 
   async function handleDelete() {
     if (!deleteTarget) return;
     try {
-      await authedFetch<void>(`${apiPath}/${deleteTarget.id}`, {
-        method: "DELETE",
-      });
-      await revalidatePublicContent(revalidateScope, getAccessToken());
+      await deleteMutation.mutateAsync(deleteTarget);
       toast.success(`${entityLabel} deleted successfully`);
       setDeleteTarget(null);
-      refreshItems();
     } catch (err) {
       toast.error(
         err instanceof ApiRequestError
@@ -173,13 +181,13 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
         {newButton}
       </div>
 
-      {error && (
+      {loadError && (
         <div className="mt-6 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-600">
-          {error}
+          {loadError}
         </div>
       )}
 
-      {isLoading ? (
+      {isPending ? (
         <div className="mt-10 flex items-center justify-center gap-2 text-sm text-gray-400">
           <Loader2 size={18} className="animate-spin" />
           Loading {lowerPlural}…

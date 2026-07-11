@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { SITE_NAME } from "@/config/site.config";
-import { formatPostDate } from "@/lib/format";
+import { formatPostDate, htmlToPlainText } from "@/lib/format";
 import PostImagePlaceholder from "@/components/posts/post-image-placeholder";
 import { ClockIcon, ArrowRightIcon } from "@/components/icons";
 import type { PostSummaryResponse } from "@/types/post";
@@ -77,6 +77,9 @@ export default function PostCard({
   const [imageError, setImageError] = useState(false);
   const showImage = post.featuredImage && !imageError;
   const config = VARIANT_CONFIG[variant];
+  // Excerpts may be auto-generated from HTML content — render as plain text,
+  // and drop it entirely if nothing but markup remains (e.g. image-only lead).
+  const excerptText = post.excerpt ? htmlToPlainText(post.excerpt) : "";
 
   return (
     <Link
@@ -126,8 +129,8 @@ export default function PostCard({
         <h3 className={config.titleClassName}>{post.title}</h3>
 
         {/* Excerpt */}
-        {post.excerpt && (
-          <p className={config.excerptClassName}>{post.excerpt}</p>
+        {excerptText && (
+          <p className={config.excerptClassName}>{excerptText}</p>
         )}
 
         {/* Footer */}

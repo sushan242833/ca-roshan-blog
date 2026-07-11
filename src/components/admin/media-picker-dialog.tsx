@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Upload } from "lucide-react";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
+import { queryKeys } from "@/lib/query-keys";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB } from "@/lib/constants";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
 import MediaGridItem from "@/components/admin/media-grid-item";
@@ -33,45 +35,38 @@ export default function MediaPickerDialog({
   title = "Select Featured Image",
 }: MediaPickerDialogProps) {
   const { authedFetch } = useAuth();
+  const queryClient = useQueryClient();
   const { uploadFiles, isUploading } = useMediaUpload();
-  const [items, setItems] = useState<MediaResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  // Same ["media"] key as the Media Library, so uploads here appear there
+  // (and vice versa) with no reload.
+  const mediaQuery = useQuery({
+    queryKey: queryKeys.media,
+    queryFn: () => authedFetch<MediaResponse[]>("/v1/media"),
+  });
 
-    async function load() {
-      try {
-        const data = await authedFetch<MediaResponse[]>("/v1/media");
-        if (cancelled) return;
-        setItems(data);
-        setError("");
-      } catch (err) {
-        if (cancelled) return;
-        setError(
-          err instanceof ApiRequestError
-            ? err.message
-            : "Failed to load media.",
-        );
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [authedFetch]);
+  const items = mediaQuery.data ?? [];
+  const isLoading = mediaQuery.isPending;
+  const error = mediaQuery.isError
+    ? mediaQuery.error instanceof ApiRequestError
+      ? mediaQuery.error.message
+      : "Failed to load media."
+    : "";
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    // A fresh upload is auto-selected as the featured image.
-    void uploadFiles([file], onSelect);
+    // A fresh upload is prepended to the shared ["media"] cache (so it also
+    // lands in the Media Library) and auto-selected as the featured image.
+    void uploadFiles([file], (media) => {
+      queryClient.setQueryData<MediaResponse[]>(queryKeys.media, (previous) => [
+        media,
+        ...(previous ?? []),
+      ]);
+      onSelect(media);
+    });
   }
 
   return (

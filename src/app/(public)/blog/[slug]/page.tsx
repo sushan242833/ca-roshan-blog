@@ -4,6 +4,7 @@ import PostCard from "@/components/posts/post-card";
 import ArticleView from "@/components/blog/article-view";
 import { apiRequest, ApiRequestError } from "@/lib/api";
 import { SITE_NAME, SITE_URL } from "@/config/site.config";
+import { htmlToPlainText } from "@/lib/format";
 import type {
   PostDetailResponse,
   PaginatedResponse,
@@ -19,7 +20,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   try {
     const post = await apiRequest<PostDetailResponse>(`/v1/posts/${slug}`);
     const title = `${post.metaTitle ?? post.title} | ${SITE_NAME}`;
-    const description = post.metaDescription ?? post.excerpt ?? undefined;
+    // Excerpt can be auto-generated HTML — strip it so meta tags stay clean.
+    const description =
+      post.metaDescription ??
+      (post.excerpt ? htmlToPlainText(post.excerpt) : undefined);
     const images = post.featuredImage?.url
       ? [{ url: post.featuredImage.url, alt: post.title }]
       : [];

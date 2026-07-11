@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -42,6 +43,7 @@ import { Input } from "@/components/ui/input";
 import DeleteEntityDialog from "@/components/admin/delete-entity-dialog";
 import PublishPostDialog from "@/components/admin/publish-post-dialog";
 import { getPageNumbers } from "@/components/blog/pagination";
+import { queryKeys } from "@/lib/query-keys";
 import type { DashboardStatsResponse } from "@/types/dashboard";
 import type {
   PaginationMeta,
@@ -98,6 +100,7 @@ function ManagePosts() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { authedFetch, getAccessToken } = useAuth();
+  const queryClient = useQueryClient();
 
   const [statusTab, setStatusTab] = useState<StatusTab>(() =>
     parseStatusParam(searchParams.get("status")),
@@ -109,15 +112,6 @@ function ManagePosts() {
   const [page, setPage] = useState(
     () => Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1),
   );
-
-  const [posts, setPosts] = useState<PostSummaryResponse[]>([]);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
-  const [stats, setStats] = useState<DashboardStatsResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  // Bumped after each mutation to re-run the fetch effects.
-  const [listNonce, setListNonce] = useState(0);
-  const [statsNonce, setStatsNonce] = useState(0);
 
   // Row whose mutation is in flight — its action buttons are disabled.
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -154,78 +148,79 @@ function ManagePosts() {
     return () => clearTimeout(handle);
   }, [searchInput, search]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      try {
-        const query = [
-          `page=${page}`,
-          `limit=${ADMIN_POSTS_PER_PAGE}`,
-          statusTab !== "ALL" && `status=${statusTab}`,
-          search && `search=${encodeURIComponent(search)}`,
-        ]
-          .filter(Boolean)
-          .join("&");
-        const data = await authedFetch<PaginatedResponse<PostSummaryResponse>>(
-          `/v1/posts/admin/list?${query}`,
-        );
-        if (cancelled) return;
-
-        // Deleting the last row of the final page leaves it empty — snap
-        // back to the last page that still has results.
-        if (data.items.length === 0 && page > 1 && data.pagination.total > 0) {
-          setPage(Math.max(1, data.pagination.totalPages));
-          return;
-        }
-
-        setPosts(data.items);
-        setPagination(data.pagination);
-        setError("");
-      } catch (err) {
-        if (cancelled) return;
-        setError(
-          err instanceof ApiRequestError
-            ? err.message
-            : "Failed to load posts.",
-        );
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [authedFetch, statusTab, search, page, listNonce]);
+  // The filter object is the query key, so changing tab/search/page refetches
+  // automatically — no manual debounce-and-refetch wiring needed.
+  const postsQuery = useQuery({
+    queryKey: queryKeys.posts({ status: statusTab, search, page }),
+    queryFn: () => {
+      const query = [
+        `page=${page}`,
+        `limit=${ADMIN_POSTS_PER_PAGE}`,
+        statusTab !== "ALL" && `status=${statusTab}`,
+        search && `search=${encodeURIComponent(search)}`,
+      ]
+        .filter(Boolean)
+        .join("&");
+      return authedFetch<PaginatedResponse<PostSummaryResponse>>(
+        `/v1/posts/admin/list?${query}`,
+      );
+    },
+  });
 
   // Tab counts are non-critical — the tabs render without them on failure.
-  useEffect(() => {
-    let cancelled = false;
+  const statsQuery = useQuery({
+    queryKey: queryKeys.postStats,
+    queryFn: () => authedFetch<DashboardStatsResponse>("/v1/posts/admin/stats"),
+  });
 
-    authedFetch<DashboardStatsResponse>("/v1/posts/admin/stats")
-      .then((data) => {
-        if (!cancelled) setStats(data);
-      })
-      .catch(() => {});
+  const posts = postsQuery.data?.items ?? [];
+  const pagination: PaginationMeta | null = postsQuery.data?.pagination ?? null;
+  const stats = statsQuery.data ?? null;
+  const isLoading = postsQuery.isPending;
+  const error = postsQuery.isError
+    ? postsQuery.error instanceof ApiRequestError
+      ? postsQuery.error.message
+      : "Failed to load posts."
+    : "";
 
-    return () => {
-      cancelled = true;
-    };
-  }, [authedFetch, statsNonce]);
+  // Deleting the last row of the final page leaves it empty — snap back to the
+  // last page that still has results (was an early-return in the old fetch).
+  // Adjusting state during render is React's sanctioned pattern here: it
+  // converges in one extra render and avoids an effect (and an empty flash).
+  if (
+    postsQuery.data &&
+    postsQuery.data.items.length === 0 &&
+    page > 1 &&
+    postsQuery.data.pagination.total > 0
+  ) {
+    setPage(Math.max(1, postsQuery.data.pagination.totalPages));
+  }
 
   // Mutations move posts between tabs, so both the list and counts refresh.
   const refreshAfterMutation = () => {
-    setListNonce((nonce) => nonce + 1);
-    setStatsNonce((nonce) => nonce + 1);
+    queryClient.invalidateQueries({ queryKey: queryKeys.postsAll });
+    queryClient.invalidateQueries({ queryKey: queryKeys.postStats });
   };
 
   const selectTab = (tab: StatusTab) => {
     setStatusTab(tab);
     setPage(1);
   };
+
+  const transitionMutation = useMutation({
+    mutationFn: (vars: { post: PostSummaryResponse; action: StatusAction }) =>
+      authedFetch<PostDetailResponse>(
+        `/v1/posts/${vars.post.id}/${vars.action}`,
+        { method: "POST" },
+      ),
+  });
+
+  const deleteMutation = useMutation({
+    // The backend responds 200 { success: true } with no data field —
+    // apiRequest resolves that to undefined, which <void> accepts.
+    mutationFn: (id: string) =>
+      authedFetch<void>(`/v1/posts/${id}`, { method: "DELETE" }),
+  });
 
   // Throws on failure so the publish dialog can stay open; the direct
   // (dialog-less) callers catch and toast themselves.
@@ -236,9 +231,7 @@ function ManagePosts() {
   ) {
     setPendingId(post.id);
     try {
-      await authedFetch<PostDetailResponse>(`/v1/posts/${post.id}/${action}`, {
-        method: "POST",
-      });
+      await transitionMutation.mutateAsync({ post, action });
       await revalidatePublicContent("posts", getAccessToken());
       toast.success(successMessage);
       refreshAfterMutation();
@@ -285,11 +278,7 @@ function ManagePosts() {
     if (!deleteTarget) return;
     setPendingId(deleteTarget.id);
     try {
-      // The backend responds 200 { success: true } with no data field —
-      // apiRequest resolves that to undefined, which <void> accepts.
-      await authedFetch<void>(`/v1/posts/${deleteTarget.id}`, {
-        method: "DELETE",
-      });
+      await deleteMutation.mutateAsync(deleteTarget.id);
       await revalidatePublicContent("posts", getAccessToken());
       toast.success("Post deleted successfully");
       setDeleteTarget(null);

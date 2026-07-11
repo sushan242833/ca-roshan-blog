@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { act, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AuthProvider, {
   useAuth,
 } from "@/components/providers/auth-provider";
+import { useAuthStore } from "@/store/auth-store";
 import { ApiRequestError } from "@/lib/api";
 import { SESSION_COOKIE_NAME } from "@/lib/constants";
 
@@ -103,6 +104,12 @@ async function mountAuthedProvider(harness: FetchHarness): Promise<void> {
     expect(screen.getByTestId("auth-state")).toHaveTextContent("authed"),
   );
 }
+
+// The Zustand store is a module singleton, so state leaks across tests unless
+// reset — restore the initial auth state before each test for isolation.
+beforeEach(() => {
+  useAuthStore.setState({ admin: null, accessToken: null, isLoading: true });
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();

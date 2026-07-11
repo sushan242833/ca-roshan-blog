@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
   Clock,
@@ -12,6 +13,7 @@ import {
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { formatPostDate } from "@/lib/format";
+import { queryKeys } from "@/lib/query-keys";
 import {
   ADMIN_SUBSCRIBERS_PER_PAGE,
   SEARCH_DEBOUNCE_MS,
@@ -118,12 +120,6 @@ export default function AdminSubscribersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const [subscribers, setSubscribers] = useState<SubscriberResponse[]>([]);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
-  const [stats, setStats] = useState<SubscriberStatsResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-
   // Debounced search — skipped when the input already matches the applied
   // search (e.g. on mount), so the page isn't reset needlessly.
   useEffect(() => {
@@ -136,60 +132,42 @@ export default function AdminSubscribersPage() {
     return () => clearTimeout(handle);
   }, [searchInput, search]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      try {
-        const query = [
-          `page=${page}`,
-          `limit=${ADMIN_SUBSCRIBERS_PER_PAGE}`,
-          statusTab !== "ALL" && `status=${statusTab}`,
-          search && `search=${encodeURIComponent(search)}`,
-        ]
-          .filter(Boolean)
-          .join("&");
-        const data = await authedFetch<PaginatedResponse<SubscriberResponse>>(
-          `/v1/admin/subscribers?${query}`,
-        );
-        if (cancelled) return;
-        setSubscribers(data.items);
-        setPagination(data.pagination);
-        setError("");
-      } catch (err) {
-        if (cancelled) return;
-        setError(
-          err instanceof ApiRequestError
-            ? err.message
-            : "Failed to load subscribers.",
-        );
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [authedFetch, statusTab, search, page]);
+  // Filters are the query key, so tab/search/page changes refetch on their own.
+  const subscribersQuery = useQuery({
+    queryKey: queryKeys.subscribers({ status: statusTab, search, page }),
+    queryFn: () => {
+      const query = [
+        `page=${page}`,
+        `limit=${ADMIN_SUBSCRIBERS_PER_PAGE}`,
+        statusTab !== "ALL" && `status=${statusTab}`,
+        search && `search=${encodeURIComponent(search)}`,
+      ]
+        .filter(Boolean)
+        .join("&");
+      return authedFetch<PaginatedResponse<SubscriberResponse>>(
+        `/v1/admin/subscribers?${query}`,
+      );
+    },
+  });
 
   // Stat cards and tab counts are non-critical — the page renders without
   // them if the stats fetch fails.
-  useEffect(() => {
-    let cancelled = false;
+  const statsQuery = useQuery({
+    queryKey: queryKeys.subscriberStats,
+    queryFn: () =>
+      authedFetch<SubscriberStatsResponse>("/v1/admin/subscribers/stats"),
+  });
 
-    authedFetch<SubscriberStatsResponse>("/v1/admin/subscribers/stats")
-      .then((data) => {
-        if (!cancelled) setStats(data);
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authedFetch]);
+  const subscribers = subscribersQuery.data?.items ?? [];
+  const pagination: PaginationMeta | null =
+    subscribersQuery.data?.pagination ?? null;
+  const stats = statsQuery.data ?? null;
+  const isLoading = subscribersQuery.isPending;
+  const error = subscribersQuery.isError
+    ? subscribersQuery.error instanceof ApiRequestError
+      ? subscribersQuery.error.message
+      : "Failed to load subscribers."
+    : "";
 
   const selectTab = (tab: StatusTab) => {
     setStatusTab(tab);
