@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { NAV_LINKS, SITE_NAME } from "@/config/site.config";
 import { SearchIcon, MenuIcon, XIcon } from "@/components/icons";
+import SearchOverlay from "@/components/layout/search-overlay";
 
 export default function Header() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -54,10 +56,14 @@ export default function Header() {
 
         {/* Right icons */}
         <div className="flex items-center gap-3">
-          {/* Search */}
+          {/* Search — shared by desktop and mobile (this button is outside the
+              md:hidden split, so it appears in both layouts). */}
           <button
             aria-label="Search"
-            onClick={() => {}} // TODO: wire up search overlay
+            onClick={() => {
+              setIsMenuOpen(false);
+              setIsSearchOpen(true);
+            }}
             className="text-gray-500 hover:text-brand-teal"
           >
             <SearchIcon size={20} />
@@ -103,6 +109,9 @@ export default function Header() {
           })}
         </nav>
       )}
+
+      {/* Portalled above all content by the dialog primitive. */}
+      <SearchOverlay open={isSearchOpen} onOpenChange={setIsSearchOpen} />
     </header>
   );
 }

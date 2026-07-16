@@ -13,6 +13,7 @@ import {
   Captions,
   Heading2,
   Heading3,
+  Heading4,
   Image as ImageIcon,
   Info,
   Italic,
@@ -162,7 +163,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: { levels: [2, 3] },
+        heading: { levels: [2, 3, 4] },
         // StarterKit v3 bundles the Link extension (@tiptap/extension-link).
         link: {
           openOnClick: false,
@@ -236,6 +237,13 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
         >
           <Heading3 size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Heading 4"
+          active={editor.isActive("heading", { level: 4 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+        >
+          <Heading4 size={16} />
         </ToolbarButton>
 
         <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />

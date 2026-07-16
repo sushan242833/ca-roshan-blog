@@ -21,6 +21,7 @@ import {
   MAX_META_DESCRIPTION_LENGTH,
 } from "@/lib/constants";
 import RichTextEditor from "@/components/admin/rich-text-editor";
+import EditorOutline from "@/components/admin/editor-outline";
 import WordImport, {
   type WordImportResult,
 } from "@/components/admin/word-import";
@@ -53,6 +54,9 @@ export const postFormSchema = z.object({
     ),
   categoryId: z.string(),
   tagIds: z.array(z.string()),
+  // Required to PUBLISH (checked in requestPublish), but not to save a draft
+  // or edit an existing post — so fixing an excerpt never gets blocked by a
+  // missing image. The image is shown at the top of the published article.
   featuredImageId: z.string().nullable(),
   metaTitle: z
     .string()
@@ -143,6 +147,8 @@ export default function PostEditor({ postId }: PostEditorProps) {
     control,
     reset,
     setValue,
+    setError,
+    clearErrors,
     getValues,
     formState: { errors, isDirty, isSubmitting },
   } = useForm<PostFormValues>({
@@ -150,7 +156,14 @@ export default function PostEditor({ postId }: PostEditorProps) {
     defaultValues: EMPTY_FORM_VALUES,
   });
 
+  // Wraps the rich-text editor so the outline can scroll to a heading by
+  // index — the editor's h2/h3 elements are in the same order as parseHeadings.
+  const editorWrapperRef = useRef<HTMLDivElement>(null);
+  // Lets a failed publish (missing featured image) scroll the field into view.
+  const featuredImageRef = useRef<HTMLDivElement>(null);
+
   const titleValue = useWatch({ control, name: "title" });
+  const contentValue = useWatch({ control, name: "content" });
   const excerptValue = useWatch({ control, name: "excerpt" });
   const metaTitleValue = useWatch({ control, name: "metaTitle" });
   const metaDescriptionValue = useWatch({ control, name: "metaDescription" });
@@ -412,6 +425,15 @@ export default function PostEditor({ postId }: PostEditorProps) {
     }
   }
 
+  // Jump the editor to a heading picked in the outline. Headings carry no ids
+  // inside the editor (those are injected only at render time), so match by
+  // document order against the live h2/h3 elements.
+  function scrollToHeading(index: number) {
+    const headings =
+      editorWrapperRef.current?.querySelectorAll<HTMLElement>("h2, h3");
+    headings?.[index]?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
   function selectFeaturedImage(media: MediaResponse) {
     setFeaturedImage({
       id: media.id,
@@ -419,6 +441,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
       fileName: media.fileName,
     });
     setValue("featuredImageId", media.id, { shouldDirty: true });
+    clearErrors("featuredImageId");
     setShowMediaPicker(false);
   }
 
@@ -427,8 +450,26 @@ export default function PostEditor({ postId }: PostEditorProps) {
     setValue("featuredImageId", null, { shouldDirty: true });
   }
 
-  // Validate first; the confirmation dialog only opens on a valid form.
-  const requestPublish = handleSubmit(() => setShowPublishConfirm(true));
+  // Validate first; the confirmation dialog only opens on a valid form. A
+  // featured image is required to publish (but not to save a draft/edit), so
+  // enforce it here with a visible message rather than failing silently.
+  function requestPublish() {
+    void handleSubmit((data) => {
+      if (!data.featuredImageId) {
+        setError("featuredImageId", {
+          type: "required",
+          message: "A featured image is required to publish.",
+        });
+        toast.error("Add a featured image before publishing.");
+        featuredImageRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        return;
+      }
+      setShowPublishConfirm(true);
+    })();
+  }
 
   const confirmPublish = handleSubmit(async (data) => {
     setShowPublishConfirm(false);
@@ -528,7 +569,10 @@ export default function PostEditor({ postId }: PostEditorProps) {
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+          <div
+            ref={editorWrapperRef}
+            className="overflow-hidden rounded-lg border border-gray-200 bg-white"
+          >
             <Controller
               control={control}
               name="content"
@@ -571,9 +615,19 @@ export default function PostEditor({ postId }: PostEditorProps) {
 
         {/* ── Sidebar ─────────────────────────────────────────────── */}
         <div className="space-y-6 lg:col-span-4">
-          <div className={cardClass}>
+          <div className={`${cardClass} max-h-96 overflow-y-auto`}>
             <h2 className="font-serif text-base font-bold text-brand-navy">
-              Featured Image
+              Table of Contents
+            </h2>
+            <EditorOutline content={contentValue} onSelect={scrollToHeading} />
+          </div>
+
+          <div ref={featuredImageRef} className={cardClass}>
+            <h2 className="font-serif text-base font-bold text-brand-navy">
+              Featured Image{" "}
+              <span className="text-red-500" title="Required to publish">
+                *
+              </span>
             </h2>
             {featuredImage ? (
               <div className="relative mt-3 overflow-hidden rounded-md border border-gray-200">
@@ -614,6 +668,11 @@ export default function PostEditor({ postId }: PostEditorProps) {
               >
                 Change image
               </button>
+            )}
+            {errors.featuredImageId && (
+              <p className="mt-2 text-xs text-red-600">
+                {errors.featuredImageId.message}
+              </p>
             )}
           </div>
 

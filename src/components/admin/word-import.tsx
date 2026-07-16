@@ -59,6 +59,110 @@ function splitLeadingTitle(html: string): WordImportResult {
   return { title: null, html };
 }
 
+// The editor's schema only supports headings h2–h4. Word documents use
+// Heading 1+ (and may skip levels), so shift every heading into [2, 4],
+// preserving relative hierarchy, rather than letting ProseMirror silently
+// drop levels it doesn't recognize (which reduces them to plain paragraphs).
+const MIN_HEADING_LEVEL = 2;
+const MAX_HEADING_LEVEL = 4;
+
+function remapHeadingLevels(html: string): string {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const headings = Array.from(
+    doc.body.querySelectorAll("h1,h2,h3,h4,h5,h6"),
+  );
+  if (headings.length === 0) return html;
+
+  const levelOf = (el: Element) => parseInt(el.tagName.substring(1), 10);
+  const minLevel = Math.min(...headings.map(levelOf));
+  const shift = MIN_HEADING_LEVEL - minLevel;
+
+  headings.forEach((el) => {
+    const newLevel = Math.min(
+      MAX_HEADING_LEVEL,
+      Math.max(MIN_HEADING_LEVEL, levelOf(el) + shift),
+    );
+    const replacement = doc.createElement(`h${newLevel}`);
+    while (el.firstChild) replacement.appendChild(el.firstChild);
+    Array.from(el.attributes).forEach((attr) =>
+      replacement.setAttribute(attr.name, attr.value),
+    );
+    el.replaceWith(replacement);
+  });
+
+  return doc.body.innerHTML;
+}
+
+// Word's own auto-generated Table of Contents is redundant — this platform
+// builds its own TOC from headings — so its paragraphs (styled "TOC Heading",
+// "toc 1", "toc 2", etc., Style IDs "TOCHeading"/"TOC1"/"TOC2"...) are dropped
+// entirely from the converted document, not just hidden from the warning
+// list, since leaving them produces broken-looking duplicate text in the
+// draft.
+const TOC_STYLE_ID_PATTERN = /^(TOC\d*|TOCHeading)$/i;
+
+// mammoth exposes no type for its document elements (Options.transformDocument
+// is typed `(element: any) => any`), so `any` is unavoidable here.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function stripTocParagraphs(element: any): any {
+  if (element.children) {
+    const kept = element.children
+      .filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (child: any) =>
+          !(
+            child.type === "paragraph" &&
+            child.styleId &&
+            TOC_STYLE_ID_PATTERN.test(child.styleId)
+          ),
+      )
+      .map(stripTocParagraphs);
+    return { ...element, children: kept };
+  }
+  return element;
+}
+
+// Style IDs mammoth leaves unmapped but which are common and harmless — e.g.
+// "List Paragraph" is often used purely for indentation, not as a real list —
+// so they should not alarm a non-technical admin.
+const BENIGN_UNMAPPED_STYLE_IDS = new Set(["ListParagraph"]);
+
+function isBenignStyleWarning(message: string): boolean {
+  const match = /Style ID: ([^)]+)\)/.exec(message);
+  return !!match && BENIGN_UNMAPPED_STYLE_IDS.has(match[1]);
+}
+
+// VML is Word's legacy vector-drawing markup (v:line, v:oval, v:shape, etc.) —
+// genuinely not convertible (it's drawing instructions, not an embeddable
+// image), so surface ONE plain-language message instead of raw XML tag names.
+function isVmlWarning(message: string): boolean {
+  return /unrecogni[sz]ed element was ignored: v:/i.test(message);
+}
+
+const VML_USER_MESSAGE =
+  "One or more drawn graphics (shapes created directly in Word, not " +
+  "inserted pictures) could not be imported. Please replace them with " +
+  "an inserted image file (Word's Insert > Pictures) and re-import, or " +
+  "add the image directly in the editor below.";
+
+function humanizeMammothMessages(
+  messages: { type: string; message: string }[],
+): string[] {
+  let hasVmlWarning = false;
+  const notices: string[] = [];
+  for (const m of messages) {
+    if (m.type !== "warning" && m.type !== "error") continue;
+    if (isVmlWarning(m.message)) {
+      hasVmlWarning = true;
+      continue;
+    }
+    if (isBenignStyleWarning(m.message)) continue;
+    notices.push(m.message);
+  }
+  if (hasVmlWarning) notices.unshift(VML_USER_MESSAGE);
+  return notices;
+}
+
 export default function WordImport({
   onImport,
   hasExistingContent,
@@ -117,14 +221,18 @@ export default function WordImport({
       const arrayBuffer = await file.arrayBuffer();
       const { value, messages } = await mammoth.convertToHtml(
         { arrayBuffer },
-        { convertImage },
+        { convertImage, transformDocument: stripTocParagraphs },
       );
 
-      const result = splitLeadingTitle(value);
+      // Extract the leading H1 title BEFORE remapping — the split checks for a
+      // genuine leading <h1>, which remapping would turn into an <h2> first.
+      const titleSplit = splitLeadingTitle(value);
+      const result = {
+        title: titleSplit.title,
+        html: remapHeadingLevels(titleSplit.html),
+      };
 
-      const notices = messages
-        .filter((m) => m.type === "warning" || m.type === "error")
-        .map((m) => m.message);
+      const notices = humanizeMammothMessages(messages);
       if (failedImages.length > 0) {
         notices.push(
           `${failedImages.length} image(s) could not be uploaded and were skipped (unsupported format).`,

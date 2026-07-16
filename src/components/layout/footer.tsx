@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { CONTACT_EMAIL, LINKEDIN_URL, SITE_NAME } from "@/config/site.config";
 import { apiRequest, ApiRequestError } from "@/lib/api";
-import { MailIcon, CheckBadgeIcon, CheckCircleIcon, LinkedInIcon } from "@/components/icons";
+import {
+  MailIcon,
+  CheckBadgeIcon,
+  CheckCircleIcon,
+  LinkedInIcon,
+} from "@/components/icons";
 
 type NewsletterState = "idle" | "loading" | "sent" | "confirmed" | "error";
 
@@ -125,7 +130,7 @@ export default function Footer({
   }
 
   return (
-    <footer className="w-full bg-brand-navy px-6 pt-12 pb-8 text-white md:px-12">
+    <footer className="w-full bg-brand-navy px-6 pt-12 pb-16 text-white md:px-12">
       <div className="mx-auto max-w-7xl">
         {/* Main two-column area */}
         <div className="flex flex-col gap-10 md:flex-row md:gap-16">
@@ -165,13 +170,6 @@ export default function Footer({
               <LinkedInIcon size={18} />
             </a>
           </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="mt-16 border-t border-white/10 pt-8">
-          <p className="text-center text-sm text-brand-muted md:text-left">
-            © {currentYear} {SITE_NAME}. All rights reserved.
-          </p>
         </div>
       </div>
     </footer>

@@ -6,6 +6,11 @@ import type { TocHeading } from "@/lib/toc";
 
 interface ArticleTocProps {
   headings: TocHeading[];
+  /**
+   * "inline" — collapsible "Contents" box in the article flow (used on mobile).
+   * "sidebar" — always-open list for the fixed desktop sidebar.
+   */
+  variant?: "inline" | "sidebar";
 }
 
 const MOBILE_QUERY = "(max-width: 767px)";
@@ -16,22 +21,12 @@ function subscribeMobile(callback: () => void): () => void {
   return () => mq.removeEventListener("change", callback);
 }
 
-// Collapsible "Contents" box shown under the featured image. Server-renders
-// expanded (desktop default); useSyncExternalStore reads the viewport on the
-// client so it starts collapsed on mobile without a setState-in-effect.
-export default function ArticleToc({ headings }: ArticleTocProps) {
-  const isMobile = useSyncExternalStore(
-    subscribeMobile,
-    () => window.matchMedia(MOBILE_QUERY).matches,
-    () => false,
-  );
-  // null = follow the viewport default; once the user toggles, honour that.
-  const [manualOpen, setManualOpen] = useState<boolean | null>(null);
-  const open = manualOpen ?? !isMobile;
+// Highlight the section currently in view. The rootMargin biases toward the
+// heading nearest the top of the viewport (below the sticky header). Shared by
+// both variants so the mobile box and the desktop sidebar track scroll alike.
+function useActiveHeading(headings: TocHeading[]): string | null {
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Highlight the section currently in view. The rootMargin biases toward the
-  // heading nearest the top of the viewport (below the sticky header).
   useEffect(() => {
     const elements = headings
       .map((heading) => document.getElementById(heading.id))
@@ -53,6 +48,79 @@ export default function ArticleToc({ headings }: ArticleTocProps) {
     return () => observer.disconnect();
   }, [headings]);
 
+  return activeId;
+}
+
+function TocLinks({
+  headings,
+  activeId,
+}: {
+  headings: TocHeading[];
+  activeId: string | null;
+}) {
+  return (
+    <ul className="text-sm">
+      {headings.map((heading) => (
+        <li key={heading.id} className={heading.level === 3 ? "ml-4" : ""}>
+          <a
+            href={`#${heading.id}`}
+            aria-current={activeId === heading.id ? "true" : undefined}
+            className={`block border-l-2 py-1 pl-3 transition-colors ${
+              activeId === heading.id
+                ? "border-brand-teal font-medium text-brand-teal"
+                : "border-transparent text-gray-600 hover:text-brand-teal"
+            }`}
+          >
+            {heading.text}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// Collapsible "Contents" box (mobile) and a fixed-sidebar list (desktop). The
+// sidebar's sticky position + independent scroll is applied by the parent
+// (ArticleView) so this component stays layout-agnostic.
+export default function ArticleToc({
+  headings,
+  variant = "inline",
+}: ArticleTocProps) {
+  const activeId = useActiveHeading(headings);
+
+  if (variant === "sidebar") {
+    return (
+      <nav aria-label="Table of contents">
+        <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wide text-brand-navy">
+          Contents
+        </p>
+        <TocLinks headings={headings} activeId={activeId} />
+      </nav>
+    );
+  }
+
+  return <InlineToc headings={headings} activeId={activeId} />;
+}
+
+// Server-renders expanded (desktop default); useSyncExternalStore reads the
+// viewport on the client so it starts collapsed on mobile without a
+// setState-in-effect.
+function InlineToc({
+  headings,
+  activeId,
+}: {
+  headings: TocHeading[];
+  activeId: string | null;
+}) {
+  const isMobile = useSyncExternalStore(
+    subscribeMobile,
+    () => window.matchMedia(MOBILE_QUERY).matches,
+    () => false,
+  );
+  // null = follow the viewport default; once the user toggles, honour that.
+  const [manualOpen, setManualOpen] = useState<boolean | null>(null);
+  const open = manualOpen ?? !isMobile;
+
   return (
     <nav
       aria-label="Table of contents"
@@ -72,23 +140,9 @@ export default function ArticleToc({ headings }: ArticleTocProps) {
         />
       </button>
       {open && (
-        <ul className="px-4 pb-4 pt-1 text-sm">
-          {headings.map((heading) => (
-            <li key={heading.id} className={heading.level === 3 ? "ml-4" : ""}>
-              <a
-                href={`#${heading.id}`}
-                aria-current={activeId === heading.id ? "true" : undefined}
-                className={`block border-l-2 py-1 pl-3 transition-colors ${
-                  activeId === heading.id
-                    ? "border-brand-teal font-medium text-brand-teal"
-                    : "border-transparent text-gray-600 hover:text-brand-teal"
-                }`}
-              >
-                {heading.text}
-              </a>
-            </li>
-          ))}
-        </ul>
+        <div className="px-1 pb-4 pt-1">
+          <TocLinks headings={headings} activeId={activeId} />
+        </div>
       )}
     </nav>
   );

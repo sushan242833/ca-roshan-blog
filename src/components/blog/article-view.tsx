@@ -30,8 +30,30 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
   const authorInitial = post.author?.name?.charAt(0).toUpperCase() ?? "A";
   const publishDate = formatPostDate(post.publishedAt ?? post.createdAt);
 
+  // Only worth a table of contents with a couple of sections. When shown, the
+  // layout widens to a two-column grid with a fixed left sidebar; otherwise it
+  // stays a single centred column.
+  const showToc = headings.length >= 2;
+
   return (
-    <article className="mx-auto max-w-180 px-6 pt-12">
+    <div
+      className={
+        showToc
+          ? "mx-auto max-w-6xl px-6 pt-12 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-10"
+          : "mx-auto max-w-4xl px-6 pt-12"
+      }
+    >
+      {/* Fixed table of contents (desktop) — sticks below the header and gets
+          its own scroll, independent of the article body's scroll. */}
+      {showToc && (
+        <aside className="hidden lg:block">
+          <div className="sticky top-20 max-h-[calc(100vh-7rem)] overflow-y-auto pb-6">
+            <ArticleToc headings={headings} variant="sidebar" />
+          </div>
+        </aside>
+      )}
+
+      <article className="min-w-0">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="mb-6 text-xs text-gray-400">
         <ol className="flex flex-wrap items-center gap-1.5">
@@ -103,12 +125,30 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
         </div>
       </header>
 
-      {/* Featured image intentionally omitted here — it serves only as the
-          listing thumbnail and the social-share/OG image, not the article
-          body (see generateMetadata in the blog page). */}
+      {/* Featured image — shown at the top of the article (it also serves as
+          the listing thumbnail and the social-share/OG image). */}
+      {post.featuredImage && (
+        <figure className="mb-8 overflow-hidden rounded-lg border border-gray-200">
+          <Image
+            src={post.featuredImage.url}
+            alt={post.title}
+            width={1200}
+            height={630}
+            sizes="(max-width: 1024px) 100vw, 768px"
+            className="h-auto w-full object-cover"
+            priority
+          />
+        </figure>
+      )}
 
-      {/* Table of contents — only worth showing with a couple of sections */}
-      {headings.length >= 2 && <ArticleToc headings={headings} />}
+      {/* Table of contents (mobile) — the desktop copy lives in the fixed
+          sidebar above; this collapsible box shows in the article flow only on
+          narrow screens where there is no room for a sidebar. */}
+      {showToc && (
+        <div className="lg:hidden">
+          <ArticleToc headings={headings} variant="inline" />
+        </div>
+      )}
 
       {/* Body */}
       <div
@@ -132,6 +172,7 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
 
       {/* Share */}
       {shareUrl && <ShareArticle title={post.title} url={shareUrl} />}
-    </article>
+      </article>
+    </div>
   );
 }

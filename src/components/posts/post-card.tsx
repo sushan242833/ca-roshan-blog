@@ -9,9 +9,18 @@ import PostImagePlaceholder from "@/components/posts/post-image-placeholder";
 import { ClockIcon, ArrowRightIcon } from "@/components/icons";
 import type { PostSummaryResponse } from "@/types/post";
 
-export type PostCardVariant = "featured" | "recommended" | "summary";
+export type PostCardVariant =
+  | "featured"
+  | "recommended"
+  | "summary"
+  | "compact";
 
 interface VariantConfig {
+  // Root <Link> class — lets the compact variant read as a lightweight result
+  // row rather than a shadowed card.
+  rootClassName: string;
+  // The compact variant drops the image entirely to stay light in the overlay.
+  showImage: boolean;
   aspectClassName: string;
   imageSizes: string;
   imageClassName: string;
@@ -23,8 +32,13 @@ interface VariantConfig {
   footer: "cta" | "author-date" | "none";
 }
 
+const CARD_ROOT_CLASSNAME =
+  "group flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md";
+
 const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
   featured: {
+    rootClassName: CARD_ROOT_CLASSNAME,
+    showImage: true,
     aspectClassName: "aspect-video",
     imageSizes: "(max-width: 768px) 100vw, 50vw",
     imageClassName: "object-cover",
@@ -37,6 +51,8 @@ const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
     footer: "cta",
   },
   recommended: {
+    rootClassName: CARD_ROOT_CLASSNAME,
+    showImage: true,
     aspectClassName: "aspect-video",
     imageSizes: "(max-width: 768px) 100vw, 50vw",
     imageClassName:
@@ -50,6 +66,8 @@ const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
     footer: "none",
   },
   summary: {
+    rootClassName: CARD_ROOT_CLASSNAME,
+    showImage: true,
     aspectClassName: "aspect-4/3",
     imageSizes: "(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw",
     imageClassName: "object-cover",
@@ -61,18 +79,38 @@ const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
     excerptClassName: "flex-1 text-sm text-gray-600 line-clamp-2",
     footer: "author-date",
   },
+  // Text-only result row for the header search overlay: category pill, title,
+  // short excerpt — no image, no footer.
+  compact: {
+    rootClassName:
+      "group flex flex-col gap-1 rounded-md px-3 py-2.5 transition-colors hover:bg-gray-50",
+    showImage: false,
+    aspectClassName: "",
+    imageSizes: "",
+    imageClassName: "",
+    bodyClassName: "gap-1",
+    showCategoryPill: true,
+    showReadingTime: false,
+    titleClassName:
+      "font-serif text-sm font-bold text-brand-navy line-clamp-1 transition-colors group-hover:text-brand-teal",
+    excerptClassName: "text-xs text-gray-500 line-clamp-2",
+    footer: "none",
+  },
 };
 
 interface PostCardProps {
   post: PostSummaryResponse;
   variant: PostCardVariant;
   priority?: boolean;
+  /** Fired on navigation — used by the search overlay to close itself. */
+  onClick?: () => void;
 }
 
 export default function PostCard({
   post,
   variant,
   priority = false,
+  onClick,
 }: PostCardProps) {
   const [imageError, setImageError] = useState(false);
   const showImage = post.featuredImage && !imageError;
@@ -84,26 +122,29 @@ export default function PostCard({
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md"
+      onClick={onClick}
+      className={config.rootClassName}
     >
       {/* Image */}
-      <div
-        className={`relative w-full overflow-hidden rounded-t-lg ${config.aspectClassName}`}
-      >
-        <PostImagePlaceholder className="absolute inset-0" />
-        {showImage && (
-          <Image
-            src={post.featuredImage!.url}
-            alt={post.title}
-            fill
-            sizes={config.imageSizes}
-            priority={priority}
-            loading={priority ? "eager" : "lazy"}
-            className={config.imageClassName}
-            onError={() => setImageError(true)}
-          />
-        )}
-      </div>
+      {config.showImage && (
+        <div
+          className={`relative w-full overflow-hidden rounded-t-lg ${config.aspectClassName}`}
+        >
+          <PostImagePlaceholder className="absolute inset-0" />
+          {showImage && (
+            <Image
+              src={post.featuredImage!.url}
+              alt={post.title}
+              fill
+              sizes={config.imageSizes}
+              priority={priority}
+              loading={priority ? "eager" : "lazy"}
+              className={config.imageClassName}
+              onError={() => setImageError(true)}
+            />
+          )}
+        </div>
+      )}
 
       {/* Body */}
       <div className={`flex flex-1 flex-col ${config.bodyClassName}`}>

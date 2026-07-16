@@ -136,6 +136,15 @@
   html {
     @apply font-sans;
   }
+  /* Tailwind v4 resets interactive controls to `cursor: default`; restore the
+     expected pointer on enabled buttons and button-role elements. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  label[for],
+  summary,
+  select:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 /* Scoped prose styles for article body — only apply inside .article-body */
@@ -166,6 +175,8 @@
   margin-bottom: 0.5rem;
 }
 .article-body h4 {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
   font-weight: 700;
   color: #0D1B2A;
   margin-top: 1.5rem;
