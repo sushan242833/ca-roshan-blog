@@ -50,6 +50,8 @@ export interface AuthStoreState {
   /** Mount-time session restore (refresh cookie → access token → profile). */
   restoreSession: () => Promise<void>;
   applyAccessToken: (token: string | null) => void;
+  /** Replace the cached admin profile (e.g. after an About-page save). */
+  setAdmin: (admin: AuthenticatedAdminResponse) => void;
 }
 
 // Refresh this long before the token's exp claim so long editing sessions
@@ -94,6 +96,8 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
   // Access token is state now; get().accessToken reads the current value
   // synchronously, replacing the old accessTokenRef mirror.
   applyAccessToken: (token) => set({ accessToken: token }),
+
+  setAdmin: (admin) => set({ admin }),
 
   getAccessToken: () => get().accessToken,
 

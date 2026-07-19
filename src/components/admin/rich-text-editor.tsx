@@ -9,6 +9,10 @@ import TableHeader from "@tiptap/extension-table-header";
 import TableCell from "@tiptap/extension-table-cell";
 import TiptapImage from "@tiptap/extension-image";
 import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   Bold,
   Captions,
   FileText,
@@ -36,6 +40,7 @@ import { useMediaUpload } from "@/components/admin/use-media-upload";
 import { ImageUpload } from "@/lib/tiptap/image-upload-extension";
 import { Callout } from "@/lib/tiptap/callout-extension";
 import { PdfLink } from "@/lib/tiptap/pdf-link-extension";
+import { TextAlign } from "@/lib/tiptap/text-align-extension";
 import { DEFAULT_PDF_LABEL } from "@/lib/constants";
 import type { MediaResponse } from "@/types/media";
 
@@ -186,6 +191,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
       ImageUpload.configure({ upload: uploadFile }),
       Callout,
       PdfLink,
+      TextAlign,
     ],
     content: value,
     // The admin shell is prerendered; rendering on mount avoids SSR
@@ -267,6 +273,37 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <Italic size={16} />
+        </ToolbarButton>
+
+        <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />
+
+        <ToolbarButton
+          label="Align left"
+          active={editor.isActive({ textAlign: "left" })}
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+        >
+          <AlignLeft size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Align center"
+          active={editor.isActive({ textAlign: "center" })}
+          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+        >
+          <AlignCenter size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Align right"
+          active={editor.isActive({ textAlign: "right" })}
+          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+        >
+          <AlignRight size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Justify"
+          active={editor.isActive({ textAlign: "justify" })}
+          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+        >
+          <AlignJustify size={16} />
         </ToolbarButton>
 
         <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />

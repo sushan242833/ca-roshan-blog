@@ -357,6 +357,22 @@
   scroll-margin-top: 5rem;
 }
 
+/* Block text alignment — emitted by the Tiptap TextAlign extension as classes
+   (not inline styles) so they survive sanitisation and apply in both the
+   editor and the public article. */
+.article-body .text-align-left {
+  text-align: left;
+}
+.article-body .text-align-center {
+  text-align: center;
+}
+.article-body .text-align-right {
+  text-align: right;
+}
+.article-body .text-align-justify {
+  text-align: justify;
+}
+
 /* Full content PDF link — a compact inline chip (NOT a full-width card),
    shared by the editor (Tiptap pdfLink node), the sanitised public output, and
    the legacy fallback in ArticleView (all use .article-body). The file icon is

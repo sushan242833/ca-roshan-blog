@@ -23,6 +23,7 @@ export interface AuthContextValue {
   authedFetch: AuthedFetch;
   authedUpload: AuthStoreState["authedUpload"];
   getAccessToken: AuthStoreState["getAccessToken"];
+  setAdmin: AuthStoreState["setAdmin"];
 }
 
 // State now lives in the Zustand store (src/store/auth-store.ts); this
@@ -74,6 +75,7 @@ export function useAuth(): AuthContextValue {
   const authedFetch = useAuthStore((state) => state.authedFetch);
   const authedUpload = useAuthStore((state) => state.authedUpload);
   const getAccessToken = useAuthStore((state) => state.getAccessToken);
+  const setAdmin = useAuthStore((state) => state.setAdmin);
 
   const logout = useCallback(async () => {
     await storeLogout();
@@ -89,5 +91,6 @@ export function useAuth(): AuthContextValue {
     authedFetch,
     authedUpload,
     getAccessToken,
+    setAdmin,
   };
 }

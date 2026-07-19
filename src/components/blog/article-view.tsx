@@ -120,7 +120,11 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
               alt={post.author.name}
               width={40}
               height={40}
-              className="rounded-full object-cover"
+              // h-10 w-10 pins BOTH dimensions; without an explicit height the
+              // Tailwind preflight `img { height: auto }` rule would override
+              // the height attribute and squash a non-square source into an
+              // ellipse under rounded-full.
+              className="h-10 w-10 shrink-0 rounded-full object-cover"
             />
           ) : (
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-teal text-sm font-bold text-white">

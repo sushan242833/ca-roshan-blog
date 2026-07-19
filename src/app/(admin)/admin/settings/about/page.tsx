@@ -17,6 +17,7 @@ import { revalidatePublicContent } from "@/lib/revalidate";
 import type { ExpertiseItem } from "@/types/about";
 
 // Mirrors the backend's validateUpdateProfile limits.
+const MAX_NAME_LENGTH = 255;
 const MAX_TITLE_LENGTH = 150;
 const MAX_LOCATION_LENGTH = 200;
 const MAX_YEARS_OF_EXPERIENCE_LENGTH = 100;
@@ -26,6 +27,7 @@ const MAX_SEO_TITLE_LENGTH = MAX_META_TITLE_LENGTH;
 const MAX_SEO_DESCRIPTION_LENGTH = MAX_META_DESCRIPTION_LENGTH;
 
 interface ProfileFormValues {
+  name: string;
   title: string;
   bio: string;
   bioParagraph2: string;
@@ -42,6 +44,7 @@ interface ProfileFormValues {
 }
 
 const EMPTY_FORM_VALUES: ProfileFormValues = {
+  name: "",
   title: "",
   bio: "",
   bioParagraph2: "",
@@ -59,7 +62,8 @@ const EMPTY_FORM_VALUES: ProfileFormValues = {
 
 export default function AdminAboutSettingsPage() {
   // AdminGuard only renders this page once `admin` is populated.
-  const { admin, authedFetch, authedUpload, getAccessToken } = useAuth();
+  const { admin, authedFetch, authedUpload, getAccessToken, setAdmin } =
+    useAuth();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingOgImage, setIsUploadingOgImage] = useState(false);
 
@@ -74,6 +78,7 @@ export default function AdminAboutSettingsPage() {
   } = useForm<ProfileFormValues>({
     defaultValues: admin
       ? {
+          name: admin.name ?? "",
           title: admin.title ?? "",
           bio: admin.bio ?? "",
           bioParagraph2: admin.bioParagraph2 ?? "",
@@ -99,6 +104,7 @@ export default function AdminAboutSettingsPage() {
 
   const avatarUrl = watch("avatarUrl");
   const ogImageUrl = watch("ogImageUrl");
+  const nameValue = watch("name");
   const titleValue = watch("title");
   const locationValue = watch("location");
   const yearsOfExperienceValue = watch("yearsOfExperience");
@@ -149,10 +155,17 @@ export default function AdminAboutSettingsPage() {
       (item) => item.title.trim() || item.description.trim(),
     );
 
+    const trimmedName = data.name.trim();
+    if (!trimmedName) {
+      toast.error("Full name is required.");
+      return;
+    }
+
     try {
       await authedFetch("/v1/auth/profile", {
         method: "PATCH",
         body: JSON.stringify({
+          name: trimmedName,
           title: data.title || null,
           bio: data.bio || null,
           bioParagraph2: data.bioParagraph2 || null,
@@ -169,9 +182,12 @@ export default function AdminAboutSettingsPage() {
           ogImageUrl: data.ogImageUrl || null,
         }),
       });
+      // Keep the cached admin (sidebar, header, future edits) in sync with the
+      // saved name so it updates without a reload.
+      if (admin) setAdmin({ ...admin, name: trimmedName });
       await revalidatePublicContent("about", getAccessToken());
       toast.success("Profile updated successfully");
-      reset({ ...data, expertise: cleanedExpertise });
+      reset({ ...data, name: trimmedName, expertise: cleanedExpertise });
     } catch (err) {
       toast.error(
         err instanceof ApiRequestError
@@ -234,17 +250,18 @@ export default function AdminAboutSettingsPage() {
 
           <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Full Name
+              <label className="mb-1 flex items-center justify-between text-sm font-medium text-gray-700">
+                <span>Full Name</span>
+                <span className="text-xs font-normal text-gray-400">
+                  {nameValue.length}/{MAX_NAME_LENGTH}
+                </span>
               </label>
               <input
-                value={admin.name}
-                readOnly
-                className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-500"
+                {...register("name")}
+                maxLength={MAX_NAME_LENGTH}
+                placeholder="e.g. Sushan Poudel"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-brand-teal focus:outline-none focus:ring-1 focus:ring-brand-teal"
               />
-              <p className="mt-1 text-xs text-gray-400">
-                Name can be updated from your account settings
-              </p>
             </div>
             <div>
               <label className="mb-1 flex items-center justify-between text-sm font-medium text-gray-700">
