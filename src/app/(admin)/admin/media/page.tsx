@@ -14,7 +14,15 @@ import { useMediaUpload } from "@/components/admin/use-media-upload";
 import MediaGridItem from "@/components/admin/media-grid-item";
 import DeleteEntityDialog from "@/components/admin/delete-entity-dialog";
 import { Input } from "@/components/ui/input";
-import type { MediaResponse } from "@/types/media";
+import type { MediaKind, MediaResponse } from "@/types/media";
+
+type MediaTypeFilter = "all" | MediaKind;
+
+const TYPE_FILTERS: { value: MediaTypeFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "image", label: "Images" },
+  { value: "document", label: "PDFs" },
+];
 
 export default function AdminMediaPage() {
   const { authedFetch, getAccessToken } = useAuth();
@@ -23,15 +31,21 @@ export default function AdminMediaPage() {
   // The backend has no search param on GET /v1/media — filtering is
   // client-side over the full list.
   const [search, setSearch] = useState("");
+  // Kind filter uses the backend ?type param so each list is a separate cache.
+  const [typeFilter, setTypeFilter] = useState<MediaTypeFilter>("all");
   const [deleteTarget, setDeleteTarget] = useState<MediaResponse | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // The API returns media newest-first (createdAt DESC) — no client sort
-  // needed. Shares the ["media"] key with the picker dialog, so an upload
-  // from either surface shows in both.
+  // needed. "All" shares the ["media"] key with the picker dialog, so an
+  // upload from either surface shows in both.
   const mediaQuery = useQuery({
-    queryKey: queryKeys.media,
-    queryFn: () => authedFetch<MediaResponse[]>("/v1/media"),
+    queryKey:
+      typeFilter === "all" ? queryKeys.media : queryKeys.mediaByType(typeFilter),
+    queryFn: () =>
+      authedFetch<MediaResponse[]>(
+        typeFilter === "all" ? "/v1/media" : `/v1/media?type=${typeFilter}`,
+      ),
   });
 
   const items = mediaQuery.data ?? [];
@@ -53,11 +67,13 @@ export default function AdminMediaPage() {
     if (files.length === 0) return;
     // Each finished upload lands in the grid immediately, newest first, by
     // prepending to the shared ["media"] cache (which the picker also reads).
+    // Library uploads are images, so refresh the image-filtered list too.
     void uploadFiles(files, (media) => {
       queryClient.setQueryData<MediaResponse[]>(queryKeys.media, (previous) => [
         media,
         ...(previous ?? []),
       ]);
+      queryClient.invalidateQueries({ queryKey: queryKeys.mediaByType("image") });
     });
   }
 
@@ -134,19 +150,42 @@ export default function AdminMediaPage() {
         className="hidden"
       />
 
-      <div className="relative mt-6 w-full max-w-xs">
-        <Search
-          size={16}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-        />
-        <Input
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search media…"
-          aria-label="Search media"
-          className="pl-9"
-        />
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="relative w-full max-w-xs">
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
+          <Input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search media…"
+            aria-label="Search media"
+            className="pl-9"
+          />
+        </div>
+        <div
+          className="inline-flex rounded-md border border-gray-200 bg-white p-0.5"
+          role="group"
+          aria-label="Filter media by type"
+        >
+          {TYPE_FILTERS.map((filter) => (
+            <button
+              key={filter.value}
+              type="button"
+              onClick={() => setTypeFilter(filter.value)}
+              aria-pressed={typeFilter === filter.value}
+              className={`rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+                typeFilter === filter.value
+                  ? "bg-brand-teal-dark text-white"
+                  : "text-gray-600 hover:text-brand-teal"
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error && (

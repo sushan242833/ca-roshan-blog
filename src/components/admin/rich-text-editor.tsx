@@ -11,6 +11,7 @@ import TiptapImage from "@tiptap/extension-image";
 import {
   Bold,
   Captions,
+  FileText,
   Heading2,
   Heading3,
   Heading4,
@@ -30,9 +31,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import MediaPickerDialog from "@/components/admin/media-picker-dialog";
+import PdfLinkDialog from "@/components/admin/pdf-link-dialog";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
 import { ImageUpload } from "@/lib/tiptap/image-upload-extension";
 import { Callout } from "@/lib/tiptap/callout-extension";
+import { PdfLink } from "@/lib/tiptap/pdf-link-extension";
+import { DEFAULT_PDF_LABEL } from "@/lib/constants";
 import type { MediaResponse } from "@/types/media";
 
 interface RichTextEditorProps {
@@ -156,6 +160,7 @@ function applyCallout(editor: Editor, variant: "note" | "warning") {
 // readers will see.
 export default function RichTextEditor({ value, onChange }: RichTextEditorProps) {
   const [showImagePicker, setShowImagePicker] = useState(false);
+  const [showPdfDialog, setShowPdfDialog] = useState(false);
   // uploadFile is referentially stable (its whole dependency chain in the
   // auth provider is ref-backed), so the editor can capture it once.
   const { uploadFile } = useMediaUpload();
@@ -180,6 +185,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
       // Drag-drop / paste uploads share the picker's upload primitive.
       ImageUpload.configure({ upload: uploadFile }),
       Callout,
+      PdfLink,
     ],
     content: value,
     // The admin shell is prerendered; rendering on mount avoids SSR
@@ -324,6 +330,13 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
             <Captions size={16} />
           </ToolbarButton>
         )}
+        <ToolbarButton
+          label={editor.isActive("pdfLink") ? "Edit PDF link" : "Insert PDF link"}
+          active={editor.isActive("pdfLink")}
+          onClick={() => setShowPdfDialog(true)}
+        >
+          <FileText size={16} />
+        </ToolbarButton>
 
         <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />
 
@@ -426,6 +439,34 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
               .setImage({ src: media.url, alt: media.originalName })
               .run();
             setShowImagePicker(false);
+          }}
+        />
+      )}
+
+      {showPdfDialog && (
+        <PdfLinkDialog
+          initial={
+            editor.isActive("pdfLink")
+              ? {
+                  href: (editor.getAttributes("pdfLink").href as string) ?? "",
+                  label:
+                    (editor.getAttributes("pdfLink").label as string) ??
+                    DEFAULT_PDF_LABEL,
+                }
+              : undefined
+          }
+          onOpenChange={(open) => {
+            if (!open) setShowPdfDialog(false);
+          }}
+          onSubmit={({ href, label }) => {
+            // Editing a selected block updates it in place; otherwise insert a
+            // new block at the caret.
+            if (editor.isActive("pdfLink")) {
+              editor.chain().focus().updatePdfLink({ href, label }).run();
+            } else {
+              editor.chain().focus().setPdfLink({ href, label }).run();
+            }
+            setShowPdfDialog(false);
           }}
         />
       )}

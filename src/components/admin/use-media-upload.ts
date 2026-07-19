@@ -4,12 +4,31 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
-import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB } from "@/lib/constants";
-import type { MediaResponse } from "@/types/media";
+import {
+  ALLOWED_DOCUMENT_TYPES,
+  ALLOWED_IMAGE_TYPES,
+  MAX_DOCUMENT_SIZE_MB,
+  MAX_IMAGE_SIZE_MB,
+} from "@/lib/constants";
+import type { MediaKind, MediaResponse } from "@/types/media";
 
 // Client-side pre-check mirroring the backend's upload rules; returns a
-// user-facing error message, or null when the file is acceptable.
-export function validateMediaFile(file: File): string | null {
+// user-facing error message, or null when the file is acceptable. The kind
+// selects the allowed MIME types and size ceiling (images vs PDF documents).
+export function validateMediaFile(
+  file: File,
+  mediaType: MediaKind = "image",
+): string | null {
+  if (mediaType === "document") {
+    if (!ALLOWED_DOCUMENT_TYPES.includes(file.type)) {
+      return `${file.name}: only PDF documents are allowed.`;
+    }
+    if (file.size > MAX_DOCUMENT_SIZE_MB * 1024 * 1024) {
+      return `${file.name}: PDF must be ${MAX_DOCUMENT_SIZE_MB}MB or smaller.`;
+    }
+    return null;
+  }
+
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
     return `${file.name}: only PNG, JPG, or WEBP images are allowed.`;
   }
@@ -36,7 +55,7 @@ interface UploadProgress {
 // Upload logic shared by the media picker dialog and the Media Library.
 // Invalid files are rejected client-side with a toast (no request sent);
 // valid files upload sequentially — the endpoint takes one file per request.
-export function useMediaUpload() {
+export function useMediaUpload(mediaType: MediaKind = "image") {
   const { authedUpload } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
@@ -48,13 +67,13 @@ export function useMediaUpload() {
   // server/network failure so callers can present the outcome their own way.
   const uploadFile = useCallback(
     async (file: File): Promise<MediaResponse> => {
-      const validationError = validateMediaFile(file);
+      const validationError = validateMediaFile(file, mediaType);
       if (validationError) throw new MediaValidationError(validationError);
       const formData = new FormData();
       formData.append("file", file);
       return authedUpload<MediaResponse>("/v1/media/upload", formData);
     },
-    [authedUpload],
+    [authedUpload, mediaType],
   );
 
   // Batch helper for the picker dialogs: invalid files toast and are
@@ -67,7 +86,7 @@ export function useMediaUpload() {
     ): Promise<void> => {
       const validFiles: File[] = [];
       for (const file of files) {
-        const validationError = validateMediaFile(file);
+        const validationError = validateMediaFile(file, mediaType);
         if (validationError) {
           toast.error(validationError);
         } else {
@@ -98,7 +117,7 @@ export function useMediaUpload() {
         setProgress(null);
       }
     },
-    [uploadFile],
+    [uploadFile, mediaType],
   );
 
   return { uploadFile, uploadFiles, isUploading, progress };

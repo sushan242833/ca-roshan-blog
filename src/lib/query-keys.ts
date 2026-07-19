@@ -31,6 +31,9 @@ export const queryKeys = {
 
   // Media — shared by the Media Library and the media picker dialog.
   media: ["media"] as const,
+  // Kind-filtered media list (e.g. the PDF picker), kept separate from the
+  // unfiltered ["media"] cache so the two lists never overwrite each other.
+  mediaByType: (type: "image" | "document") => ["media", type] as const,
 
   // Subscribers (read-only).
   subscribers: (filters: SubscriberListFilters) =>

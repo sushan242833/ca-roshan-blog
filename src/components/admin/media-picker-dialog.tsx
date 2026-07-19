@@ -6,7 +6,12 @@ import { Loader2, Upload } from "lucide-react";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { queryKeys } from "@/lib/query-keys";
-import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB } from "@/lib/constants";
+import {
+  ALLOWED_DOCUMENT_TYPES,
+  ALLOWED_IMAGE_TYPES,
+  MAX_DOCUMENT_SIZE_MB,
+  MAX_IMAGE_SIZE_MB,
+} from "@/lib/constants";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
 import MediaGridItem from "@/components/admin/media-grid-item";
 import {
@@ -16,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { MediaResponse } from "@/types/media";
+import type { MediaKind, MediaResponse } from "@/types/media";
 
 interface MediaPickerDialogProps {
   onOpenChange: (open: boolean) => void;
@@ -24,6 +29,12 @@ interface MediaPickerDialogProps {
   onSelect: (media: MediaResponse) => void;
   /** Dialog heading; defaults to the featured-image wording. */
   title?: string;
+  /**
+   * Which media kind this picker deals with. "image" (default) keeps every
+   * existing usage unchanged; "document" restricts uploads to PDFs, filters
+   * the list to documents, and updates the accept attribute + wording.
+   */
+  mediaType?: MediaKind;
 }
 
 // Media chooser for the post editor's featured-image field and inline
@@ -33,17 +44,24 @@ export default function MediaPickerDialog({
   onOpenChange,
   onSelect,
   title = "Select Featured Image",
+  mediaType = "image",
 }: MediaPickerDialogProps) {
   const { authedFetch } = useAuth();
   const queryClient = useQueryClient();
-  const { uploadFiles, isUploading } = useMediaUpload();
+  const { uploadFiles, isUploading } = useMediaUpload(mediaType);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Same ["media"] key as the Media Library, so uploads here appear there
-  // (and vice versa) with no reload.
+  const isDocument = mediaType === "document";
+  const acceptTypes = isDocument ? ALLOWED_DOCUMENT_TYPES : ALLOWED_IMAGE_TYPES;
+  const listKey = isDocument ? queryKeys.mediaByType("document") : queryKeys.media;
+  const listPath = isDocument ? "/v1/media?type=document" : "/v1/media";
+
+  // Same ["media"] key as the Media Library for images, so uploads here appear
+  // there (and vice versa) with no reload; a separate key for the document
+  // filter keeps the two lists from clobbering each other in the cache.
   const mediaQuery = useQuery({
-    queryKey: queryKeys.media,
-    queryFn: () => authedFetch<MediaResponse[]>("/v1/media"),
+    queryKey: listKey,
+    queryFn: () => authedFetch<MediaResponse[]>(listPath),
   });
 
   const items = mediaQuery.data ?? [];
@@ -58,27 +76,34 @@ export default function MediaPickerDialog({
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    // A fresh upload is prepended to the shared ["media"] cache (so it also
-    // lands in the Media Library) and auto-selected as the featured image.
+    // A fresh upload is prepended to the list this picker shows and
+    // auto-selected. Documents also live in the unfiltered Media Library, so
+    // invalidate that cache to keep it in sync.
     void uploadFiles([file], (media) => {
-      queryClient.setQueryData<MediaResponse[]>(queryKeys.media, (previous) => [
+      queryClient.setQueryData<MediaResponse[]>(listKey, (previous) => [
         media,
         ...(previous ?? []),
       ]);
+      if (isDocument) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.media });
+      }
       onSelect(media);
     });
   }
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      {/* Flex column capped at 85vh so the header/upload stay put and only the
+          media grid scrolls, instead of the dialog growing past the viewport. */}
+      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-serif text-lg font-bold text-brand-navy">
             {title}
           </DialogTitle>
           <DialogDescription>
-            Pick an existing image or upload a new one (PNG, JPG, WEBP — max{" "}
-            {MAX_IMAGE_SIZE_MB}MB).
+            {isDocument
+              ? `Pick an existing PDF or upload a new one (max ${MAX_DOCUMENT_SIZE_MB}MB).`
+              : `Pick an existing image or upload a new one (PNG, JPG, WEBP — max ${MAX_IMAGE_SIZE_MB}MB).`}
           </DialogDescription>
         </DialogHeader>
 
@@ -94,12 +119,16 @@ export default function MediaPickerDialog({
             ) : (
               <Upload size={16} />
             )}
-            {isUploading ? "Uploading…" : "Upload new image"}
+            {isUploading
+              ? "Uploading…"
+              : isDocument
+                ? "Upload new PDF"
+                : "Upload new image"}
           </button>
           <input
             ref={fileInputRef}
             type="file"
-            accept={ALLOWED_IMAGE_TYPES.join(",")}
+            accept={acceptTypes.join(",")}
             onChange={handleFileChange}
             className="hidden"
           />
@@ -118,10 +147,14 @@ export default function MediaPickerDialog({
           </div>
         ) : items.length === 0 ? (
           <p className="py-10 text-center text-sm text-gray-400">
-            No media uploaded yet.
+            {isDocument
+              ? "No PDFs uploaded yet."
+              : "No media uploaded yet."}
           </p>
         ) : (
-          <div className="grid max-h-96 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 md:grid-cols-4">
+          // min-h-0 lets this scroll area shrink below its content so flex-1 +
+          // overflow-y-auto actually scroll inside the capped dialog.
+          <div className="grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 md:grid-cols-4">
             {items.map((media) => (
               <MediaGridItem
                 key={media.id}

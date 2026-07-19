@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import DOMPurify from "isomorphic-dompurify";
 import ShareArticle from "@/components/blog/share-article";
 import ArticleToc from "@/components/blog/article-toc";
 import { formatPostDate } from "@/lib/format";
 import { buildToc } from "@/lib/toc";
+import { sanitizeArticleHtml } from "@/lib/sanitize-html";
+import { isValidPdfUrl } from "@/lib/pdf-url";
+import { DEFAULT_PDF_LABEL } from "@/lib/constants";
 import { SITE_NAME } from "@/config/site.config";
 import type { PostDetailResponse } from "@/types/post";
 
@@ -21,7 +23,7 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
   // sanitised HTML (a single parse in buildToc, so ids and links agree), and
   // finally wrap tables in a horizontal-scroll container. All post-sanitise
   // string work is safe because DOMPurify emits well-formed, balanced HTML.
-  const sanitized = DOMPurify.sanitize(post.content ?? "");
+  const sanitized = sanitizeArticleHtml(post.content ?? "");
   const { html: withHeadingIds, headings } = buildToc(sanitized);
   const cleanContent = withHeadingIds
     .replace(/<table(?=[\s>])/g, '<div class="table-scroll"><table')
@@ -29,6 +31,17 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
 
   const authorInitial = post.author?.name?.charAt(0).toUpperCase() ?? "A";
   const publishDate = formatPostDate(post.publishedAt ?? post.createdAt);
+
+  // Backward compatibility: older posts stored the PDF link in post.pdfUrl and
+  // rendered a card at the bottom. If such a post has no inline pdf-link-block
+  // in its body, render the same compact chip at the end so the link survives.
+  const contentHasPdfLink = /class="[^"]*\bpdf-link-block\b[^"]*"/.test(
+    sanitized,
+  );
+  const legacyPdfUrl =
+    post.pdfUrl && isValidPdfUrl(post.pdfUrl) ? post.pdfUrl : null;
+  const showLegacyPdf = Boolean(legacyPdfUrl) && !contentHasPdfLink;
+  const legacyPdfLabel = post.pdfLabel?.trim() || DEFAULT_PDF_LABEL;
 
   // Only worth a table of contents with a couple of sections. When shown, the
   // layout widens to a two-column grid with a fixed left sidebar; otherwise it
@@ -155,6 +168,25 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
         className="article-body"
         dangerouslySetInnerHTML={{ __html: cleanContent }}
       />
+
+      {/* Backward-compatible PDF link for legacy posts that stored it in
+          post.pdfUrl (no inline block). Rendered as the same compact chip via
+          the .pdf-link-block class inside an .article-body wrapper, so it
+          matches the in-content chip exactly. The href is a plain anchor,
+          never routed through dangerouslySetInnerHTML. */}
+      {showLegacyPdf && legacyPdfUrl && (
+        <div className="article-body mt-8">
+          <a
+            className="pdf-link-block"
+            href={legacyPdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-pdf-label={legacyPdfLabel}
+          >
+            {legacyPdfLabel}
+          </a>
+        </div>
+      )}
 
       {/* Tags */}
       {post.tags.length > 0 && (

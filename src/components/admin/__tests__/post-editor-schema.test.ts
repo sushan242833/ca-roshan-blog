@@ -71,4 +71,15 @@ describe("postFormSchema", () => {
       "content",
     );
   });
+
+  // The PDF link now lives inside the post content (Tiptap pdfLink node), so
+  // the form schema no longer carries pdfUrl / pdfLabel fields.
+  it("does not include pdf fields in the schema", () => {
+    const parsed = postFormSchema.safeParse(validValues);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data).not.toHaveProperty("pdfUrl");
+      expect(parsed.data).not.toHaveProperty("pdfLabel");
+    }
+  });
 });

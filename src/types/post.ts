@@ -44,6 +44,9 @@ export interface PostDetailResponse extends PostSummaryResponse {
   content: string;
   metaTitle: string | null;
   metaDescription: string | null;
+  // Optional "Full content PDF" link shown as a callout on the article page.
+  pdfUrl: string | null;
+  pdfLabel: string | null;
 }
 
 export interface PreviewTokenResponse {

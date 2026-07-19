@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
-import { ImageOff } from "lucide-react";
+import { FileText, ImageOff } from "lucide-react";
 import type { MediaResponse } from "@/types/media";
 
 interface MediaGridItemProps {
@@ -25,11 +25,21 @@ export default function MediaGridItem({
   actions,
 }: MediaGridItemProps) {
   const [imageFailed, setImageFailed] = useState(false);
+  const isDocument = media.kind === "document";
 
   const body = (
     <>
       <div className="relative aspect-square w-full bg-gray-100">
-        {imageFailed ? (
+        {isDocument ? (
+          // Documents (PDFs) have no thumbnail — show an icon + extension so
+          // the card reads as a file rather than a broken image.
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-gray-400">
+            <FileText size={28} />
+            <span className="text-xs font-semibold uppercase tracking-wide">
+              PDF
+            </span>
+          </div>
+        ) : imageFailed ? (
           <div className="flex h-full w-full items-center justify-center text-gray-300">
             <ImageOff size={24} />
           </div>

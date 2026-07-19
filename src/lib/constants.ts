@@ -15,6 +15,10 @@ export const MAX_META_TITLE_LENGTH = 60;
 export const MAX_META_DESCRIPTION_LENGTH = 160;
 // Frontend-only soft cap; the backend accepts any excerpt length.
 export const MAX_EXCERPT_LENGTH = 300;
+// Full content PDF link — must mirror the backend validation limits.
+export const MAX_PDF_URL_LENGTH = 2048;
+export const MAX_PDF_LABEL_LENGTH = 255;
+export const DEFAULT_PDF_LABEL = "Read the full content (PDF)";
 export const MAX_CATEGORY_NAME_LENGTH = 100;
 export const MAX_TAG_NAME_LENGTH = 100;
 export const MAX_CONTACT_MESSAGE_LENGTH = 5000;
@@ -23,6 +27,8 @@ export const MAX_CONTACT_NAME_LENGTH = 100;
 // Media upload
 export const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 export const MAX_IMAGE_SIZE_MB = 5;
+export const ALLOWED_DOCUMENT_TYPES = ["application/pdf"];
+export const MAX_DOCUMENT_SIZE_MB = 20;
 
 // Preview tokens
 export const PREVIEW_TOKEN_EXPIRY_MINUTES = 60;

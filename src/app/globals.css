@@ -356,3 +356,63 @@
 .article-body h3 {
   scroll-margin-top: 5rem;
 }
+
+/* Full content PDF link — a compact inline chip (NOT a full-width card),
+   shared by the editor (Tiptap pdfLink node), the sanitised public output, and
+   the legacy fallback in ArticleView (all use .article-body). The file icon is
+   a CSS mask so no JS is needed inside sanitised content. Overrides the base
+   .article-body a rule (underline / plain colour) above. */
+.article-body a.pdf-link-block {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: 100%;
+  margin: 1.25rem 0;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #f9fafb;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  color: #005243;
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+  /* Wrap gracefully rather than overflow on narrow screens. */
+  word-break: break-word;
+}
+.article-body a.pdf-link-block:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #005243;
+}
+.article-body a.pdf-link-block::before {
+  content: "";
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z'/%3E%3Cpath d='M14 2v4a2 2 0 0 0 2 2h4'/%3E%3Cpath d='M10 9H8'/%3E%3Cpath d='M16 13H8'/%3E%3Cpath d='M16 17H8'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z'/%3E%3Cpath d='M14 2v4a2 2 0 0 0 2 2h4'/%3E%3Cpath d='M10 9H8'/%3E%3Cpath d='M16 13H8'/%3E%3Cpath d='M16 17H8'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+/* Selected state inside the editor (atom node selection). */
+.article-body a.pdf-link-block.ProseMirror-selectednode {
+  outline: 2px solid #1a6b5a;
+  outline-offset: 2px;
+}
+/* Dark mode, if the surrounding surface opts into it. */
+.dark .article-body a.pdf-link-block {
+  background: var(--color-brand-box-bg);
+  border-color: var(--color-brand-box-border);
+  color: var(--color-brand-mint-text);
+}
+.dark .article-body a.pdf-link-block:hover {
+  background: var(--color-brand-box-border);
+  border-color: var(--color-brand-mint-text);
+  color: var(--color-brand-mint-text);
+}
