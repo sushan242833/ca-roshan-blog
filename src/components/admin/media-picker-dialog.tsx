@@ -53,12 +53,11 @@ export default function MediaPickerDialog({
 
   const isDocument = mediaType === "document";
   const acceptTypes = isDocument ? ALLOWED_DOCUMENT_TYPES : ALLOWED_IMAGE_TYPES;
-  const listKey = isDocument ? queryKeys.mediaByType("document") : queryKeys.media;
-  const listPath = isDocument ? "/v1/media?type=document" : "/v1/media";
+  // Always scope the listing to this picker's kind so the image picker never
+  // shows PDFs (and vice versa). Each kind has its own cache key.
+  const listKey = queryKeys.mediaByType(mediaType);
+  const listPath = `/v1/media?type=${mediaType}`;
 
-  // Same ["media"] key as the Media Library for images, so uploads here appear
-  // there (and vice versa) with no reload; a separate key for the document
-  // filter keeps the two lists from clobbering each other in the cache.
   const mediaQuery = useQuery({
     queryKey: listKey,
     queryFn: () => authedFetch<MediaResponse[]>(listPath),
@@ -77,16 +76,14 @@ export default function MediaPickerDialog({
     event.target.value = "";
     if (!file) return;
     // A fresh upload is prepended to the list this picker shows and
-    // auto-selected. Documents also live in the unfiltered Media Library, so
-    // invalidate that cache to keep it in sync.
+    // auto-selected. Refresh the unfiltered Media Library ("all") too so it
+    // reflects the new file without a reload.
     void uploadFiles([file], (media) => {
       queryClient.setQueryData<MediaResponse[]>(listKey, (previous) => [
         media,
         ...(previous ?? []),
       ]);
-      if (isDocument) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.media });
-      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.media, exact: true });
       onSelect(media);
     });
   }
@@ -152,9 +149,10 @@ export default function MediaPickerDialog({
               : "No media uploaded yet."}
           </p>
         ) : (
-          // min-h-0 lets this scroll area shrink below its content so flex-1 +
-          // overflow-y-auto actually scroll inside the capped dialog.
-          <div className="grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 md:grid-cols-4">
+          // Capped, scrollable thumbnail grid. min-h-0 removes the flex item's
+          // implicit min-height:auto so max-h can take effect and overflow-y
+          // actually scrolls instead of the grid growing to fit every item.
+          <div className="grid max-h-104 min-h-0 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 md:grid-cols-4">
             {items.map((media) => (
               <MediaGridItem
                 key={media.id}

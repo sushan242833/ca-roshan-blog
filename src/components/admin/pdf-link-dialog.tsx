@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -12,10 +13,13 @@ import {
 } from "@/lib/constants";
 import { isValidPdfUrl } from "@/lib/pdf-url";
 import { ApiRequestError } from "@/lib/api";
+import { useAuth } from "@/components/providers/auth-provider";
+import { queryKeys } from "@/lib/query-keys";
 import {
   MediaValidationError,
   useMediaUpload,
 } from "@/components/admin/use-media-upload";
+import MediaGridItem from "@/components/admin/media-grid-item";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { MediaResponse } from "@/types/media";
 
 interface PdfLinkDialogProps {
   /** Existing block being edited; omit to insert a new one. */
@@ -36,9 +41,9 @@ const inputClass =
   "w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 " +
   "placeholder:text-gray-400 focus:border-brand-teal focus:outline-none focus:ring-1 focus:ring-brand-teal";
 
-// Small dialog for inserting or editing a PDF link block. Offers a URL field
-// (paste an external link or a self-hosted /uploads/ path) and an "Upload PDF"
-// button that reuses the shared media upload flow restricted to application/pdf.
+// Dialog for inserting or editing a PDF link block. Three ways to set the
+// link: paste a URL, upload a new PDF, or pick one already in storage. All
+// three fill the same URL field, and an optional label overrides the default.
 export default function PdfLinkDialog({
   initial,
   onOpenChange,
@@ -48,8 +53,17 @@ export default function PdfLinkDialog({
   const [url, setUrl] = useState(initial?.href ?? "");
   const [label, setLabel] = useState(initial?.label ?? "");
   const [error, setError] = useState("");
+  const { authedFetch } = useAuth();
+  const queryClient = useQueryClient();
   const { uploadFile, isUploading } = useMediaUpload("document");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Existing PDFs in storage, so the admin can reuse one without re-uploading.
+  const docsQuery = useQuery({
+    queryKey: queryKeys.mediaByType("document"),
+    queryFn: () => authedFetch<MediaResponse[]>("/v1/media?type=document"),
+  });
+  const documents = docsQuery.data ?? [];
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -59,6 +73,13 @@ export default function PdfLinkDialog({
       const media = await uploadFile(file);
       setUrl(media.url);
       setError("");
+      // Show the freshly uploaded PDF in the existing-PDFs grid immediately,
+      // and refresh the unfiltered Media Library.
+      queryClient.setQueryData<MediaResponse[]>(
+        queryKeys.mediaByType("document"),
+        (previous) => [media, ...(previous ?? [])],
+      );
+      queryClient.invalidateQueries({ queryKey: queryKeys.media, exact: true });
     } catch (err) {
       const message =
         err instanceof MediaValidationError || err instanceof ApiRequestError
@@ -71,7 +92,7 @@ export default function PdfLinkDialog({
   function handleConfirm() {
     const trimmedUrl = url.trim();
     if (!trimmedUrl) {
-      setError("Enter a PDF URL or upload a file.");
+      setError("Enter a PDF URL, upload one, or pick an existing PDF.");
       return;
     }
     if (trimmedUrl.length > MAX_PDF_URL_LENGTH) {
@@ -88,81 +109,128 @@ export default function PdfLinkDialog({
     });
   }
 
+  const docsError = docsQuery.isError
+    ? docsQuery.error instanceof ApiRequestError
+      ? docsQuery.error.message
+      : "Failed to load PDFs."
+    : "";
+
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-serif text-lg font-bold text-brand-navy">
             {isEditing ? "Edit PDF link" : "Insert PDF link"}
           </DialogTitle>
           <DialogDescription>
-            Paste a link or upload a PDF (max {MAX_DOCUMENT_SIZE_MB}MB). It is
-            inserted at your cursor as a compact link.
+            Paste a link, upload a PDF (max {MAX_DOCUMENT_SIZE_MB}MB), or pick an
+            existing one. It is inserted at your cursor as a compact link.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="pdf-link-url"
-              className="text-sm font-medium text-gray-700"
-            >
-              PDF URL
-            </label>
-            <div className="mt-1 flex gap-2">
-              <input
-                id="pdf-link-url"
-                value={url}
-                onChange={(event) => {
-                  setUrl(event.target.value);
-                  if (error) setError("");
-                }}
-                placeholder="https://… or /uploads/file.pdf"
-                className={`min-w-0 flex-1 ${inputClass}`}
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-50 disabled:opacity-60"
-              >
-                {isUploading ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Upload size={14} />
-                )}
-                {isUploading ? "Uploading…" : "Upload PDF"}
-              </button>
-            </div>
+        <div>
+          <label
+            htmlFor="pdf-link-url"
+            className="text-sm font-medium text-gray-700"
+          >
+            PDF URL
+          </label>
+          <div className="mt-1 flex gap-2">
             <input
-              ref={fileInputRef}
-              type="file"
-              accept={ALLOWED_DOCUMENT_TYPES.join(",")}
-              onChange={handleFileChange}
-              className="hidden"
+              id="pdf-link-url"
+              value={url}
+              onChange={(event) => {
+                setUrl(event.target.value);
+                if (error) setError("");
+              }}
+              placeholder="https://… or /uploads/file.pdf"
+              className={`min-w-0 flex-1 ${inputClass}`}
             />
-            {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-50 disabled:opacity-60"
+            >
+              {isUploading ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Upload size={14} />
+              )}
+              {isUploading ? "Uploading…" : "Upload PDF"}
+            </button>
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ALLOWED_DOCUMENT_TYPES.join(",")}
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+        </div>
 
-          <div>
-            <label
-              htmlFor="pdf-link-label"
-              className="text-sm font-medium text-gray-700"
-            >
-              Link label
-            </label>
-            <input
-              id="pdf-link-label"
-              value={label}
-              maxLength={MAX_PDF_LABEL_LENGTH}
-              onChange={(event) => setLabel(event.target.value)}
-              placeholder={DEFAULT_PDF_LABEL}
-              className={`mt-1 ${inputClass}`}
-            />
-            <p className="mt-1 text-xs text-gray-400">
-              Defaults to “{DEFAULT_PDF_LABEL}”.
+        <div>
+          <label
+            htmlFor="pdf-link-label"
+            className="text-sm font-medium text-gray-700"
+          >
+            Link label
+          </label>
+          <input
+            id="pdf-link-label"
+            value={label}
+            maxLength={MAX_PDF_LABEL_LENGTH}
+            onChange={(event) => setLabel(event.target.value)}
+            placeholder={DEFAULT_PDF_LABEL}
+            className={`mt-1 ${inputClass}`}
+          />
+          <p className="mt-1 text-xs text-gray-400">
+            Defaults to “{DEFAULT_PDF_LABEL}”.
+          </p>
+        </div>
+
+        {/* Existing PDFs — click one to fill the URL above. */}
+        <div className="flex min-h-0 flex-1 flex-col">
+          <p className="mb-2 text-sm font-medium text-gray-700">
+            Or choose an existing PDF
+          </p>
+          {docsError && (
+            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-600">
+              {docsError}
+            </div>
+          )}
+          {docsQuery.isPending ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-400">
+              <Loader2 size={18} className="animate-spin" />
+              Loading PDFs…
+            </div>
+          ) : documents.length === 0 ? (
+            <p className="py-8 text-center text-sm text-gray-400">
+              No PDFs uploaded yet.
             </p>
-          </div>
+          ) : (
+            <div className="grid max-h-56 min-h-0 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
+              {documents.map((media) => (
+                <div
+                  key={media.id}
+                  className={
+                    url === media.url
+                      ? "rounded-md ring-2 ring-brand-teal"
+                      : undefined
+                  }
+                >
+                  <MediaGridItem
+                    media={media}
+                    onClick={() => {
+                      setUrl(media.url);
+                      setError("");
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <DialogFooter>
