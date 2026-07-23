@@ -29,6 +29,8 @@ export interface PostSummaryResponse {
   metaTitle: string | null;
   metaDescription: string | null;
   featuredImage: FeaturedImageResponse | null;
+  // Whether the featured image is rendered at the top of the detail page.
+  showFeaturedImage: boolean;
   category: TaxonomyResponse | null;
   categories: TaxonomyResponse[];
   tags: TaxonomyResponse[];

@@ -51,6 +51,9 @@ function useActiveHeading(headings: TocHeading[]): string | null {
   return activeId;
 }
 
+// The link rail. The wrapping <ul> carries a continuous hairline on its left
+// edge; each item's own 2px border sits on top (pulled over with -ml-px) so the
+// active section reads as a teal segment of that rail — the classic docs TOC.
 function TocLinks({
   headings,
   activeId,
@@ -59,16 +62,16 @@ function TocLinks({
   activeId: string | null;
 }) {
   return (
-    <ul className="text-sm">
+    <ul className="border-l border-gray-200 text-sm">
       {headings.map((heading) => (
-        <li key={heading.id} className={heading.level === 3 ? "ml-4" : ""}>
+        <li key={heading.id} className={heading.level === 3 ? "ml-3" : ""}>
           <a
             href={`#${heading.id}`}
             aria-current={activeId === heading.id ? "true" : undefined}
-            className={`block border-l-2 py-1 pl-3 transition-colors ${
+            className={`-ml-px block border-l-2 py-1.5 pl-4 leading-snug transition-colors ${
               activeId === heading.id
                 ? "border-brand-teal font-medium text-brand-teal"
-                : "border-transparent text-gray-600 hover:text-brand-teal"
+                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-brand-navy"
             }`}
           >
             {heading.text}
@@ -91,8 +94,8 @@ export default function ArticleToc({
   if (variant === "sidebar") {
     return (
       <nav aria-label="Table of contents">
-        <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wide text-brand-navy">
-          Contents
+        <p className="mb-4 pl-4 text-xs font-semibold uppercase tracking-widest text-gray-400">
+          On this page
         </p>
         <TocLinks headings={headings} activeId={activeId} />
       </nav>

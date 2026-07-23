@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import ShareArticle from "@/components/blog/share-article";
-import ArticleToc from "@/components/blog/article-toc";
-import { formatPostDate } from "@/lib/format";
+import { EyeIcon } from "@/components/icons";
 import { buildToc } from "@/lib/toc";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 import { isValidPdfUrl } from "@/lib/pdf-url";
@@ -16,21 +15,45 @@ interface ArticleViewProps {
   shareUrl?: string;
 }
 
+function formatArticleDate(dateString: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(dateString));
+}
+
+function formatViewCount(count: number): string {
+  if (count >= 1_000_000) {
+    const value = count / 1_000_000;
+    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}m`;
+  }
+
+  if (count >= 1_000) {
+    const value = count / 1_000;
+    return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)}k`;
+  }
+
+  return count.toLocaleString("en-US");
+}
+
 // The article presentation shared by the public post page and the admin
-// draft preview — header, sanitised body, and tags.
+// draft preview: centered editorial header, featured image, body, tags, share.
 export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
-  // Sanitise first, then derive the TOC and inject heading ids from the
-  // sanitised HTML (a single parse in buildToc, so ids and links agree), and
-  // finally wrap tables in a horizontal-scroll container. All post-sanitise
-  // string work is safe because DOMPurify emits well-formed, balanced HTML.
+  // Sanitise first, then inject heading ids from the sanitised HTML, and finally
+  // wrap tables in a horizontal-scroll container.
   const sanitized = sanitizeArticleHtml(post.content ?? "");
-  const { html: withHeadingIds, headings } = buildToc(sanitized);
+  const { html: withHeadingIds } = buildToc(sanitized);
   const cleanContent = withHeadingIds
     .replace(/<table(?=[\s>])/g, '<div class="table-scroll"><table')
     .replace(/<\/table>/g, "</table></div>");
 
   const authorInitial = post.author?.name?.charAt(0).toUpperCase() ?? "A";
-  const publishDate = formatPostDate(post.publishedAt ?? post.createdAt);
+  const publishDate = formatArticleDate(post.publishedAt ?? post.createdAt);
+  const updatedDate = formatArticleDate(post.updatedAt);
+  const viewLabel = `${formatViewCount(post.viewCount)} ${
+    post.viewCount === 1 ? "View" : "Views"
+  }`;
 
   // Backward compatibility: older posts stored the PDF link in post.pdfUrl and
   // rendered a card at the bottom. If such a post has no inline pdf-link-block
@@ -43,172 +66,111 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
   const showLegacyPdf = Boolean(legacyPdfUrl) && !contentHasPdfLink;
   const legacyPdfLabel = post.pdfLabel?.trim() || DEFAULT_PDF_LABEL;
 
-  // Only worth a table of contents with a couple of sections. When shown, the
-  // layout widens to a two-column grid with a fixed left sidebar; otherwise it
-  // stays a single centred column.
-  const showToc = headings.length >= 2;
-
   return (
-    <div
-      className={
-        showToc
-          ? "mx-auto max-w-6xl px-6 pt-12 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-10"
-          : "mx-auto max-w-4xl px-6 pt-12"
-      }
-    >
-      {/* Fixed table of contents (desktop) — sticks below the header and gets
-          its own scroll, independent of the article body's scroll. */}
-      {showToc && (
-        <aside className="hidden lg:block">
-          <div className="sticky top-20 max-h-[calc(100vh-7rem)] overflow-y-auto pb-6">
-            <ArticleToc headings={headings} variant="sidebar" />
-          </div>
-        </aside>
-      )}
-
-      <article className="min-w-0">
-      {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="mb-6 text-xs text-gray-400">
-        <ol className="flex flex-wrap items-center gap-1.5">
-          <li>
-            <Link href="/" className="hover:text-brand-teal">
-              Home
-            </Link>
-          </li>
-          <li aria-hidden="true">/</li>
-          <li>
-            <Link href="/blog" className="hover:text-brand-teal">
-              Blog
-            </Link>
-          </li>
+    <article className="bg-[#f9f9ff] text-[#121c2a] selection:bg-[#a6f1db] selection:text-[#002019]">
+      <header className="px-6 pb-8 pt-16 text-center">
+        <div className="mx-auto max-w-[800px]">
           {post.category && (
-            <>
-              <li aria-hidden="true">/</li>
-              <li>
-                <Link
-                  href={`/categories/${post.category.slug}`}
-                  className="hover:text-brand-teal"
-                >
-                  {post.category.name}
-                </Link>
-              </li>
-            </>
+            <Link
+              href={`/categories/${post.category.slug}`}
+              className="mb-6 inline-block rounded bg-[#d3e1f6] px-3 py-1 text-[14px] font-semibold uppercase leading-none tracking-normal text-[#566475] transition-colors hover:bg-[#bac8dc]"
+            >
+              {post.category.name}
+            </Link>
           )}
-          <li aria-hidden="true">/</li>
-          <li className="text-gray-500" aria-current="page">
+
+          <h1 className="mb-8 font-serif text-[32px] font-bold leading-[1.2] tracking-normal text-[#121c2a] md:text-[48px]">
             {post.title}
-          </li>
-        </ol>
-      </nav>
+          </h1>
 
-      {/* Header */}
-      <header className="mb-8">
-        {post.category && (
-          <span className="mb-4 inline-block rounded bg-brand-teal/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-teal">
-            {post.category.name}
-          </span>
-        )}
-        <h1 className="font-serif text-3xl font-bold leading-tight text-brand-navy md:text-4xl">
-          {post.title}
-        </h1>
-
-        {/* Author row */}
-        <div className="mt-5 flex items-center gap-3">
-          {post.author?.avatarUrl ? (
-            <Image
-              src={post.author.avatarUrl}
-              alt={post.author.name}
-              width={40}
-              height={40}
-              // h-10 w-10 pins BOTH dimensions; without an explicit height the
-              // Tailwind preflight `img { height: auto }` rule would override
-              // the height attribute and squash a non-square source into an
-              // ellipse under rounded-full.
-              className="h-10 w-10 shrink-0 rounded-full object-cover"
-            />
-          ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-teal text-sm font-bold text-white">
-              {authorInitial}
+          <div className="flex flex-col items-center justify-center gap-4 border-y border-[#bec9c4]/30 py-6 sm:flex-row">
+            {post.author?.avatarUrl ? (
+              <Image
+                src={post.author.avatarUrl}
+                alt={post.author.name}
+                width={48}
+                height={48}
+                className="h-12 w-12 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#005243] text-base font-bold text-white">
+                {authorInitial}
+              </div>
+            )}
+            <div className="text-center sm:text-left">
+              <p className="text-[14px] font-semibold leading-none text-[#121c2a]">
+                {post.author?.name ?? SITE_NAME}
+              </p>
+              <p className="mt-1.5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[13px] leading-[1.5] text-[#3f4945] sm:justify-start">
+                <span>Published: {publishDate}</span>
+                <span aria-hidden="true">•</span>
+                <span>Last Updated: {updatedDate}</span>
+                <span aria-hidden="true">•</span>
+                <span className="inline-flex items-center gap-1">
+                  <EyeIcon size={14} />
+                  {viewLabel}
+                </span>
+              </p>
             </div>
-          )}
-          <div>
-            <p className="text-sm font-semibold text-brand-navy">
-              By {post.author?.name ?? SITE_NAME}
-            </p>
-            <p className="text-xs text-gray-500">
-              {publishDate} · {post.readingTime} min read
-            </p>
           </div>
         </div>
       </header>
 
-      {/* Featured image — shown at the top of the article (it also serves as
-          the listing thumbnail and the social-share/OG image). */}
-      {post.featuredImage && (
-        <figure className="mb-8 overflow-hidden rounded-lg border border-gray-200">
-          <Image
-            src={post.featuredImage.url}
-            alt={post.title}
-            width={1200}
-            height={630}
-            sizes="(max-width: 1024px) 100vw, 768px"
-            className="h-auto w-full object-cover"
-            priority
+      {post.featuredImage && post.showFeaturedImage && (
+        <section className="mb-20 px-6">
+          <div className="mx-auto max-w-[1000px]">
+            <figure className="h-[260px] overflow-hidden rounded-xl shadow-lg sm:h-[360px] lg:h-[500px]">
+              <Image
+                src={post.featuredImage.url}
+                alt={post.title}
+                width={1200}
+                height={675}
+                sizes="(max-width: 768px) 100vw, 1000px"
+                className="h-full w-full object-cover"
+                priority
+              />
+            </figure>
+          </div>
+        </section>
+      )}
+
+      <div className="px-6 pb-20">
+        <div className="mx-auto max-w-[720px]">
+          <div
+            className="article-body article-body-detail has-dropcap"
+            dangerouslySetInnerHTML={{ __html: cleanContent }}
           />
-        </figure>
-      )}
 
-      {/* Table of contents (mobile) — the desktop copy lives in the fixed
-          sidebar above; this collapsible box shows in the article flow only on
-          narrow screens where there is no room for a sidebar. */}
-      {showToc && (
-        <div className="lg:hidden">
-          <ArticleToc headings={headings} variant="inline" />
+          {showLegacyPdf && legacyPdfUrl && (
+            <div className="article-body article-body-detail mt-8">
+              <a
+                className="pdf-link-block"
+                href={legacyPdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-pdf-label={legacyPdfLabel}
+              >
+                {legacyPdfLabel}
+              </a>
+            </div>
+          )}
+
+          {post.tags.length > 0 && (
+            <div className="mt-12 flex flex-wrap justify-center gap-2 border-t border-[#bec9c4] pt-6">
+              {post.tags.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="rounded-full border border-[#6f7975] px-4 py-1.5 text-xs font-medium text-[#3f4945] transition-colors hover:border-[#005243] hover:text-[#005243]"
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {shareUrl && <ShareArticle title={post.title} url={shareUrl} />}
         </div>
-      )}
-
-      {/* Body */}
-      <div
-        className="article-body"
-        dangerouslySetInnerHTML={{ __html: cleanContent }}
-      />
-
-      {/* Backward-compatible PDF link for legacy posts that stored it in
-          post.pdfUrl (no inline block). Rendered as the same compact chip via
-          the .pdf-link-block class inside an .article-body wrapper, so it
-          matches the in-content chip exactly. The href is a plain anchor,
-          never routed through dangerouslySetInnerHTML. */}
-      {showLegacyPdf && legacyPdfUrl && (
-        <div className="article-body mt-8">
-          <a
-            className="pdf-link-block"
-            href={legacyPdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-pdf-label={legacyPdfLabel}
-          >
-            {legacyPdfLabel}
-          </a>
-        </div>
-      )}
-
-      {/* Tags */}
-      {post.tags.length > 0 && (
-        <div className="mt-12 flex flex-wrap gap-2 border-t border-gray-200 pt-6">
-          {post.tags.map((tag) => (
-            <span
-              key={tag.id}
-              className="rounded-full border border-gray-300 px-4 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-brand-teal hover:text-brand-teal"
-            >
-              {tag.name}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Share */}
-      {shareUrl && <ShareArticle title={post.title} url={shareUrl} />}
-      </article>
-    </div>
+      </div>
+    </article>
   );
 }

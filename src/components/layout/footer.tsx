@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CONTACT_EMAIL, LINKEDIN_URL, SITE_NAME } from "@/config/site.config";
 import { apiRequest, ApiRequestError } from "@/lib/api";
 import {
@@ -25,6 +25,13 @@ export default function Footer({
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const currentYear = new Date().getFullYear();
+
+  // Auto-dismiss the "verification link sent" message and restore the form.
+  useEffect(() => {
+    if (newsletterState !== "sent") return;
+    const timer = setTimeout(() => setNewsletterState("idle"), 2000);
+    return () => clearTimeout(timer);
+  }, [newsletterState]);
 
   async function handleSubscribe(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

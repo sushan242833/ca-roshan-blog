@@ -175,6 +175,31 @@ export function ClockIcon({
   );
 }
 
+export function EyeIcon({
+  size = 16,
+  className,
+  strokeWidth = 1.75,
+}: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <path d="M2.062 12.348a1 1 0 0 1 0-.696C3.53 7.933 7.064 5 12 5s8.47 2.933 9.938 6.652a1 1 0 0 1 0 .696C20.47 16.067 16.936 19 12 19s-8.47-2.933-9.938-6.652Z" />
+      <circle cx={12} cy={12} r={3} />
+    </svg>
+  );
+}
+
 export function ArrowRightIcon({
   size = 14,
   className,

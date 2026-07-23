@@ -13,6 +13,7 @@ const validValues = {
   categoryId: "",
   tagIds: [],
   featuredImageId: null,
+  showFeaturedImage: true,
   metaTitle: "",
   metaDescription: "",
   featured: false,

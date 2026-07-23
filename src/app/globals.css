@@ -149,26 +149,26 @@
 
 /* Scoped prose styles for article body — only apply inside .article-body */
 .article-body {
-  font-size: 1.0625rem;
-  line-height: 1.8;
-  color: #374151;
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: #1f2937;
 }
 .article-body p {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
+/* h2 headings render in the brand teal (no underline) to match the article
+   detail design; h3/h4 stay navy. */
 .article-body h2 {
   font-family: var(--font-serif);
-  font-size: 1.5rem;
+  font-size: 1.875rem;
   font-weight: 700;
-  color: #0D1B2A;
+  color: #005243;
   margin-top: 2.5rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
 }
 .article-body h3 {
   font-family: var(--font-serif);
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #0D1B2A;
   margin-top: 2rem;
@@ -183,13 +183,18 @@
   margin-bottom: 0.5rem;
 }
 .article-body blockquote {
-  border-left: 4px solid #1A6B5A;
-  padding: 0.75rem 1rem 0.75rem 1.5rem;
-  margin: 1.5rem 0;
-  background: #f9fafb;
-  border-radius: 0 0.375rem 0.375rem 0;
+  border-left: 4px solid #005243;
+  padding: 1.5rem 2rem;
+  margin: 2.5rem 0;
+  background: #eff3ff;
+  border-radius: 0 0.5rem 0.5rem 0;
   font-style: italic;
-  color: #6b7280;
+  font-size: 1.1875rem;
+  line-height: 1.6;
+  color: #3f4945;
+}
+.article-body blockquote p:last-child {
+  margin-bottom: 0;
 }
 .article-body ul {
   list-style: none;
@@ -355,6 +360,105 @@
 .article-body h2,
 .article-body h3 {
   scroll-margin-top: 5rem;
+}
+
+/* Drop cap on the article detail page — a large serif initial on the first
+   paragraph. Scoped to .has-dropcap so it never applies inside the editor
+   (which uses .article-body without this modifier). */
+.article-body.has-dropcap > p:first-of-type::first-letter {
+  float: left;
+  margin-right: 0.75rem;
+  margin-top: 0.35rem;
+  font-family: var(--font-serif);
+  font-size: 3.75rem;
+  font-weight: 700;
+  line-height: 0.7;
+  color: #005243;
+}
+
+/* Blog detail article — mirrors the supplied standalone HTML design while the
+   base .article-body rules continue to serve the admin editor and previews. */
+.article-body-detail {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: #121c2a;
+}
+.article-body-detail p {
+  margin-bottom: 2rem;
+}
+.article-body-detail > :last-child {
+  margin-bottom: 0;
+}
+.article-body-detail h2 {
+  margin-top: 4rem;
+  margin-bottom: 2rem;
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #005243;
+}
+.article-body-detail h3 {
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #121c2a;
+}
+.article-body-detail h4 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #121c2a;
+}
+.article-body-detail ul {
+  margin: 2rem 0;
+}
+.article-body-detail ul li {
+  min-height: 1.6em;
+  margin-bottom: 1rem;
+  padding-left: 1.75rem;
+}
+.article-body-detail ul li::before {
+  top: 0.68em;
+  width: 8px;
+  height: 8px;
+  border-radius: 0;
+  background-color: #005243;
+}
+.article-body-detail blockquote {
+  margin: 2.5rem 0;
+  padding: 2rem;
+  border-left-color: #005243;
+  border-radius: 0 0.5rem 0.5rem 0;
+  background: #eff3ff;
+  color: #3f4945;
+}
+.article-body-detail blockquote p {
+  margin-bottom: 1rem;
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.article-body-detail blockquote cite {
+  display: block;
+  font-style: normal;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #005243;
+}
+.article-body-detail.has-dropcap > p:first-of-type::first-letter {
+  margin-top: 0.25rem;
+  margin-right: 0.75rem;
+  font-size: 3rem;
+  line-height: 0.9;
 }
 
 /* Block text alignment — emitted by the Tiptap TextAlign extension as classes

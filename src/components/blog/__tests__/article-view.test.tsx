@@ -33,6 +33,7 @@ function makePost(overrides: Partial<PostDetailResponse>): PostDetailResponse {
     metaTitle: null,
     metaDescription: null,
     featuredImage: null,
+    showFeaturedImage: true,
     category: null,
     categories: [],
     tags: [],
@@ -92,5 +93,29 @@ describe("ArticleView PDF link", () => {
     const { container } = render(<ArticleView post={post} />);
 
     expect(container.querySelectorAll("a.pdf-link-block")).toHaveLength(0);
+  });
+});
+
+describe("ArticleView featured image", () => {
+  const featuredImage = {
+    id: "img-1",
+    url: "/uploads/hero.webp",
+    fileName: "hero.webp",
+  };
+
+  it("renders the featured image when showFeaturedImage is true", () => {
+    const post = makePost({ featuredImage, showFeaturedImage: true });
+
+    const { container } = render(<ArticleView post={post} />);
+
+    expect(container.querySelector("figure img")).not.toBeNull();
+  });
+
+  it("hides the featured image when showFeaturedImage is false", () => {
+    const post = makePost({ featuredImage, showFeaturedImage: false });
+
+    const { container } = render(<ArticleView post={post} />);
+
+    expect(container.querySelector("figure img")).toBeNull();
   });
 });

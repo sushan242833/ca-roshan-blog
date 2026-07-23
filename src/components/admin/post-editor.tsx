@@ -58,6 +58,8 @@ export const postFormSchema = z.object({
   // or edit an existing post — so fixing an excerpt never gets blocked by a
   // missing image. The image is shown at the top of the published article.
   featuredImageId: z.string().nullable(),
+  // Whether the featured image is shown at the top of the blog detail page.
+  showFeaturedImage: z.boolean(),
   metaTitle: z
     .string()
     .max(
@@ -83,6 +85,7 @@ const EMPTY_FORM_VALUES: PostFormValues = {
   categoryId: "",
   tagIds: [],
   featuredImageId: null,
+  showFeaturedImage: true,
   metaTitle: "",
   metaDescription: "",
   featured: false,
@@ -120,6 +123,7 @@ function formValuesFromPost(post: PostDetailResponse): PostFormValues {
     categoryId: post.category?.id ?? "",
     tagIds: post.tags.map((tag) => tag.id),
     featuredImageId: post.featuredImage?.id ?? null,
+    showFeaturedImage: post.showFeaturedImage,
     metaTitle: post.metaTitle ?? "",
     metaDescription: post.metaDescription ?? "",
     featured: post.featured,
@@ -240,6 +244,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
       slug: data.slug.trim() || undefined,
       excerpt: data.excerpt.trim() || undefined,
       featuredImageId: data.featuredImageId,
+      showFeaturedImage: data.showFeaturedImage,
       // Public category pages resolve posts through the post_categories
       // join, not the primary categoryId column — always send both.
       categoryId: data.categoryId || null,
@@ -674,6 +679,21 @@ export default function PostEditor({ postId }: PostEditorProps) {
                 {errors.featuredImageId.message}
               </p>
             )}
+
+            <label className="mt-4 flex cursor-pointer items-start gap-3 border-t border-gray-100 pt-4">
+              <input
+                type="checkbox"
+                {...register("showFeaturedImage")}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-teal focus:ring-brand-teal"
+              />
+              <span className="text-sm text-gray-700">
+                <span className="font-medium">Show at top of post</span>
+                <span className="mt-0.5 block text-xs text-gray-400">
+                  Display this image below the title on the blog detail page.
+                  Untick to hide it there (it still appears in post listings).
+                </span>
+              </span>
+            </label>
           </div>
 
           <div className={cardClass}>

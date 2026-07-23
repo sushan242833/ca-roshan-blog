@@ -51,18 +51,18 @@ const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
     footer: "cta",
   },
   recommended: {
-    rootClassName: CARD_ROOT_CLASSNAME,
+    rootClassName: "group block cursor-pointer",
     showImage: true,
-    aspectClassName: "aspect-video",
-    imageSizes: "(max-width: 768px) 100vw, 50vw",
+    aspectClassName: "h-48",
+    imageSizes: "(max-width: 768px) 100vw, 33vw",
     imageClassName:
-      "object-cover transition-transform duration-300 group-hover:scale-105",
-    bodyClassName: "gap-2 p-5",
+      "object-cover transition-transform duration-500 group-hover:scale-105",
+    bodyClassName: "gap-0 p-0",
     showCategoryPill: false,
     showReadingTime: false,
     titleClassName:
-      "font-serif text-lg font-bold leading-snug text-brand-navy line-clamp-2 transition-colors group-hover:text-brand-teal",
-    excerptClassName: "text-sm text-gray-500 line-clamp-2",
+      "mt-2 font-serif text-[24px] font-semibold leading-[1.35] tracking-normal text-[#121c2a] line-clamp-2 transition-colors group-hover:text-[#005243]",
+    excerptClassName: "mt-2 text-sm leading-[1.5] text-[#3f4945] line-clamp-2",
     footer: "none",
   },
   summary: {
@@ -128,7 +128,11 @@ export default function PostCard({
       {/* Image */}
       {config.showImage && (
         <div
-          className={`relative w-full overflow-hidden rounded-t-lg ${config.aspectClassName}`}
+          className={
+            variant === "recommended"
+              ? `relative mb-4 w-full overflow-hidden rounded-lg bg-[#e6eeff] ${config.aspectClassName}`
+              : `relative w-full overflow-hidden rounded-t-lg ${config.aspectClassName}`
+          }
         >
           <PostImagePlaceholder className="absolute inset-0" />
           {showImage && (
@@ -148,6 +152,12 @@ export default function PostCard({
 
       {/* Body */}
       <div className={`flex flex-1 flex-col ${config.bodyClassName}`}>
+        {variant === "recommended" && post.category && (
+          <span className="text-xs font-bold uppercase leading-none tracking-normal text-[#005243]">
+            {post.category.name}
+          </span>
+        )}
+
         {/* Meta row */}
         {((config.showCategoryPill && post.category) ||
           config.showReadingTime) && (

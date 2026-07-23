@@ -31,7 +31,7 @@ export default async function PostPreviewPage({ params }: PageProps) {
 
   if (!post) {
     return (
-      <div className="bg-white px-6 py-24 text-center">
+      <div className="bg-[#f9f9ff] px-6 py-24 text-center">
         <h1 className="font-serif text-2xl font-bold text-brand-navy">
           Preview link is invalid or has expired.
         </h1>
@@ -43,7 +43,7 @@ export default async function PostPreviewPage({ params }: PageProps) {
   }
 
   return (
-    <div className="bg-white pb-16">
+    <div className="bg-[#f9f9ff]">
       <div className="sticky top-0 z-50 bg-amber-500 px-6 py-2.5 text-center text-sm font-medium text-white">
         Preview mode — this is a draft preview and expires in{" "}
         {PREVIEW_TOKEN_EXPIRY_MINUTES} minutes.

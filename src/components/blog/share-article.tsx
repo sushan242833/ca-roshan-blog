@@ -1,7 +1,13 @@
 "use client";
 
 import { toast } from "sonner";
-import { FacebookIcon, TwitterXIcon, LinkedInIcon, ShareIcon, LinkIcon } from "@/components/icons";
+import {
+  FacebookIcon,
+  TwitterXIcon,
+  LinkedInIcon,
+  LinkIcon,
+  MailIcon,
+} from "@/components/icons";
 
 interface ShareArticleProps {
   title: string;
@@ -9,7 +15,7 @@ interface ShareArticleProps {
 }
 
 const iconBtn =
-  "flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition-colors hover:border-brand-teal hover:text-brand-teal";
+  "flex h-12 w-12 items-center justify-center rounded-full border border-[#6f7975] text-[#121c2a] transition-colors hover:border-[#005243] hover:text-[#005243]";
 
 export default function ShareArticle({ title, url }: ShareArticleProps) {
   const encoded = encodeURIComponent(url);
@@ -18,16 +24,7 @@ export default function ShareArticle({ title, url }: ShareArticleProps) {
   const facebookHref = `https://www.facebook.com/sharer/sharer.php?u=${encoded}`;
   const twitterHref = `https://twitter.com/intent/tweet?url=${encoded}&text=${encodedTitle}`;
   const linkedinHref = `https://www.linkedin.com/sharing/share-offsite/?url=${encoded}`;
-
-  async function handleShare() {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, url });
-      } catch {
-        // user cancelled or not supported
-      }
-    }
-  }
+  const mailHref = `mailto:?subject=${encodedTitle}&body=${encoded}`;
 
   async function handleCopy() {
     try {
@@ -39,11 +36,11 @@ export default function ShareArticle({ title, url }: ShareArticleProps) {
   }
 
   return (
-    <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
-      <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-        Share this article
+    <div className="mt-16 flex flex-col items-center gap-6 border-t border-[#bec9c4] pt-16 text-center">
+      <p className="text-[14px] font-semibold uppercase leading-none tracking-normal text-[#3f4945]">
+        Share this insight
       </p>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-4">
         <a
           href={facebookHref}
           target="_blank"
@@ -71,12 +68,17 @@ export default function ShareArticle({ title, url }: ShareArticleProps) {
         >
           <LinkedInIcon size={16} />
         </a>
-        <button onClick={handleShare} aria-label="Share article" className={iconBtn}>
-          <ShareIcon />
-        </button>
-        <button onClick={handleCopy} aria-label="Copy link" className={iconBtn}>
+        <button
+          type="button"
+          onClick={handleCopy}
+          aria-label="Copy link"
+          className={iconBtn}
+        >
           <LinkIcon />
         </button>
+        <a href={mailHref} aria-label="Share by email" className={iconBtn}>
+          <MailIcon size={18} />
+        </a>
       </div>
     </div>
   );

@@ -83,24 +83,23 @@ export default async function ArticlePage({ params }: PageProps) {
   }
 
   return (
-    <div className="bg-white pb-16">
-      {/* ── Article ─────────────────────────────────────────────── */}
+    <div className="bg-[#f9f9ff]">
       <ArticleView post={post} shareUrl={`${SITE_URL}/blog/${slug}`} />
 
-      {/* ── Recommended for You ──────────────────────────────────── */}
       {relatedPosts.length > 0 && (
-        <section className="mx-auto mt-16 max-w-7xl border-t border-gray-200 px-6 pt-12">
-          <h2 className="mb-8 text-center font-serif text-2xl font-bold text-brand-navy">
-            Recommended for You
-          </h2>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {relatedPosts.map((p) => (
-              <PostCard key={p.id} post={p} variant="recommended" />
-            ))}
+        <section className="bg-[#f9f9ff] px-6 py-20">
+          <div className="mx-auto max-w-[1200px]">
+            <h2 className="mb-8 border-b border-[#bec9c4] pb-4 font-serif text-[32px] font-bold leading-[1.3] tracking-normal text-[#121c2a]">
+              Recommended for You
+            </h2>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {relatedPosts.map((p) => (
+                <PostCard key={p.id} post={p} variant="recommended" />
+              ))}
+            </div>
           </div>
         </section>
       )}
-
     </div>
   );
 }
