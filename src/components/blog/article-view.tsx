@@ -137,7 +137,7 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
       <div className="px-6 pb-20">
         <div className="mx-auto max-w-[720px]">
           <div
-            className="article-body article-body-detail has-dropcap"
+            className="article-body article-body-detail"
             dangerouslySetInnerHTML={{ __html: cleanContent }}
           />
 
