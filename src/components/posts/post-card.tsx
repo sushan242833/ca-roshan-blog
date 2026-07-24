@@ -118,6 +118,14 @@ export default function PostCard({
   // Excerpts may be auto-generated from HTML content — render as plain text,
   // and drop it entirely if nothing but markup remains (e.g. image-only lead).
   const excerptText = post.excerpt ? htmlToPlainText(post.excerpt) : "";
+  // A post can belong to one or more categories. Prefer the full set; fall
+  // back to the legacy single category for posts saved before multi-category.
+  const categoryList =
+    post.categories && post.categories.length > 0
+      ? post.categories
+      : post.category
+        ? [post.category]
+        : [];
 
   return (
     <Link
@@ -152,21 +160,25 @@ export default function PostCard({
 
       {/* Body */}
       <div className={`flex flex-1 flex-col ${config.bodyClassName}`}>
-        {variant === "recommended" && post.category && (
+        {variant === "recommended" && categoryList.length > 0 && (
           <span className="text-xs font-bold uppercase leading-none tracking-normal text-[#005243]">
-            {post.category.name}
+            {categoryList[0].name}
           </span>
         )}
 
         {/* Meta row */}
-        {((config.showCategoryPill && post.category) ||
+        {((config.showCategoryPill && categoryList.length > 0) ||
           config.showReadingTime) && (
           <div className="flex flex-wrap items-center gap-3">
-            {config.showCategoryPill && post.category && (
-              <span className="w-fit rounded-full bg-brand-teal/10 px-3 py-1 text-xs font-medium text-brand-teal">
-                {post.category.name}
-              </span>
-            )}
+            {config.showCategoryPill &&
+              categoryList.map((category) => (
+                <span
+                  key={category.id}
+                  className="w-fit rounded-full bg-brand-teal/10 px-3 py-1 text-xs font-medium text-brand-teal"
+                >
+                  {category.name}
+                </span>
+              ))}
             {config.showReadingTime && (
               <span className="flex items-center gap-1 text-xs text-gray-500">
                 <ClockIcon size={12} />

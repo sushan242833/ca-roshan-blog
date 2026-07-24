@@ -10,7 +10,7 @@ const validValues = {
   slug: "",
   content: "<p>Real content.</p>",
   excerpt: "",
-  categoryId: "",
+  categoryIds: [],
   tagIds: [],
   featuredImageId: null,
   showFeaturedImage: true,

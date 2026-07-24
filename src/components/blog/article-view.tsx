@@ -55,6 +55,15 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
     post.viewCount === 1 ? "View" : "Views"
   }`;
 
+  // A post can belong to one or more categories. Prefer the full set; fall
+  // back to the legacy single category for posts saved before multi-category.
+  const categoryList =
+    post.categories && post.categories.length > 0
+      ? post.categories
+      : post.category
+        ? [post.category]
+        : [];
+
   // Backward compatibility: older posts stored the PDF link in post.pdfUrl and
   // rendered a card at the bottom. If such a post has no inline pdf-link-block
   // in its body, render the same compact chip at the end so the link survives.
@@ -70,13 +79,18 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
     <article className="bg-[#f9f9ff] text-[#121c2a] selection:bg-[#a6f1db] selection:text-[#002019]">
       <header className="px-6 pb-8 pt-16 text-center">
         <div className="mx-auto max-w-[800px]">
-          {post.category && (
-            <Link
-              href={`/categories/${post.category.slug}`}
-              className="mb-6 inline-block rounded bg-[#d3e1f6] px-3 py-1 text-[14px] font-semibold uppercase leading-none tracking-normal text-[#566475] transition-colors hover:bg-[#bac8dc]"
-            >
-              {post.category.name}
-            </Link>
+          {categoryList.length > 0 && (
+            <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+              {categoryList.map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/categories/${category.slug}`}
+                  className="inline-block rounded bg-[#d3e1f6] px-3 py-1 text-[14px] font-semibold uppercase leading-none tracking-normal text-[#566475] transition-colors hover:bg-[#bac8dc]"
+                >
+                  {category.name}
+                </Link>
+              ))}
+            </div>
           )}
 
           <h1 className="mb-8 font-serif text-[32px] font-bold leading-[1.2] tracking-normal text-[#121c2a] md:text-[48px]">

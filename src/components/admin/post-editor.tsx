@@ -52,7 +52,7 @@ export const postFormSchema = z.object({
       MAX_EXCERPT_LENGTH,
       `Excerpt must be ${MAX_EXCERPT_LENGTH} characters or fewer.`,
     ),
-  categoryId: z.string(),
+  categoryIds: z.array(z.string()),
   tagIds: z.array(z.string()),
   // Required to PUBLISH (checked in requestPublish), but not to save a draft
   // or edit an existing post — so fixing an excerpt never gets blocked by a
@@ -82,7 +82,7 @@ const EMPTY_FORM_VALUES: PostFormValues = {
   slug: "",
   content: "",
   excerpt: "",
-  categoryId: "",
+  categoryIds: [],
   tagIds: [],
   featuredImageId: null,
   showFeaturedImage: true,
@@ -120,7 +120,14 @@ function formValuesFromPost(post: PostDetailResponse): PostFormValues {
     slug: post.slug,
     content: post.content,
     excerpt: post.excerpt ?? "",
-    categoryId: post.category?.id ?? "",
+    // Prefer the many-to-many categories; fall back to the legacy single
+    // category so posts created before multi-category still load correctly.
+    categoryIds:
+      post.categories.length > 0
+        ? post.categories.map((category) => category.id)
+        : post.category
+          ? [post.category.id]
+          : [],
     tagIds: post.tags.map((tag) => tag.id),
     featuredImageId: post.featuredImage?.id ?? null,
     showFeaturedImage: post.showFeaturedImage,
@@ -172,6 +179,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
   const metaTitleValue = useWatch({ control, name: "metaTitle" });
   const metaDescriptionValue = useWatch({ control, name: "metaDescription" });
   const selectedTagIds = useWatch({ control, name: "tagIds" });
+  const selectedCategoryIds = useWatch({ control, name: "categoryIds" });
 
   // Reference lists share the SAME query keys as the Manage Categories/Tags
   // screens (see src/lib/query-keys.ts), so a create/edit there shows here
@@ -246,9 +254,10 @@ export default function PostEditor({ postId }: PostEditorProps) {
       featuredImageId: data.featuredImageId,
       showFeaturedImage: data.showFeaturedImage,
       // Public category pages resolve posts through the post_categories
-      // join, not the primary categoryId column — always send both.
-      categoryId: data.categoryId || null,
-      categoryIds: data.categoryId ? [data.categoryId] : [],
+      // join. Send the full set, and keep the legacy primary categoryId in
+      // sync (first selected) for any code path that still reads it.
+      categoryId: data.categoryIds[0] ?? null,
+      categoryIds: data.categoryIds,
       tagIds: data.tagIds,
       // Empty meta fields reset to the server defaults (title / excerpt).
       metaTitle: data.metaTitle,
@@ -360,6 +369,13 @@ export default function PostEditor({ postId }: PostEditorProps) {
       ? selectedTagIds.filter((id) => id !== tagId)
       : [...selectedTagIds, tagId];
     setValue("tagIds", next, { shouldDirty: true });
+  }
+
+  function toggleCategory(categoryId: string) {
+    const next = selectedCategoryIds.includes(categoryId)
+      ? selectedCategoryIds.filter((id) => id !== categoryId)
+      : [...selectedCategoryIds, categoryId];
+    setValue("categoryIds", next, { shouldDirty: true });
   }
 
   // Read the current selection via getValues (not the closed-over watch value)
@@ -698,20 +714,33 @@ export default function PostEditor({ postId }: PostEditorProps) {
 
           <div className={cardClass}>
             <h2 className="font-serif text-base font-bold text-brand-navy">
-              Category
+              Categories
             </h2>
-            <select
-              {...register("categoryId")}
-              aria-label="Primary category"
-              className={`mt-3 ${inputClass}`}
-            >
-              <option value="">None</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <p className="mt-1 text-xs text-gray-400">
+              Select one or more categories for this post.
+            </p>
+            {categories.length === 0 ? (
+              <p className="mt-3 text-sm text-gray-400">
+                No categories yet. Create one under Manage Categories.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {categories.map((category) => (
+                  <label
+                    key={category.id}
+                    className="flex cursor-pointer items-center gap-3 text-sm text-gray-700"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCategoryIds.includes(category.id)}
+                      onChange={() => toggleCategory(category.id)}
+                      className="h-4 w-4 rounded border-gray-300 text-brand-teal focus:ring-brand-teal"
+                    />
+                    <span>{category.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className={cardClass}>
