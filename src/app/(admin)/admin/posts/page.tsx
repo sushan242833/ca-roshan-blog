@@ -295,7 +295,7 @@ function ManagePosts() {
   async function handlePreview(post: PostSummaryResponse) {
     setPendingId(post.id);
     try {
-      await openPostPreview(post.id, authedFetch);
+      await openPostPreview(post, authedFetch);
     } catch (err) {
       toast.error(
         err instanceof ApiRequestError

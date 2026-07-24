@@ -349,10 +349,10 @@ export default function PostEditor({ postId }: PostEditorProps) {
   }
 
   async function handlePreview() {
-    if (!postId) return;
+    if (!post) return;
     setIsPreviewing(true);
     try {
-      await openPostPreview(postId, authedFetch);
+      await openPostPreview(post, authedFetch);
     } catch (err) {
       toast.error(
         err instanceof ApiRequestError
