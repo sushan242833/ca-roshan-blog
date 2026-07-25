@@ -114,7 +114,7 @@ function VerifyContent() {
               financial updates delivered straight to your inbox.
             </p>
             <Link
-              href="/blog"
+              href="/blogs"
               className="mt-7 inline-block rounded-md bg-brand-teal px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-teal-dark"
             >
               Browse Latest Articles
@@ -219,7 +219,7 @@ function VerifyContent() {
               Return to Home
             </Link>
             <Link
-              href="/blog"
+              href="/blogs"
               className="text-sm text-gray-500 transition-colors hover:text-brand-navy"
             >
               Browse Latest Articles

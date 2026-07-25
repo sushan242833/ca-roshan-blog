@@ -7,7 +7,7 @@ import type { CategoryResponse } from "@/types/category";
 
 const STATIC_PATHS = [
   "/",
-  "/blog",
+  "/blogs",
   "/categories",
   "/about",
   ...(FEATURES.contactPage ? ["/contact"] : []),
@@ -44,7 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const posts = await fetchAllPublishedPosts();
     entries.push(
       ...posts.map((post) => ({
-        url: `${SITE_URL}/blog/${post.slug}`,
+        url: `${SITE_URL}/blogs/${post.slug}`,
         lastModified: new Date(post.updatedAt),
       })),
     );

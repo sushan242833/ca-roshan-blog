@@ -7,7 +7,8 @@ export interface NavLink {
 
 export const SITE_NAME = "CA Roshan";
 export const SITE_TAGLINE = "Clear thinking on tax, finance, and policy";
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const CONTACT_EMAIL = "contact@caroshan.com";
 export const LINKEDIN_URL = "https://www.linkedin.com/in/ca-roshan"; // TODO: replace with the real LinkedIn profile URL
 
@@ -42,9 +43,9 @@ type GatedNavLink = NavLink & { feature?: keyof typeof FEATURES };
 
 const ALL_NAV_LINKS: GatedNavLink[] = [
   { label: "Home", href: "/" },
-  { label: "Blog", href: "/blog" },
-  { label: "Categories", href: "/categories" },
   { label: "About", href: "/about" },
+  { label: "Blogs", href: "/blogs" },
+  { label: "Categories", href: "/categories" },
   { label: "Contact", href: "/contact", feature: "contactPage" },
 ];
 

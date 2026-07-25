@@ -1,6 +1,6 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import ArticleView from "@/components/blog/article-view";
+import ArticleView from "@/components/blogs/article-view";
 import { DEFAULT_PDF_LABEL } from "@/lib/constants";
 import type { PostDetailResponse } from "@/types/post";
 

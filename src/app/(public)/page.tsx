@@ -92,7 +92,7 @@ export default async function HomePage() {
             </div>
             <div className="mt-10 flex justify-center">
               <Link
-                href="/blog"
+                href="/blogs"
                 className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-6 py-2.5 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-200"
               >
                 View all posts

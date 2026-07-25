@@ -5,7 +5,7 @@ import type { RevalidateScope } from "@/lib/revalidate";
 
 interface RevalidateTarget {
   path: string;
-  /** Required for dynamic route patterns like "/blog/[slug]". */
+  /** Required for dynamic route patterns like "/blogs/[slug]". */
   type?: "page";
 }
 
@@ -17,14 +17,14 @@ const SCOPE_TARGETS: Record<RevalidateScope, RevalidateTarget[]> = {
     { path: "/categories" },
     { path: "/categories/[slug]", type: "page" },
     // Category pills appear on post cards and filters.
-    { path: "/blog" },
+    { path: "/blogs" },
   ],
   // Tags render on the post detail page.
-  tags: [{ path: "/blog/[slug]", type: "page" }],
+  tags: [{ path: "/blogs/[slug]", type: "page" }],
   posts: [
     { path: "/" },
-    { path: "/blog" },
-    { path: "/blog/[slug]", type: "page" },
+    { path: "/blogs" },
+    { path: "/blogs/[slug]", type: "page" },
     { path: "/categories/[slug]", type: "page" },
   ],
   about: [{ path: "/about" }, { path: "/" }],

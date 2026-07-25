@@ -11,7 +11,7 @@ import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 
 // "done" covers both "results ready" and "zero results" — the results array
 // distinguishes them. The dropdown shows a bounded, scrollable preview; the
-// full, paginated experience is the existing /blog?search= page.
+// full, paginated experience is the existing /blogs?search= page.
 type Status = "loading" | "error" | "done";
 const RESULT_LIMIT = 10;
 
@@ -187,12 +187,12 @@ export default function HeaderSearch() {
   // existing full listing page rather than a second results page.
   function goToAllResults() {
     if (!trimmed) return;
-    router.push(`/blog?search=${encodeURIComponent(trimmed)}`);
+    router.push(`/blogs?search=${encodeURIComponent(trimmed)}`);
     close();
   }
 
   function openPost(post: PostSummaryResponse) {
-    router.push(`/blog/${post.slug}`);
+    router.push(`/blogs/${post.slug}`);
     close();
   }
 

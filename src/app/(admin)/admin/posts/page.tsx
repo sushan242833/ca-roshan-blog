@@ -42,7 +42,7 @@ import {
 import { Input } from "@/components/ui/input";
 import DeleteEntityDialog from "@/components/admin/delete-entity-dialog";
 import PublishPostDialog from "@/components/admin/publish-post-dialog";
-import { getPageNumbers } from "@/components/blog/pagination";
+import { getPageNumbers } from "@/components/blogs/pagination";
 import { queryKeys } from "@/lib/query-keys";
 import type { DashboardStatsResponse } from "@/types/dashboard";
 import type {

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ArticleView from "@/components/blog/article-view";
+import ArticleView from "@/components/blogs/article-view";
 import { apiRequest } from "@/lib/api";
 import { PREVIEW_TOKEN_EXPIRY_MINUTES } from "@/lib/constants";
 import { SITE_NAME } from "@/config/site.config";

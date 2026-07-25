@@ -22,7 +22,7 @@ export default function Pagination({
   limit,
   currentSearch = "",
   activeCategory = "",
-  basePath = "/blog",
+  basePath = "/blogs",
 }: PaginationProps) {
   const totalPages = Math.ceil(totalCount / limit);
 

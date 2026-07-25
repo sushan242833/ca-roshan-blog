@@ -578,7 +578,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
             )}
 
             <div className="mt-4 flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 font-mono text-xs text-gray-500">
-              <span className="shrink-0">/blog/</span>
+              <span className="shrink-0">/blogs/</span>
               <input
                 {...register("slug")}
                 placeholder="post-slug-here"

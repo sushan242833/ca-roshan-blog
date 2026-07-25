@@ -27,7 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { getPageNumbers } from "@/components/blog/pagination";
+import { getPageNumbers } from "@/components/blogs/pagination";
 import type {
   SubscriberResponse,
   SubscriberStatsResponse,

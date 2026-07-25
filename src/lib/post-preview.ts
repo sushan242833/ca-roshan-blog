@@ -10,7 +10,7 @@ export async function openPostPreview(
   authedFetch: AuthedFetch,
 ): Promise<void> {
   if (post.status === "PUBLISHED") {
-    window.open(`/blog/${encodeURIComponent(post.slug)}`, "_blank");
+    window.open(`/blogs/${encodeURIComponent(post.slug)}`, "_blank");
     return;
   }
 
@@ -18,5 +18,5 @@ export async function openPostPreview(
     `/v1/posts/${post.id}/preview-token`,
     { method: "POST" },
   );
-  window.open(`/blog/preview/${encodeURIComponent(token)}`, "_blank");
+  window.open(`/blogs/preview/${encodeURIComponent(token)}`, "_blank");
 }

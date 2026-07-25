@@ -21,7 +21,7 @@ export default function CategoryFilterPills({
     if (currentSearch) params.set("search", currentSearch);
     if (slug) params.set("category", slug);
     const qs = params.toString();
-    router.push(`/blog${qs ? `?${qs}` : ""}`);
+    router.push(`/blogs${qs ? `?${qs}` : ""}`);
   }
 
   const pillBase =

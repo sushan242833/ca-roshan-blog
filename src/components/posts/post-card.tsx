@@ -129,7 +129,7 @@ export default function PostCard({
 
   return (
     <Link
-      href={`/blog/${post.slug}`}
+      href={`/blogs/${post.slug}`}
       onClick={onClick}
       className={config.rootClassName}
     >

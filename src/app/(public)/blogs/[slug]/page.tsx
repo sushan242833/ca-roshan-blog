@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PostCard from "@/components/posts/post-card";
-import ArticleView from "@/components/blog/article-view";
+import ArticleView from "@/components/blogs/article-view";
 import { apiRequest, ApiRequestError } from "@/lib/api";
 import { SITE_NAME, SITE_URL } from "@/config/site.config";
 import { htmlToPlainText } from "@/lib/format";
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {
       title,
       description,
-      alternates: { canonical: `/blog/${slug}` },
+      alternates: { canonical: `/blogs/${slug}` },
       openGraph: {
         type: "article",
         title,
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   } catch {
     return {
       title: `Article | ${SITE_NAME}`,
-      alternates: { canonical: `/blog/${slug}` },
+      alternates: { canonical: `/blogs/${slug}` },
     };
   }
 }
@@ -84,7 +84,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
   return (
     <div className="bg-[#f9f9ff]">
-      <ArticleView post={post} shareUrl={`${SITE_URL}/blog/${slug}`} />
+      <ArticleView post={post} shareUrl={`${SITE_URL}/blogs/${slug}`} />
 
       {relatedPosts.length > 0 && (
         <section className="bg-[#f9f9ff] px-6 py-20">

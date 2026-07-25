@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import ShareArticle from "@/components/blog/share-article";
-import ArticleToc from "@/components/blog/article-toc";
+import ShareArticle from "@/components/blogs/share-article";
+import ArticleToc from "@/components/blogs/article-toc";
 import { EyeIcon } from "@/components/icons";
 import { buildToc } from "@/lib/toc";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";

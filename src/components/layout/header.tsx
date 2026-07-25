@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { NAV_LINKS, SITE_NAME } from "@/config/site.config";
 import { MenuIcon, XIcon } from "@/components/icons";
 import HeaderSearch from "@/components/layout/header-search";
@@ -11,9 +11,14 @@ export default function Header() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  useEffect(() => {
+  // Close the mobile menu when the route changes. Done via the "adjust state
+  // during render" pattern rather than a setState-in-effect, which cascades
+  // renders.
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
     setIsMenuOpen(false);
-  }, [pathname]);
+  }
 
   function isActive(href: string): boolean {
     if (href === "/") return pathname === "/";
@@ -24,15 +29,15 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6 md:h-16">
         {/* Brand */}
-        <Link
-          href="/"
-          className="font-serif text-xl font-bold text-brand-navy"
-        >
+        <Link href="/" className="font-serif text-xl font-bold text-brand-navy">
           {SITE_NAME}
         </Link>
 
         {/* Desktop nav */}
-        <nav aria-label="Main navigation" className="hidden md:flex items-center gap-8">
+        <nav
+          aria-label="Main navigation"
+          className="hidden md:flex items-center gap-8"
+        >
           {NAV_LINKS.map((link) => {
             const active = isActive(link.href);
             return (
@@ -89,9 +94,7 @@ export default function Header() {
                 onClick={() => setIsMenuOpen(false)}
                 className={[
                   "flex items-center h-12 px-6 border-b border-gray-200 text-[15px] transition-colors",
-                  active
-                    ? "text-brand-teal font-bold"
-                    : "text-brand-navy",
+                  active ? "text-brand-teal font-bold" : "text-brand-navy",
                 ].join(" ")}
               >
                 {link.label}

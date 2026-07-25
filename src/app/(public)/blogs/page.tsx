@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import PostCard from "@/components/posts/post-card";
-import Pagination from "@/components/blog/pagination";
+import Pagination from "@/components/blogs/pagination";
 import { apiRequest } from "@/lib/api";
 import { POSTS_PER_PAGE } from "@/lib/constants";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
@@ -23,16 +23,20 @@ function parsePage(pageParam?: string): number {
   return Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
 }
 
-// Search pages canonicalise to /blog (they are not their own indexable
-// destinations). Paginated pages get a self-referencing canonical so /blog?page=3
-// is not deindexed by pointing at /blog.
-function buildCanonical(search: string, category: string, page: number): string {
-  if (search) return "/blog";
+// Search pages canonicalise to /blogs (they are not their own indexable
+// destinations). Paginated pages get a self-referencing canonical so /blogs?page=3
+// is not deindexed by pointing at /blogs.
+function buildCanonical(
+  search: string,
+  category: string,
+  page: number,
+): string {
+  if (search) return "/blogs";
   const params = new URLSearchParams();
   if (page > 1) params.set("page", String(page));
   if (category) params.set("category", category);
   const qs = params.toString();
-  return `/blog${qs ? `?${qs}` : ""}`;
+  return `/blogs${qs ? `?${qs}` : ""}`;
 }
 
 export async function generateMetadata({
@@ -143,7 +147,7 @@ export default async function BlogPage({
                   </p>
                   {hasFilters && (
                     <Link
-                      href="/blog"
+                      href="/blogs"
                       className="mt-4 inline-block text-sm font-medium text-brand-teal underline-offset-2 hover:underline"
                     >
                       Clear filters

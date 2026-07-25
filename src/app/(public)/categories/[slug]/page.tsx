@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PostCard from "@/components/posts/post-card";
-import Pagination from "@/components/blog/pagination";
+import Pagination from "@/components/blogs/pagination";
 import { apiRequest } from "@/lib/api";
 import { POSTS_PER_PAGE } from "@/lib/constants";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
