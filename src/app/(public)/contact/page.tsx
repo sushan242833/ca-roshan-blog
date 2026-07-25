@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import ContactForm from "@/components/contact/contact-form";
+import { FEATURES } from "@/config/features";
 import { CONTACT_EMAIL, SITE_NAME } from "@/config/site.config";
 
 export const metadata: Metadata = {
@@ -16,6 +18,13 @@ const CONTACT_PHONE = "+977 1 4XXXXXX";
 const OFFICE_ADDRESS = "123 Financial District, Kathmandu, Nepal";
 
 export default function ContactPage() {
+  // The nav link and sitemap entry are gated, but the route itself is still
+  // reachable by typing the URL — 404 it when the feature is off. One flag flip
+  // away from working; nothing below is deleted.
+  if (!FEATURES.contactPage) {
+    notFound();
+  }
+
   return (
     <div className="bg-white">
       {/* Heading */}

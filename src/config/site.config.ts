@@ -1,3 +1,5 @@
+import { FEATURES } from "@/config/features";
+
 export interface NavLink {
   label: string;
   href: string;
@@ -34,10 +36,18 @@ function resolveApiBaseUrl(): string {
 
 export const API_BASE_URL = resolveApiBaseUrl();
 
-export const NAV_LINKS: NavLink[] = [
+// A nav link may be gated behind a feature flag. Gated links are filtered out of
+// the exported NAV_LINKS when their flag is off, so header.tsx needs no changes.
+type GatedNavLink = NavLink & { feature?: keyof typeof FEATURES };
+
+const ALL_NAV_LINKS: GatedNavLink[] = [
   { label: "Home", href: "/" },
   { label: "Blog", href: "/blog" },
   { label: "Categories", href: "/categories" },
   { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
+  { label: "Contact", href: "/contact", feature: "contactPage" },
 ];
+
+export const NAV_LINKS: NavLink[] = ALL_NAV_LINKS.filter(
+  (link) => !link.feature || FEATURES[link.feature],
+).map(({ label, href }) => ({ label, href }));

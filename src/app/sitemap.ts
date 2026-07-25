@@ -1,10 +1,17 @@
 import type { MetadataRoute } from "next";
 import { apiRequest } from "@/lib/api";
+import { FEATURES } from "@/config/features";
 import { SITE_URL } from "@/config/site.config";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 import type { CategoryResponse } from "@/types/category";
 
-const STATIC_PATHS = ["/", "/blog", "/categories", "/about", "/contact"];
+const STATIC_PATHS = [
+  "/",
+  "/blog",
+  "/categories",
+  "/about",
+  ...(FEATURES.contactPage ? ["/contact"] : []),
+];
 const SITEMAP_POSTS_PAGE_SIZE = 100;
 
 // GET /v1/posts only returns published posts; walk every page so the sitemap

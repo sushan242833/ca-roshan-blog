@@ -115,6 +115,12 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: process.cwd(),
 
+  // Feature flags inlined at build time so client components (e.g. the nav in
+  // header.tsx) can read them. Default "0" (off) when the var is unset.
+  env: {
+    FEATURE_FLAG_CONTACT_PAGE: process.env.FEATURE_FLAG_CONTACT_PAGE ?? "0",
+  },
+
   turbopack: {
     root: path.resolve(__dirname),
   },

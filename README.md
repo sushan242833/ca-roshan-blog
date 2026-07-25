@@ -20,6 +20,16 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Feature flags
+
+Flags follow the `FEATURE_FLAG_*` convention: the string `"1"` turns a feature **on**; `"0"` or an unset variable turns it **off** (the default). Flags are read only through `src/config/features.ts` — never `process.env` directly in components.
+
+| Flag | Default | Values | Effect |
+| --- | --- | --- | --- |
+| `FEATURE_FLAG_CONTACT_PAGE` | `0` (off) | `1` = on, `0`/unset = off | Shows the Contact nav link, renders `/contact` (otherwise 404), and lists `/contact` in the sitemap. |
+
+**Build-time (frontend).** The value is inlined at build via the `env` mapping in `next.config.ts`, so flipping the frontend half requires a **rebuild** (`npm run build`), not just a restart. The matching **backend** flag (`FEATURE_FLAG_CONTACT_PAGE`, which gates `POST /api/v1/contact`) is read at **runtime** and only needs a restart. Set both `.env` files to the same value.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
