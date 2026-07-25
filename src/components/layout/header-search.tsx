@@ -10,10 +10,10 @@ import { MIN_SEARCH_LENGTH, SEARCH_DEBOUNCE_MS } from "@/lib/constants";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 
 // "done" covers both "results ready" and "zero results" — the results array
-// distinguishes them. A small preview count keeps the dropdown instant; the
+// distinguishes them. The dropdown shows a bounded, scrollable preview; the
 // full, paginated experience is the existing /blog?search= page.
 type Status = "loading" | "error" | "done";
-const RESULT_LIMIT = 5;
+const RESULT_LIMIT = 10;
 
 // Module-level preview cache: retyping a previously searched term commits
 // synchronously and fires no request. Keyed on the trimmed, lowercased term;
@@ -241,7 +241,7 @@ export default function HeaderSearch() {
           <SearchIcon size={16} className="shrink-0 text-gray-400" />
           <input
             ref={inputRef}
-            type="search"
+            type="text"
             role="combobox"
             aria-expanded={dropdownOpen}
             aria-controls={listboxId}
@@ -296,7 +296,7 @@ export default function HeaderSearch() {
               Something went wrong while searching. Please try again.
             </p>
           ) : (
-            <div className="max-h-[60vh] overflow-y-auto p-2">
+            <div className="max-h-[min(24rem,60vh)] overflow-y-auto overscroll-contain p-2">
               {results.length === 0 && status === "loading" && (
                 <div className="flex items-center justify-center py-6 text-gray-400">
                   <Loader2 size={18} className="animate-spin" />
