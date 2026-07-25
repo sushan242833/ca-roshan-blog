@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { revalidatePublicContent } from "@/lib/revalidate";
+import { htmlToPlainText } from "@/lib/format";
 import { queryKeys } from "@/lib/query-keys";
 import { openPostPreview } from "@/lib/post-preview";
 import {
@@ -119,7 +120,9 @@ function formValuesFromPost(post: PostDetailResponse): PostFormValues {
     title: post.title,
     slug: post.slug,
     content: post.content,
-    excerpt: post.excerpt ?? "",
+    // Strip any HTML from a legacy excerpt (older posts stored the
+    // auto-generated excerpt with raw markup) so the field shows plain text.
+    excerpt: post.excerpt ? htmlToPlainText(post.excerpt) : "",
     // Prefer the many-to-many categories; fall back to the legacy single
     // category so posts created before multi-category still load correctly.
     categoryIds:
@@ -605,7 +608,10 @@ export default function PostEditor({ postId }: PostEditorProps) {
           {errors.content && (
             <p className="-mt-4 text-xs text-red-600">{errors.content.message}</p>
           )}
+        </div>
 
+        {/* ── Sidebar ─────────────────────────────────────────────── */}
+        <div className="space-y-6 lg:col-span-4">
           <div className={cardClass}>
             <label
               htmlFor="excerpt"
@@ -618,7 +624,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
             </label>
             <textarea
               id="excerpt"
-              rows={3}
+              rows={4}
               maxLength={MAX_EXCERPT_LENGTH}
               {...register("excerpt")}
               className={`mt-2 ${inputClass}`}
@@ -632,10 +638,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
               </p>
             )}
           </div>
-        </div>
 
-        {/* ── Sidebar ─────────────────────────────────────────────── */}
-        <div className="space-y-6 lg:col-span-4">
           <div className={`${cardClass} max-h-96 overflow-y-auto`}>
             <h2 className="font-serif text-base font-bold text-brand-navy">
               Table of Contents

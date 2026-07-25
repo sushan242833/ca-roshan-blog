@@ -28,6 +28,7 @@ interface SlugEntityBase {
   id: string;
   name: string;
   slug: string;
+  description?: string | null;
   createdAt: string;
 }
 
@@ -50,6 +51,9 @@ interface SlugEntityManagerProps<T extends SlugEntityBase> {
   extraColumns?: SlugEntityColumn<T>[];
   /** Caution line for the delete confirmation, e.g. attached post count. */
   getDeleteWarning?: (item: T) => string | null;
+  /** When true, the create/edit dialog shows an optional description field. */
+  showDescription?: boolean;
+  descriptionMaxLength?: number;
 }
 
 type DialogState<T> = { mode: "create" } | { mode: "edit"; item: T } | null;
@@ -67,6 +71,8 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
   revalidateScope,
   extraColumns = [],
   getDeleteWarning,
+  showDescription = false,
+  descriptionMaxLength,
 }: SlugEntityManagerProps<T>) {
   const { authedFetch, getAccessToken } = useAuth();
   const queryClient = useQueryClient();
@@ -277,9 +283,12 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
               ? {
                   name: dialogState.item.name,
                   slug: dialogState.item.slug,
+                  description: dialogState.item.description ?? "",
                 }
               : null
           }
+          showDescription={showDescription}
+          descriptionMaxLength={descriptionMaxLength}
           onOpenChange={(open) => {
             if (!open) setDialogState(null);
           }}

@@ -389,6 +389,12 @@
 .article-body-detail > :last-child {
   margin-bottom: 0;
 }
+/* The first block (often an h2 with a large top margin) must sit flush with
+   the top of the article column — otherwise it leaves a big gap under the
+   author meta. */
+.article-body-detail > :first-child {
+  margin-top: 0;
+}
 .article-body-detail h2 {
   margin-top: 4rem;
   margin-bottom: 2rem;

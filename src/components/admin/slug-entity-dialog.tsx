@@ -15,13 +15,17 @@ import {
 export interface SlugEntityFormValues {
   name: string;
   slug?: string;
+  description?: string | null;
 }
 
 interface SlugEntityDialogProps {
   entityLabel: string;
   nameMaxLength: number;
   /** Pre-filled values when editing; null when creating. */
-  initialValues: { name: string; slug: string } | null;
+  initialValues: { name: string; slug: string; description?: string | null } | null;
+  /** When true, shows an optional description textarea (e.g. categories). */
+  showDescription?: boolean;
+  descriptionMaxLength?: number;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: SlugEntityFormValues) => Promise<void>;
 }
@@ -32,12 +36,17 @@ export default function SlugEntityDialog({
   entityLabel,
   nameMaxLength,
   initialValues,
+  showDescription = false,
+  descriptionMaxLength = 500,
   onOpenChange,
   onSubmit,
 }: SlugEntityDialogProps) {
   const isEdit = initialValues !== null;
   const [name, setName] = useState(initialValues?.name ?? "");
   const [slug, setSlug] = useState(initialValues?.slug ?? "");
+  const [description, setDescription] = useState(
+    initialValues?.description ?? "",
+  );
   const [nameError, setNameError] = useState("");
   const [serverError, setServerError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -54,11 +63,15 @@ export default function SlugEntityDialog({
     setServerError("");
 
     const trimmedSlug = slug.trim();
+    const trimmedDescription = description.trim();
     setIsSaving(true);
     try {
       await onSubmit({
         name: trimmedName,
         ...(trimmedSlug ? { slug: trimmedSlug } : {}),
+        // Only categories show this field; send null when cleared so the
+        // server can unset an existing description.
+        ...(showDescription ? { description: trimmedDescription || null } : {}),
       });
     } catch (err) {
       setServerError(
@@ -80,7 +93,7 @@ export default function SlugEntityDialog({
           </DialogTitle>
           <DialogDescription>
             {isEdit
-              ? `Update the ${entityLabel.toLowerCase()} name or slug.`
+              ? `Update the ${entityLabel.toLowerCase()} details.`
               : `Add a new ${entityLabel.toLowerCase()} to organize your content.`}
           </DialogDescription>
         </DialogHeader>
@@ -139,6 +152,32 @@ export default function SlugEntityDialog({
                 : "Leave blank to auto-generate from name."}
             </p>
           </div>
+
+          {showDescription && (
+            <div>
+              <label
+                htmlFor="slug-entity-description"
+                className="mb-1 flex items-center justify-between text-sm font-medium text-gray-700"
+              >
+                <span>Description</span>
+                <span className="text-xs font-normal text-gray-400">
+                  {description.length}/{descriptionMaxLength}
+                </span>
+              </label>
+              <textarea
+                id="slug-entity-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                maxLength={descriptionMaxLength}
+                rows={3}
+                placeholder="A short summary shown on the categories page."
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-brand-teal focus:outline-none focus:ring-1 focus:ring-brand-teal"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                Optional. Appears under the category name on your site.
+              </p>
+            </div>
+          )}
 
           <DialogFooter>
             <button

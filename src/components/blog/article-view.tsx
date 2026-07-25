@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import ShareArticle from "@/components/blog/share-article";
+import ArticleToc from "@/components/blog/article-toc";
 import { EyeIcon } from "@/components/icons";
 import { buildToc } from "@/lib/toc";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
@@ -43,7 +44,7 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
   // Sanitise first, then inject heading ids from the sanitised HTML, and finally
   // wrap tables in a horizontal-scroll container.
   const sanitized = sanitizeArticleHtml(post.content ?? "");
-  const { html: withHeadingIds } = buildToc(sanitized);
+  const { html: withHeadingIds, headings } = buildToc(sanitized);
   const cleanContent = withHeadingIds
     .replace(/<table(?=[\s>])/g, '<div class="table-scroll"><table')
     .replace(/<\/table>/g, "</table></div>");
@@ -149,40 +150,61 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
       )}
 
       <div className="px-6 pb-20">
-        <div className="mx-auto max-w-[720px]">
+        <div className="mx-auto grid max-w-300 grid-cols-1 items-start gap-5 lg:grid-cols-4">
+          {/* Desktop: sticky Table of Contents on the left — stays in place
+              while the article column scrolls. */}
+          {headings.length > 0 && (
+            <aside className="hidden self-start lg:col-span-1 lg:block lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+              <ArticleToc headings={headings} variant="sidebar" />
+            </aside>
+          )}
+
           <div
-            className="article-body article-body-detail"
-            dangerouslySetInnerHTML={{ __html: cleanContent }}
-          />
+            className={`mx-auto w-full min-w-0 max-w-180 ${
+              headings.length > 0 ? "lg:col-span-3 lg:mx-0" : "lg:col-span-4"
+            }`}
+          >
+            {/* Mobile: collapsible TOC box in the article flow. */}
+            {headings.length > 0 && (
+              <div className="lg:hidden">
+                <ArticleToc headings={headings} />
+              </div>
+            )}
 
-          {showLegacyPdf && legacyPdfUrl && (
-            <div className="article-body article-body-detail mt-8">
-              <a
-                className="pdf-link-block"
-                href={legacyPdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-pdf-label={legacyPdfLabel}
-              >
-                {legacyPdfLabel}
-              </a>
-            </div>
-          )}
+            <div
+              className="article-body article-body-detail"
+              dangerouslySetInnerHTML={{ __html: cleanContent }}
+            />
 
-          {post.tags.length > 0 && (
-            <div className="mt-12 flex flex-wrap justify-center gap-2 border-t border-[#bec9c4] pt-6">
-              {post.tags.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="rounded-full border border-[#6f7975] px-4 py-1.5 text-xs font-medium text-[#3f4945] transition-colors hover:border-[#005243] hover:text-[#005243]"
+            {showLegacyPdf && legacyPdfUrl && (
+              <div className="article-body article-body-detail mt-8">
+                <a
+                  className="pdf-link-block"
+                  href={legacyPdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-pdf-label={legacyPdfLabel}
                 >
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
+                  {legacyPdfLabel}
+                </a>
+              </div>
+            )}
 
-          {shareUrl && <ShareArticle title={post.title} url={shareUrl} />}
+            {post.tags.length > 0 && (
+              <div className="mt-12 flex flex-wrap justify-center gap-2 border-t border-[#bec9c4] pt-6">
+                {post.tags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="rounded-full border border-[#6f7975] px-4 py-1.5 text-xs font-medium text-[#3f4945] transition-colors hover:border-[#005243] hover:text-[#005243]"
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {shareUrl && <ShareArticle title={post.title} url={shareUrl} />}
+          </div>
         </div>
       </div>
     </article>

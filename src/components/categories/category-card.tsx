@@ -14,6 +14,11 @@ export default function CategoryCard({ category }: CategoryCardProps) {
       <h2 className="font-serif text-xl font-bold text-brand-navy">
         {category.name}
       </h2>
+      {category.description && (
+        <p className="mt-2 text-sm leading-relaxed text-gray-600 line-clamp-2">
+          {category.description}
+        </p>
+      )}
       <div className="mt-4 flex-1">
         <span className="inline-block rounded-full bg-brand-teal px-3 py-1 text-xs font-medium text-white">
           {category.postCount}{" "}

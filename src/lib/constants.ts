@@ -20,6 +20,7 @@ export const MAX_PDF_URL_LENGTH = 2048;
 export const MAX_PDF_LABEL_LENGTH = 255;
 export const DEFAULT_PDF_LABEL = "Read the full content (PDF)";
 export const MAX_CATEGORY_NAME_LENGTH = 100;
+export const MAX_CATEGORY_DESCRIPTION_LENGTH = 500;
 export const MAX_TAG_NAME_LENGTH = 100;
 export const MAX_CONTACT_MESSAGE_LENGTH = 5000;
 export const MAX_CONTACT_NAME_LENGTH = 100;

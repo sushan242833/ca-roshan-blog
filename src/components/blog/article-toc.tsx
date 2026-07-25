@@ -62,16 +62,16 @@ function TocLinks({
   activeId: string | null;
 }) {
   return (
-    <ul className="border-l border-gray-200 text-sm">
+    <ul className="border-l border-brand-muted/40 text-sm">
       {headings.map((heading) => (
         <li key={heading.id} className={heading.level === 3 ? "ml-3" : ""}>
           <a
             href={`#${heading.id}`}
             aria-current={activeId === heading.id ? "true" : undefined}
-            className={`-ml-px block border-l-2 py-1.5 pl-4 leading-snug transition-colors ${
+            className={`-ml-px block border-l-4 py-1.5 pl-4 leading-snug transition-colors ${
               activeId === heading.id
-                ? "border-brand-teal font-medium text-brand-teal"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-brand-navy"
+                ? "border-brand-teal-dark font-semibold text-brand-teal-dark"
+                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-brand-teal-dark"
             }`}
           >
             {heading.text}
@@ -94,9 +94,9 @@ export default function ArticleToc({
   if (variant === "sidebar") {
     return (
       <nav aria-label="Table of contents">
-        <p className="mb-4 pl-4 text-xs font-semibold uppercase tracking-widest text-gray-400">
-          On this page
-        </p>
+        <h2 className="mb-6 font-serif text-xl font-bold text-brand-teal-dark">
+          Table of Contents
+        </h2>
         <TocLinks headings={headings} activeId={activeId} />
       </nav>
     );
