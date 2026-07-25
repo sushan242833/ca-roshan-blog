@@ -9,6 +9,9 @@ export const ADMIN_DASHBOARD_ACTIVITY_DISPLAY_LIMIT = 5;
 
 // Search
 export const SEARCH_DEBOUNCE_MS = 350;
+// Below this length a search fires no request — a 1-character ILIKE scans every
+// post and matches almost all of them. Mirrors the backend's 2-char minimum.
+export const MIN_SEARCH_LENGTH = 2;
 
 // Validation limits — must mirror the backend exactly
 export const MAX_META_TITLE_LENGTH = 60;

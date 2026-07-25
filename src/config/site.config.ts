@@ -9,7 +9,30 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:30
 export const CONTACT_EMAIL = "contact@caroshan.com";
 export const LINKEDIN_URL = "https://www.linkedin.com/in/ca-roshan"; // TODO: replace with the real LinkedIn profile URL
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+function resolveApiBaseUrl(): string {
+  const value = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (value) {
+    return value;
+  }
+
+  // A missing value doesn't just break API calls — next.config.ts derives the
+  // CSP connect-src and image remotePatterns from this same variable, so an
+  // unset value also silently narrows the CSP. Fail loudly in production
+  // instead of degrading into hard-to-diagnose same-origin request failures.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "NEXT_PUBLIC_API_BASE_URL is not set. It is required in production: " +
+        "API requests fall back to failing same-origin calls, and " +
+        "next.config.ts also derives the CSP connect-src and image " +
+        "remotePatterns from it, so a missing value silently narrows the CSP.",
+    );
+  }
+
+  // Development keeps the same-origin ("") fallback.
+  return "";
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export const NAV_LINKS: NavLink[] = [
   { label: "Home", href: "/" },

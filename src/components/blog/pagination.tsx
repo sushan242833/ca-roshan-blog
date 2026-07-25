@@ -1,6 +1,4 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface PaginationProps {
   currentPage: number;
@@ -26,34 +24,45 @@ export default function Pagination({
   activeCategory = "",
   basePath = "/blog",
 }: PaginationProps) {
-  const router = useRouter();
   const totalPages = Math.ceil(totalCount / limit);
 
   if (!totalPages || isNaN(totalPages) || totalPages <= 1) return null;
 
-  function navigate(page: number) {
+  // Real URLs (not router.push handlers) so crawlers can follow them, users can
+  // middle-click / open in a new tab, and Next can prefetch.
+  function hrefFor(page: number): string {
     const params = new URLSearchParams();
     if (page > 1) params.set("page", String(page));
     if (currentSearch) params.set("search", currentSearch);
     if (activeCategory) params.set("category", activeCategory);
     const qs = params.toString();
-    router.push(`${basePath}${qs ? `?${qs}` : ""}`);
+    return `${basePath}${qs ? `?${qs}` : ""}`;
   }
 
   const pages = getPageNumbers(currentPage, totalPages);
+  const isFirstPage = currentPage === 1;
+  const isLastPage = currentPage === totalPages;
 
   return (
     <nav
       className="mt-12 flex items-center justify-center gap-1"
       aria-label="Pagination"
     >
-      <button
-        onClick={() => navigate(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="px-3 py-2 text-sm text-gray-500 transition-colors hover:text-brand-teal disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        Previous
-      </button>
+      {isFirstPage ? (
+        <span
+          aria-disabled="true"
+          className="px-3 py-2 text-sm text-gray-500 cursor-not-allowed opacity-40"
+        >
+          Previous
+        </span>
+      ) : (
+        <Link
+          href={hrefFor(currentPage - 1)}
+          className="px-3 py-2 text-sm text-gray-500 transition-colors hover:text-brand-teal"
+        >
+          Previous
+        </Link>
+      )}
 
       {pages.map((p, i) =>
         p === "…" ? (
@@ -65,9 +74,9 @@ export default function Pagination({
             …
           </span>
         ) : (
-          <button
+          <Link
             key={p}
-            onClick={() => navigate(p)}
+            href={hrefFor(p)}
             aria-current={p === currentPage ? "page" : undefined}
             aria-label={`Page ${p}`}
             className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${
@@ -77,17 +86,25 @@ export default function Pagination({
             }`}
           >
             {p}
-          </button>
+          </Link>
         ),
       )}
 
-      <button
-        onClick={() => navigate(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="px-3 py-2 text-sm text-gray-500 transition-colors hover:text-brand-teal disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        Next
-      </button>
+      {isLastPage ? (
+        <span
+          aria-disabled="true"
+          className="px-3 py-2 text-sm text-gray-500 cursor-not-allowed opacity-40"
+        >
+          Next
+        </span>
+      ) : (
+        <Link
+          href={hrefFor(currentPage + 1)}
+          className="px-3 py-2 text-sm text-gray-500 transition-colors hover:text-brand-teal"
+        >
+          Next
+        </Link>
+      )}
     </nav>
   );
 }

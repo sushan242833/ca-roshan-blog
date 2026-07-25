@@ -150,7 +150,7 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
       )}
 
       <div className="px-6 pb-20">
-        <div className="mx-auto grid max-w-300 grid-cols-1 items-start gap-5 lg:grid-cols-4">
+        <div className="mx-auto grid max-w-300 grid-cols-1 items-start gap-10 lg:grid-cols-4">
           {/* Desktop: sticky Table of Contents on the left — stays in place
               while the article column scrolls. */}
           {headings.length > 0 && (
