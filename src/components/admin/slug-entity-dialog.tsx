@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { ApiRequestError } from "@/lib/api";
+import FormMessage from "@/components/ui/form-message";
 import {
   Dialog,
   DialogContent,
@@ -100,9 +101,7 @@ export default function SlugEntityDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {serverError && (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-600">
-              {serverError}
-            </div>
+            <FormMessage type="error" className="p-3" message={serverError} />
           )}
 
           <div>
@@ -193,7 +192,7 @@ export default function SlugEntityDialog({
               disabled={isSaving}
               className="inline-flex items-center justify-center gap-2 rounded-md bg-brand-teal-dark px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-teal disabled:opacity-60"
             >
-              {isSaving && <Loader2 size={16} className="animate-spin" />}
+              {isSaving && <Spinner size={16} />}
               {isSaving
                 ? "Saving…"
                 : isEdit

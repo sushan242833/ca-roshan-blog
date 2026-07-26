@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -78,7 +79,7 @@ export default function DeleteEntityDialog({
             disabled={isDeleting}
             className="inline-flex items-center justify-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
           >
-            {isDeleting && <Loader2 size={16} className="animate-spin" />}
+            {isDeleting && <Spinner size={16} />}
             {isDeleting ? "Deleting…" : `Delete ${entityLabel}`}
           </button>
         </DialogFooter>

@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import PostCard from "@/components/posts/post-card";
 import Pagination from "@/components/blogs/pagination";
 import { apiRequest } from "@/lib/api";
-import { POSTS_PER_PAGE } from "@/lib/constants";
+import {
+  CONTENT_REVALIDATE_SECONDS,
+  POSTS_PER_PAGE,
+  STATIC_PAGE_REVALIDATE_SECONDS,
+} from "@/lib/constants";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 import type { CategoryResponse } from "@/types/category";
 
@@ -44,11 +48,11 @@ export default async function CategoryArchivePage({
   try {
     const [categories, posts] = await Promise.all([
       apiRequest<CategoryResponse[]>("/v1/categories", {
-        next: { revalidate: 300 },
+        next: { revalidate: STATIC_PAGE_REVALIDATE_SECONDS },
       }),
       apiRequest<PaginatedResponse<PostSummaryResponse>>(
         `/v1/posts?category=${encodeURIComponent(slug)}&page=${page}&limit=${POSTS_PER_PAGE}`,
-        { next: { revalidate: 60 } },
+        { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
       ),
     ]);
 

@@ -10,7 +10,7 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_COOKIE_MAX_AGE_SECONDS,
 } from "@/lib/constants";
-import type { AuthenticatedAdminResponse } from "@/types/admin";
+import type { AdminProfileResponse } from "@/types/admin";
 
 interface LoginResponse {
   accessToken: string;
@@ -26,7 +26,7 @@ export type AuthedFetch = <T>(
 ) => Promise<T>;
 
 export interface AuthStoreState {
-  admin: AuthenticatedAdminResponse | null;
+  admin: AdminProfileResponse | null;
   accessToken: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -51,7 +51,7 @@ export interface AuthStoreState {
   restoreSession: () => Promise<void>;
   applyAccessToken: (token: string | null) => void;
   /** Replace the cached admin profile (e.g. after an About-page save). */
-  setAdmin: (admin: AuthenticatedAdminResponse) => void;
+  setAdmin: (admin: AdminProfileResponse) => void;
 }
 
 // Refresh this long before the token's exp claim so long editing sessions
@@ -190,7 +190,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 
     try {
       const profile =
-        await authenticatedApiRequest<AuthenticatedAdminResponse>(
+        await authenticatedApiRequest<AdminProfileResponse>(
           "/v1/auth/me",
           token,
         );
@@ -210,7 +210,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       body: JSON.stringify({ email, password }),
     });
     const profile =
-      await authenticatedApiRequest<AuthenticatedAdminResponse>(
+      await authenticatedApiRequest<AdminProfileResponse>(
         "/v1/auth/me",
         result.accessToken,
       );

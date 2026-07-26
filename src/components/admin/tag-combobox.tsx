@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Loader2, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import type { TagResponse } from "@/types/tag";
 
 interface TagComboboxProps {
@@ -144,7 +145,7 @@ export default function TagCombobox({
                   className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-brand-teal hover:bg-brand-teal/5 disabled:opacity-60"
                 >
                   {isCreating ? (
-                    <Loader2 size={14} className="animate-spin" />
+                    <Spinner size={14} />
                   ) : (
                     <Plus size={14} />
                   )}

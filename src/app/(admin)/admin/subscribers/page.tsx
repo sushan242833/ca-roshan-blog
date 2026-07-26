@@ -5,11 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
   Clock,
-  Loader2,
   Search,
   UserMinus,
   Users,
 } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { formatPostDate } from "@/lib/format";
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { getPageNumbers } from "@/components/blogs/pagination";
+import FormMessage from "@/components/ui/form-message";
 import type {
   SubscriberResponse,
   SubscriberStatsResponse,
@@ -256,14 +257,12 @@ export default function AdminSubscribersPage() {
       </div>
 
       {error && (
-        <div className="mt-6 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-600">
-          {error}
-        </div>
+        <FormMessage type="error" className="mt-6" message={error} />
       )}
 
       {isLoading ? (
         <div className="mt-10 flex items-center justify-center gap-2 text-sm text-gray-400">
-          <Loader2 size={18} className="animate-spin" />
+          <Spinner size={18} />
           Loading subscribers…
         </div>
       ) : (

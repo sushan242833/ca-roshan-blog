@@ -8,7 +8,6 @@ import {
   Archive,
   ArchiveRestore,
   Eye,
-  Loader2,
   MoreVertical,
   Pencil,
   Plus,
@@ -17,6 +16,7 @@ import {
   Trash2,
   Undo2,
 } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -44,6 +44,7 @@ import DeleteEntityDialog from "@/components/admin/delete-entity-dialog";
 import PublishPostDialog from "@/components/admin/publish-post-dialog";
 import { getPageNumbers } from "@/components/blogs/pagination";
 import { queryKeys } from "@/lib/query-keys";
+import FormMessage from "@/components/ui/form-message";
 import type { DashboardStatsResponse } from "@/types/dashboard";
 import type {
   PaginationMeta,
@@ -383,14 +384,12 @@ function ManagePosts() {
       </div>
 
       {error && (
-        <div className="mt-6 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-600">
-          {error}
-        </div>
+        <FormMessage type="error" className="mt-6" message={error} />
       )}
 
       {isLoading ? (
         <div className="mt-10 flex items-center justify-center gap-2 text-sm text-gray-400">
-          <Loader2 size={18} className="animate-spin" />
+          <Spinner size={18} />
           Loading posts…
         </div>
       ) : (
@@ -480,10 +479,7 @@ function ManagePosts() {
                                 className="p-1 text-gray-400 transition-colors hover:text-brand-navy disabled:opacity-50"
                               >
                                 {isPending ? (
-                                  <Loader2
-                                    size={16}
-                                    className="animate-spin"
-                                  />
+                                  <Spinner size={16} />
                                 ) : (
                                   <MoreVertical size={16} />
                                 )}

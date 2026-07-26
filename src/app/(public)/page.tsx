@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import PostCard from "@/components/posts/post-card";
+import SectionHeading from "@/components/ui/section-heading";
 import { apiRequest } from "@/lib/api";
+import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
 import { ArrowRightIcon } from "@/components/icons";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 
@@ -23,11 +25,11 @@ export default async function HomePage() {
     const [featuredData, recentData] = await Promise.all([
       apiRequest<PaginatedResponse<PostSummaryResponse>>(
         "/v1/posts/featured?limit=2",
-        { next: { revalidate: 60 } },
+        { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
       ),
       apiRequest<PaginatedResponse<PostSummaryResponse>>(
         "/v1/posts?limit=3",
-        { next: { revalidate: 60 } },
+        { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
       ),
     ]);
     featuredPosts = featuredData.items;
@@ -55,12 +57,7 @@ export default async function HomePage() {
       {featuredPosts.length > 0 && (
         <section className="bg-gray-50 py-12 md:py-16">
           <div className="mx-auto max-w-7xl px-6">
-            <div className="mb-8 flex items-center gap-3">
-              <div className="w-1 self-stretch rounded-full bg-brand-teal" />
-              <h2 className="font-serif text-2xl font-bold text-brand-navy">
-                Featured Insights
-              </h2>
-            </div>
+            <SectionHeading>Featured Insights</SectionHeading>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {featuredPosts.map((post, index) => (
                 <PostCard
@@ -79,12 +76,7 @@ export default async function HomePage() {
       {recentPosts.length > 0 && (
         <section className="bg-white py-12 md:py-16">
           <div className="mx-auto max-w-7xl px-6">
-            <div className="mb-8 flex items-center gap-3">
-              <div className="w-1 self-stretch rounded-full bg-brand-teal" />
-              <h2 className="font-serif text-2xl font-bold text-brand-navy">
-                Recent Publications
-              </h2>
-            </div>
+            <SectionHeading>Recent Publications</SectionHeading>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               {recentPosts.map((post) => (
                 <PostCard key={post.id} post={post} variant="summary" />

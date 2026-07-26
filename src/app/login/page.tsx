@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { useAuth } from "@/components/providers/auth-provider";
 import { ApiRequestError } from "@/lib/api";
+import FormMessage from "@/components/ui/form-message";
 import { SITE_NAME } from "@/config/site.config";
 
 const loginSchema = z.object({
@@ -58,7 +59,7 @@ export default function LoginPage() {
   if (isLoading || admin) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <Loader2 size={32} className="animate-spin text-brand-teal" />
+        <Spinner size={32} className="text-brand-teal" />
       </div>
     );
   }
@@ -121,9 +122,7 @@ export default function LoginPage() {
           </div>
 
           {errors.root && (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-600">
-              {errors.root.message}
-            </div>
+            <FormMessage type="error" className="p-3" message={errors.root.message} />
           )}
 
           <button

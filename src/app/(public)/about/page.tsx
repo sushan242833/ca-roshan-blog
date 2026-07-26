@@ -3,6 +3,7 @@ import Image from "next/image";
 import { MapPin, Briefcase, BadgeCheck } from "lucide-react";
 import PostImagePlaceholder from "@/components/posts/post-image-placeholder";
 import { apiRequest } from "@/lib/api";
+import { STATIC_PAGE_REVALIDATE_SECONDS } from "@/lib/constants";
 import { SITE_NAME } from "@/config/site.config";
 import type { AboutPageResponse } from "@/types/about";
 
@@ -13,7 +14,7 @@ const DEFAULT_BIO =
 async function getAboutPage(): Promise<AboutPageResponse | null> {
   try {
     return await apiRequest<AboutPageResponse>("/v1/auth/about", {
-      next: { revalidate: 300 },
+      next: { revalidate: STATIC_PAGE_REVALIDATE_SECONDS },
     });
   } catch (err) {
     console.error("Failed to fetch about page data:", err);

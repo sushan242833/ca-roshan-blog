@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
+import { Toaster } from "sonner";
 
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/config/site.config";
-import ToastProvider from "@/components/providers/toast-provider";
 
 import "./globals.css";
 
@@ -40,7 +40,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans">
         {children}
-        <ToastProvider />
+        <Toaster position="bottom-right" richColors />
       </body>
     </html>
   );

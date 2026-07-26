@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { ApiRequestError } from "@/lib/api";
@@ -72,7 +72,6 @@ export default function AdminAboutSettingsPage() {
     handleSubmit,
     control,
     reset,
-    watch,
     setValue,
     formState: { isDirty, isSubmitting },
   } = useForm<ProfileFormValues>({
@@ -102,15 +101,15 @@ export default function AdminAboutSettingsPage() {
     remove: removeExpertise,
   } = useFieldArray({ control, name: "expertise" });
 
-  const avatarUrl = watch("avatarUrl");
-  const ogImageUrl = watch("ogImageUrl");
-  const nameValue = watch("name");
-  const titleValue = watch("title");
-  const locationValue = watch("location");
-  const yearsOfExperienceValue = watch("yearsOfExperience");
-  const qualificationValue = watch("qualification");
-  const seoTitleValue = watch("seoTitle");
-  const seoDescriptionValue = watch("seoDescription");
+  const avatarUrl = useWatch({ control, name: "avatarUrl" });
+  const ogImageUrl = useWatch({ control, name: "ogImageUrl" });
+  const nameValue = useWatch({ control, name: "name" });
+  const titleValue = useWatch({ control, name: "title" });
+  const locationValue = useWatch({ control, name: "location" });
+  const yearsOfExperienceValue = useWatch({ control, name: "yearsOfExperience" });
+  const qualificationValue = useWatch({ control, name: "qualification" });
+  const seoTitleValue = useWatch({ control, name: "seoTitle" });
+  const seoDescriptionValue = useWatch({ control, name: "seoDescription" });
 
   if (!admin) return null;
 

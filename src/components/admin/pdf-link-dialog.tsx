@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { toast } from "sonner";
 import {
   ALLOWED_DOCUMENT_TYPES,
@@ -20,6 +21,7 @@ import {
   useMediaUpload,
 } from "@/components/admin/use-media-upload";
 import MediaGridItem from "@/components/admin/media-grid-item";
+import FormMessage from "@/components/ui/form-message";
 import {
   Dialog,
   DialogContent,
@@ -153,7 +155,7 @@ export default function PdfLinkDialog({
               className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-50 disabled:opacity-60"
             >
               {isUploading ? (
-                <Loader2 size={14} className="animate-spin" />
+                <Spinner size={14} />
               ) : (
                 <Upload size={14} />
               )}
@@ -196,13 +198,11 @@ export default function PdfLinkDialog({
             Or choose an existing PDF
           </p>
           {docsError && (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-600">
-              {docsError}
-            </div>
+            <FormMessage type="error" className="p-3" message={docsError} />
           )}
           {docsQuery.isPending ? (
             <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-400">
-              <Loader2 size={18} className="animate-spin" />
+              <Spinner size={18} />
               Loading PDFs…
             </div>
           ) : documents.length === 0 ? (

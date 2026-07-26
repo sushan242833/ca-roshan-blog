@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link as LinkIcon, Loader2, Search, Trash2, Upload } from "lucide-react";
+import { Link as LinkIcon, Search, Trash2, Upload } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -14,6 +15,7 @@ import { useMediaUpload } from "@/components/admin/use-media-upload";
 import MediaGridItem from "@/components/admin/media-grid-item";
 import DeleteEntityDialog from "@/components/admin/delete-entity-dialog";
 import { Input } from "@/components/ui/input";
+import FormMessage from "@/components/ui/form-message";
 import type { MediaKind, MediaResponse } from "@/types/media";
 
 type MediaTypeFilter = "all" | MediaKind;
@@ -118,7 +120,7 @@ export default function AdminMediaPage() {
       className="inline-flex items-center gap-2 rounded-md bg-brand-teal-dark px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-teal disabled:opacity-60"
     >
       {isUploading ? (
-        <Loader2 size={16} className="animate-spin" />
+        <Spinner size={16} />
       ) : (
         <Upload size={16} />
       )}
@@ -189,14 +191,12 @@ export default function AdminMediaPage() {
       </div>
 
       {error && (
-        <div className="mt-6 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-600">
-          {error}
-        </div>
+        <FormMessage type="error" className="mt-6" message={error} />
       )}
 
       {isLoading ? (
         <div className="mt-10 flex items-center justify-center gap-2 text-sm text-gray-400">
-          <Loader2 size={18} className="animate-spin" />
+          <Spinner size={18} />
           Loading media…
         </div>
       ) : filteredItems.length === 0 ? (

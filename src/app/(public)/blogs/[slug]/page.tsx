@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import PostCard from "@/components/posts/post-card";
 import ArticleView from "@/components/blogs/article-view";
 import { apiRequest, ApiRequestError } from "@/lib/api";
+import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
 import { SITE_NAME, SITE_URL } from "@/config/site.config";
 import { htmlToPlainText } from "@/lib/format";
 import type {
@@ -72,7 +73,7 @@ export default async function ArticlePage({ params }: PageProps) {
     try {
       const related = await apiRequest<PaginatedResponse<PostSummaryResponse>>(
         `/v1/posts?category=${post.category.slug}&limit=4`,
-        { next: { revalidate: 60 } },
+        { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
       );
       relatedPosts = related.items
         .filter((p) => p.id !== post.id)

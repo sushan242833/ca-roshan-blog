@@ -28,6 +28,10 @@ export interface PostSummaryResponse {
   featured: boolean;
   metaTitle: string | null;
   metaDescription: string | null;
+  // Optional "Full content PDF" link. The backend returns these on every
+  // summary payload, not just the detail one.
+  pdfUrl: string | null;
+  pdfLabel: string | null;
   featuredImage: FeaturedImageResponse | null;
   // Whether the featured image is rendered at the top of the detail page.
   showFeaturedImage: boolean;
@@ -44,11 +48,6 @@ export interface PostSummaryResponse {
 
 export interface PostDetailResponse extends PostSummaryResponse {
   content: string;
-  metaTitle: string | null;
-  metaDescription: string | null;
-  // Optional "Full content PDF" link shown as a callout on the article page.
-  pdfUrl: string | null;
-  pdfLabel: string | null;
 }
 
 export interface PreviewTokenResponse {

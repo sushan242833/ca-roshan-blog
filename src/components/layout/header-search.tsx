@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import PostCard from "@/components/posts/post-card";
 import { SearchIcon, XIcon } from "@/components/icons";
 import { apiRequest } from "@/lib/api";
@@ -257,7 +257,7 @@ export default function HeaderSearch() {
             className="w-40 bg-transparent text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none sm:w-56"
           />
           {status === "loading" && (
-            <Loader2 size={14} className="shrink-0 animate-spin text-gray-400" />
+            <Spinner size={14} className="shrink-0 text-gray-400" />
           )}
           <button
             type="button"
@@ -299,7 +299,7 @@ export default function HeaderSearch() {
             <div className="max-h-[min(24rem,60vh)] overflow-y-auto overscroll-contain p-2">
               {results.length === 0 && status === "loading" && (
                 <div className="flex items-center justify-center py-6 text-gray-400">
-                  <Loader2 size={18} className="animate-spin" />
+                  <Spinner size={18} />
                 </div>
               )}
               {results.length === 0 && status === "done" && (

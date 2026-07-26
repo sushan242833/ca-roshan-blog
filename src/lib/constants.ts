@@ -1,3 +1,7 @@
+// ISR revalidation windows (seconds) for public pages fetched via the API.
+export const CONTENT_REVALIDATE_SECONDS = 60; // post lists & article pages
+export const STATIC_PAGE_REVALIDATE_SECONDS = 300; // about & category pages
+
 // Pagination
 export const POSTS_PER_PAGE = 9;
 export const ADMIN_POSTS_PER_PAGE = 10;

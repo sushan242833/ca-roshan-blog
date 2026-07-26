@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, CheckCircle2, PenLine, Users, Loader2 } from "lucide-react";
+import { FileText, CheckCircle2, PenLine, Users } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { formatRelativeTime } from "@/lib/format";
 import { queryKeys } from "@/lib/query-keys";
+import FormMessage from "@/components/ui/form-message";
 import {
   ADMIN_DASHBOARD_ACTIVITY_FETCH_LIMIT,
   ADMIN_DASHBOARD_ACTIVITY_DISPLAY_LIMIT,
@@ -107,14 +109,12 @@ export default function AdminDashboardPage() {
       </p>
 
       {error && (
-        <div className="mt-6 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-600">
-          {error}
-        </div>
+        <FormMessage type="error" className="mt-6" message={error} />
       )}
 
       {isLoading ? (
         <div className="mt-10 flex items-center justify-center gap-2 text-sm text-gray-400">
-          <Loader2 size={18} className="animate-spin" />
+          <Spinner size={18} />
           Loading dashboard…
         </div>
       ) : (

@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import mammoth from "mammoth";
-import { FileUp, Info, Loader2, X } from "lucide-react";
+import { FileUp, Info, X } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
 
@@ -272,7 +273,7 @@ export default function WordImport({
           className="inline-flex shrink-0 items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-50 disabled:opacity-60"
         >
           {isImporting ? (
-            <Loader2 size={16} className="animate-spin" />
+            <Spinner size={16} />
           ) : (
             <FileUp size={16} />
           )}
@@ -294,7 +295,7 @@ export default function WordImport({
 
       {isImporting && (
         <div className="mt-3 flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-500">
-          <Loader2 size={14} className="animate-spin" />
+          <Spinner size={14} />
           Converting document and uploading images…
         </div>
       )}

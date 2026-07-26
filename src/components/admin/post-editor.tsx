@@ -8,7 +8,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, ImagePlus, Loader2, X } from "lucide-react";
+import { Eye, ImagePlus, X } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -29,6 +30,7 @@ import WordImport, {
 import MediaPickerDialog from "@/components/admin/media-picker-dialog";
 import TagCombobox from "@/components/admin/tag-combobox";
 import PublishPostDialog from "@/components/admin/publish-post-dialog";
+import FormMessage from "@/components/ui/form-message";
 import type { CategoryResponse } from "@/types/category";
 import type { TagResponse } from "@/types/tag";
 import type { MediaResponse } from "@/types/media";
@@ -508,7 +510,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
     return (
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="mt-10 flex items-center justify-center gap-2 text-sm text-gray-400">
-          <Loader2 size={18} className="animate-spin" />
+          <Spinner size={18} />
           Loading editor…
         </div>
       </div>
@@ -518,9 +520,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
   if (loadError) {
     return (
       <div className="mx-auto max-w-6xl px-6 py-8">
-        <div className="rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-600">
-          {loadError}
-        </div>
+        <FormMessage type="error" message={loadError} />
         <Link
           href="/admin/posts"
           className="mt-4 inline-block text-sm font-medium text-brand-teal underline-offset-2 hover:underline"
@@ -547,9 +547,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
       </h1>
 
       {formError && (
-        <div className="mt-6 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-600">
-          {formError}
-        </div>
+        <FormMessage type="error" className="mt-6" message={formError} />
       )}
 
       {/* Word import only populates the create form; editing an existing post
@@ -862,7 +860,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
                   className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-50 disabled:opacity-50"
                 >
                   {isPreviewing ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Spinner size={16} />
                   ) : (
                     <Eye size={16} />
                   )}

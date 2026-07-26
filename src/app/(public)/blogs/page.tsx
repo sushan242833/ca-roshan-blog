@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import PostCard from "@/components/posts/post-card";
 import Pagination from "@/components/blogs/pagination";
 import { apiRequest } from "@/lib/api";
-import { POSTS_PER_PAGE } from "@/lib/constants";
+import { CONTENT_REVALIDATE_SECONDS, POSTS_PER_PAGE } from "@/lib/constants";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 
 const PAGE_TITLE = "All Articles";
@@ -90,7 +90,7 @@ export default async function BlogPage({
       `/v1/posts?${queryParts}`,
       // Search terms are unbounded, so caching them would let a crawler fill the
       // Next data cache — never cache a search. Non-search listings keep ISR.
-      isSearch ? { cache: "no-store" } : { next: { revalidate: 60 } },
+      isSearch ? { cache: "no-store" } : { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
     );
   } catch (err) {
     console.error("Failed to fetch blog page data:", err);

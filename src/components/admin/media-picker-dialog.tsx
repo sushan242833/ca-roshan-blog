@@ -2,7 +2,8 @@
 
 import { useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { queryKeys } from "@/lib/query-keys";
@@ -14,6 +15,7 @@ import {
 } from "@/lib/constants";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
 import MediaGridItem from "@/components/admin/media-grid-item";
+import FormMessage from "@/components/ui/form-message";
 import {
   Dialog,
   DialogContent,
@@ -112,7 +114,7 @@ export default function MediaPickerDialog({
             className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 py-3 text-sm text-gray-500 transition-colors hover:border-brand-teal hover:text-brand-teal disabled:opacity-60"
           >
             {isUploading ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Spinner size={16} />
             ) : (
               <Upload size={16} />
             )}
@@ -132,14 +134,12 @@ export default function MediaPickerDialog({
         </div>
 
         {error && (
-          <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-600">
-            {error}
-          </div>
+          <FormMessage type="error" className="p-3" message={error} />
         )}
 
         {isLoading ? (
           <div className="flex items-center justify-center gap-2 py-10 text-sm text-gray-400">
-            <Loader2 size={18} className="animate-spin" />
+            <Spinner size={18} />
             Loading media…
           </div>
         ) : items.length === 0 ? (

@@ -23,8 +23,14 @@ function VerifyContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
-  const [pageState, setPageState] = useState<PageState>("loading");
-  const [serverMessage, setServerMessage] = useState<string>("");
+  // Initialise from the token synchronously (adjust-during-first-render) rather
+  // than setting state inside the effect, which cascades renders.
+  const [pageState, setPageState] = useState<PageState>(
+    token ? "loading" : "invalid",
+  );
+  const [serverMessage, setServerMessage] = useState<string>(
+    token ? "" : "No verification token was found in the link.",
+  );
 
   const [resendEmail, setResendEmail] = useState("");
   const [resendEmailError, setResendEmailError] = useState("");
@@ -32,11 +38,7 @@ function VerifyContent() {
   const [resendServerError, setResendServerError] = useState("");
 
   useEffect(() => {
-    if (!token) {
-      setPageState("invalid");
-      setServerMessage("No verification token was found in the link.");
-      return;
-    }
+    if (!token) return;
 
     apiRequest(`/v1/subscribers/verify/${encodeURIComponent(token)}`)
       .then(() => setPageState("success"))

@@ -71,6 +71,9 @@ if (apiOrigin) imgSources.push(apiOrigin);
 
 const connectSources = ["'self'"];
 if (apiOrigin) connectSources.push(apiOrigin);
+// Turbopack/HMR opens a dev websocket; allow it so dev doesn't log CSP
+// violations. Not added in production (no HMR there).
+if (!isProduction) connectSources.push("ws:", "wss:");
 
 const csp = [
   "default-src 'self'",
@@ -86,6 +89,7 @@ const csp = [
   "font-src 'self' data:",
   `img-src ${imgSources.join(" ")}`,
   `connect-src ${connectSources.join(" ")}`,
+  "object-src 'none'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

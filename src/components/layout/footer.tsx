@@ -24,7 +24,6 @@ export default function Footer({
   );
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const currentYear = new Date().getFullYear();
 
   // Auto-dismiss the "verification link sent" message and restore the form.
   useEffect(() => {

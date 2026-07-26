@@ -2,7 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -23,6 +24,7 @@ import SlugEntityDialog, {
   type SlugEntityFormValues,
 } from "@/components/admin/slug-entity-dialog";
 import DeleteEntityDialog from "@/components/admin/delete-entity-dialog";
+import FormMessage from "@/components/ui/form-message";
 
 interface SlugEntityBase {
   id: string;
@@ -188,14 +190,12 @@ export default function SlugEntityManager<T extends SlugEntityBase>({
       </div>
 
       {loadError && (
-        <div className="mt-6 rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-600">
-          {loadError}
-        </div>
+        <FormMessage type="error" className="mt-6" message={loadError} />
       )}
 
       {isPending ? (
         <div className="mt-10 flex items-center justify-center gap-2 text-sm text-gray-400">
-          <Loader2 size={18} className="animate-spin" />
+          <Spinner size={18} />
           Loading {lowerPlural}…
         </div>
       ) : (

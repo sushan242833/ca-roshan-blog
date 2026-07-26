@@ -2,7 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import { useAuth } from "@/components/providers/auth-provider";
 
 export default function AdminGuard({ children }: { children: ReactNode }) {
@@ -18,7 +18,7 @@ export default function AdminGuard({ children }: { children: ReactNode }) {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <Loader2 size={32} className="animate-spin text-brand-teal" />
+        <Spinner size={32} className="text-brand-teal" />
       </div>
     );
   }

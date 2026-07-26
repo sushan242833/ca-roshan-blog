@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import CategoryCard from "@/components/categories/category-card";
 import { apiRequest } from "@/lib/api";
+import { STATIC_PAGE_REVALIDATE_SECONDS } from "@/lib/constants";
 import type { CategoryResponse } from "@/types/category";
 
 const PAGE_SUBTITLE =
@@ -18,7 +19,7 @@ export default async function CategoriesPage() {
 
   try {
     categories = await apiRequest<CategoryResponse[]>("/v1/categories", {
-      next: { revalidate: 300 },
+      next: { revalidate: STATIC_PAGE_REVALIDATE_SECONDS },
     });
   } catch (err) {
     console.error("Failed to fetch categories:", err);

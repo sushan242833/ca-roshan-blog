@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
+import Spinner from "@/components/ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -79,7 +80,7 @@ export default function PublishPostDialog({
             disabled={isPublishing}
             className="inline-flex items-center justify-center gap-2 rounded-md bg-brand-teal-dark px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-teal disabled:opacity-60"
           >
-            {isPublishing && <Loader2 size={16} className="animate-spin" />}
+            {isPublishing && <Spinner size={16} />}
             {isPublishing ? "Publishing…" : "Publish Post"}
           </button>
         </DialogFooter>
