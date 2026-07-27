@@ -132,8 +132,8 @@ export default async function BlogPage({
 
               {postsData.items.length > 0 ? (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                  {postsData.items.map((post) => (
-                    <PostCard key={post.id} post={post} variant="summary" />
+                  {postsData.items.map((post, index) => (
+                    <PostCard key={post.id} post={post} variant="summary" priority={index === 0} />
                   ))}
                 </div>
               ) : (

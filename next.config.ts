@@ -45,11 +45,22 @@ function toRemotePattern(origin: string | null): RemotePattern | null {
 const isProduction = process.env.NODE_ENV === "production";
 const apiOrigin = parseOrigin(process.env.NEXT_PUBLIC_API_BASE_URL);
 
+// Media is served from Cloudinary's CDN in production, so its host must be
+// allowed by both the image optimizer and the CSP. Without this, every uploaded
+// image renders as a broken <img> and the console fills with CSP violations.
+const CLOUDINARY_HOSTNAME = "res.cloudinary.com";
+const CLOUDINARY_ORIGIN = `https://${CLOUDINARY_HOSTNAME}`;
+
 // ─── Remote image patterns ────────────────────────────────────────────────────
 // Authorise Next.js image optimisation to proxy images from the API server
 // and from Google (admin avatars may be served from Google accounts).
 const remotePatterns: RemotePattern[] = [
   toRemotePattern(apiOrigin),
+  {
+    protocol: "https",
+    hostname: CLOUDINARY_HOSTNAME,
+    pathname: "/**",
+  },
   {
     protocol: "https",
     hostname: "lh3.googleusercontent.com",
@@ -66,10 +77,11 @@ const imgSources = [
   "data:",
   "blob:",
   "https://lh3.googleusercontent.com",
+  CLOUDINARY_ORIGIN,
 ];
 if (apiOrigin) imgSources.push(apiOrigin);
 
-const connectSources = ["'self'"];
+const connectSources = ["'self'", CLOUDINARY_ORIGIN];
 if (apiOrigin) connectSources.push(apiOrigin);
 // Turbopack/HMR opens a dev websocket; allow it so dev doesn't log CSP
 // violations. Not added in production (no HMR there).
