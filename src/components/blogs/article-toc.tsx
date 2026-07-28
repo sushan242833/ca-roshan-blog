@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ChevronDown } from "lucide-react";
-import type { TocHeading } from "@/lib/toc";
+import { shallowestLevel, tocIndentClass, type TocHeading } from "@/lib/toc";
 
 interface ArticleTocProps {
   headings: TocHeading[];
@@ -61,10 +61,15 @@ function TocLinks({
   headings: TocHeading[];
   activeId: string | null;
 }) {
+  const shallowest = shallowestLevel(headings);
+
   return (
     <ul className="border-l border-brand-muted/40 text-sm">
       {headings.map((heading) => (
-        <li key={heading.id} className={heading.level === 3 ? "ml-3" : ""}>
+        <li
+          key={heading.id}
+          className={tocIndentClass(heading.level, shallowest)}
+        >
           <a
             href={`#${heading.id}`}
             aria-current={activeId === heading.id ? "true" : undefined}

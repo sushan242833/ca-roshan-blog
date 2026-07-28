@@ -2,6 +2,37 @@ import { describe, expect, it } from "vitest";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
 
 describe("sanitizeArticleHtml", () => {
+  it("keeps Tiptap text colors and highlights after browser serialization", () => {
+    const input =
+      '<p><span style="color: rgb(220, 38, 38)">Sushan</span></p>' +
+      '<p><span style="color: rgb(37, 99, 235)">ckmkmc</span></p>' +
+      '<p><mark style="background-color: rgb(251, 207, 232); color: inherit" ' +
+      'data-color="rgb(251, 207, 232)">hahaha</mark></p>';
+
+    const output = sanitizeArticleHtml(input);
+
+    expect(output).toContain('style="color:rgb(220, 38, 38)"');
+    expect(output).toContain('style="color:rgb(37, 99, 235)"');
+    expect(output).toContain(
+      'style="background-color:rgb(251, 207, 232);color:inherit"',
+    );
+    expect(output).toContain('data-color="rgb(251, 207, 232)"');
+  });
+
+  it("strips unsafe or malformed inline color values", () => {
+    const input =
+      '<p><span style="color: var(--brand); background-color: url(javascript:alert(1))">Bad</span></p>' +
+      '<p><mark style="background-color: rgb(999, 207, 232)" data-color="expression(alert(1))">Bad mark</mark></p>';
+
+    const output = sanitizeArticleHtml(input);
+
+    expect(output).not.toContain("var(");
+    expect(output).not.toContain("url(");
+    expect(output).not.toContain("javascript:");
+    expect(output).not.toContain("rgb(999");
+    expect(output).not.toContain("expression");
+  });
+
   it("keeps a pdf-link-block anchor with its attributes intact", () => {
     const input =
       '<a class="pdf-link-block" href="/uploads/report.pdf" ' +

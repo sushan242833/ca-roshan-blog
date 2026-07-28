@@ -1,22 +1,64 @@
 import { describe, expect, it } from "vitest";
-import { buildToc, parseHeadings } from "@/lib/toc";
+import {
+  buildToc,
+  parseHeadings,
+  shallowestLevel,
+  tocIndentClass,
+} from "@/lib/toc";
 
 describe("parseHeadings", () => {
-  it("extracts h2 and h3 with their levels and text", () => {
+  it("extracts h1, h2 and h3 with their levels and text", () => {
     const headings = parseHeadings(
-      "<h2>First Section</h2><p>body</p><h3>A Subsection</h3>",
+      "<h1>Top Section</h1><h2>First Section</h2><p>body</p><h3>A Subsection</h3>",
     );
     expect(headings).toEqual([
+      { id: "top-section", text: "Top Section", level: 1 },
       { id: "first-section", text: "First Section", level: 2 },
       { id: "a-subsection", text: "A Subsection", level: 3 },
     ]);
   });
 
-  it("ignores headings other than h2/h3", () => {
+  it("ignores h4, which is too deep for the contents rail", () => {
     const headings = parseHeadings(
-      "<h1>Title</h1><h2>Kept</h2><h4>Dropped</h4>",
+      "<h1>Kept</h1><h2>Kept too</h2><h4>Dropped</h4>",
+    );
+    expect(headings.map((h) => h.text)).toEqual(["Kept", "Kept too"]);
+  });
+
+  it("reads headings the editor writes as classed paragraphs", () => {
+    const headings = parseHeadings(
+      '<p class="heading-1">Top</p>' +
+        '<p class="heading-2">Middle</p>' +
+        "<p>Body copy</p>" +
+        '<p class="heading-3">Deep</p>',
+    );
+
+    expect(headings).toEqual([
+      { id: "top", text: "Top", level: 1 },
+      { id: "middle", text: "Middle", level: 2 },
+      { id: "deep", text: "Deep", level: 3 },
+    ]);
+  });
+
+  it("ignores a heading-4 paragraph, like a real h4", () => {
+    const headings = parseHeadings(
+      '<p class="heading-2">Kept</p><p class="heading-4">Dropped</p>',
     );
     expect(headings.map((h) => h.text)).toEqual(["Kept"]);
+  });
+
+  it("reads the class in any position and alongside other classes", () => {
+    const headings = parseHeadings(
+      '<p class="text-align-center heading-2">Centered</p>',
+    );
+    expect(headings.map((h) => h.level)).toEqual([2]);
+  });
+
+  it("mixes legacy tags and the paragraph form in document order", () => {
+    const headings = parseHeadings(
+      '<h2>Legacy</h2><p class="heading-2">Current</p>',
+    );
+    expect(headings.map((h) => h.text)).toEqual(["Legacy", "Current"]);
   });
 
   it("slugs like the backend: lowercase, hyphens, stripped punctuation", () => {
@@ -90,7 +132,48 @@ describe("buildToc", () => {
   });
 
   it("leaves non-heading content untouched", () => {
-    const input = '<p>Paragraph</p><ul><li>Item</li></ul>';
+    const input = "<p>Paragraph</p><ul><li>Item</li></ul>";
     expect(buildToc(input).html).toBe(input);
+  });
+
+  it("gives an h1 an id so the contents can link to it", () => {
+    const { html } = buildToc("<h1>Opening</h1>");
+    expect(html).toContain('<h1 id="opening">Opening</h1>');
+  });
+
+  it("injects ids onto heading paragraphs, keeping their classes", () => {
+    const { html, headings } = buildToc(
+      '<p class="heading-2">Section</p><p>Body</p>',
+    );
+
+    expect(html).toBe(
+      '<p class="heading-2" id="section">Section</p><p>Body</p>',
+    );
+    expect(headings).toEqual([{ id: "section", text: "Section", level: 2 }]);
+  });
+
+  it("leaves ordinary paragraphs byte-identical", () => {
+    const input = '<p>One</p><p class="other">Two</p><p id="keep">Three</p>';
+    expect(buildToc(input).html).toBe(input);
+  });
+});
+
+describe("tocIndentClass", () => {
+  it("indents relative to the shallowest heading, not the tag level", () => {
+    // A post written with h2/h3 looks the same as one written with h1/h2.
+    const withoutH1 = parseHeadings("<h2>A</h2><h3>B</h3>");
+    expect(shallowestLevel(withoutH1)).toBe(2);
+    expect(tocIndentClass(2, 2)).toBe("");
+    expect(tocIndentClass(3, 2)).toBe("ml-3");
+
+    const withH1 = parseHeadings("<h1>A</h1><h2>B</h2><h3>C</h3>");
+    expect(shallowestLevel(withH1)).toBe(1);
+    expect(tocIndentClass(1, 1)).toBe("");
+    expect(tocIndentClass(2, 1)).toBe("ml-3");
+    expect(tocIndentClass(3, 1)).toBe("ml-6");
+  });
+
+  it("treats an empty heading list as the deepest level", () => {
+    expect(shallowestLevel([])).toBe(3);
   });
 });

@@ -46,15 +46,10 @@ import { ImageUpload } from "@/lib/tiptap/image-upload-extension";
 import { Callout } from "@/lib/tiptap/callout-extension";
 import { PdfLink } from "@/lib/tiptap/pdf-link-extension";
 import { TextAlign } from "@/lib/tiptap/text-align-extension";
+import { HeadingParagraph } from "@/lib/tiptap/heading-paragraph-extension";
 import { DEFAULT_PDF_LABEL } from "@/lib/constants";
+import { HIGHLIGHT_PINK, TEXT_BLUE, TEXT_RED } from "@/lib/editor-palette";
 import type { MediaResponse } from "@/types/media";
-
-// Fixed palette for the toolbar. Kept small and explicit (not a free colour
-// picker) so the values are the only ones sanitize-html has to allow through on
-// the public article page — see allowedStyles in src/lib/sanitize-html.ts.
-const TEXT_RED = "#dc2626";
-const TEXT_BLUE = "#2563eb";
-const HIGHLIGHT_PINK = "#fbcfe8";
 
 interface RichTextEditorProps {
   /** HTML string, e.g. from react-hook-form's Controller. */
@@ -175,7 +170,10 @@ function applyCallout(editor: Editor, variant: "note" | "warning") {
 // HTML in, HTML out — plugs into react-hook-form via Controller. The editor
 // body reuses the public .article-body typography so authors see what
 // readers will see.
-export default function RichTextEditor({ value, onChange }: RichTextEditorProps) {
+export default function RichTextEditor({
+  value,
+  onChange,
+}: RichTextEditorProps) {
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
   // uploadFile is referentially stable (its whole dependency chain in the
@@ -185,13 +183,16 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: { levels: [1, 2, 3, 4] },
+        // Headings come from HeadingParagraph instead: same node, same toolbar
+        // commands, but serialised as <p class="heading-N">.
+        heading: false,
         // StarterKit v3 bundles the Link extension (@tiptap/extension-link).
         link: {
           openOnClick: false,
           defaultProtocol: "https",
         },
       }),
+      HeadingParagraph.configure({ levels: [1, 2, 3, 4] }),
       // TextStyle carries the inline `style` mark; Color writes color onto it.
       // Restricted to the toolbar's fixed palette (red/blue) in practice.
       TextStyle,
@@ -258,28 +259,36 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
         <ToolbarButton
           label="Heading 1"
           active={editor.isActive("heading", { level: 1 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 1 }).run()
+          }
         >
           <Heading1 size={16} />
         </ToolbarButton>
         <ToolbarButton
           label="Heading 2"
           active={editor.isActive("heading", { level: 2 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
         >
           <Heading2 size={16} />
         </ToolbarButton>
         <ToolbarButton
           label="Heading 3"
           active={editor.isActive("heading", { level: 3 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 3 }).run()
+          }
         >
           <Heading3 size={16} />
         </ToolbarButton>
         <ToolbarButton
           label="Heading 4"
           active={editor.isActive("heading", { level: 4 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 4 }).run()
+          }
         >
           <Heading4 size={16} />
         </ToolbarButton>
@@ -327,7 +336,11 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           label="Pink highlight"
           active={editor.isActive("highlight", { color: HIGHLIGHT_PINK })}
           onClick={() =>
-            editor.chain().focus().toggleHighlight({ color: HIGHLIGHT_PINK }).run()
+            editor
+              .chain()
+              .focus()
+              .toggleHighlight({ color: HIGHLIGHT_PINK })
+              .run()
           }
         >
           <Highlighter size={16} style={{ color: HIGHLIGHT_PINK }} />
@@ -426,7 +439,9 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           </ToolbarButton>
         )}
         <ToolbarButton
-          label={editor.isActive("pdfLink") ? "Edit PDF link" : "Insert PDF link"}
+          label={
+            editor.isActive("pdfLink") ? "Edit PDF link" : "Insert PDF link"
+          }
           active={editor.isActive("pdfLink")}
           onClick={() => setShowPdfDialog(true)}
         >
