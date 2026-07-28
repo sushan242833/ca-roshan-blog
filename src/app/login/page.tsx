@@ -18,6 +18,11 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+// Backend validation `field` names match the form field names.
+function isLoginField(name: string): name is keyof LoginFormValues {
+  return name === "email" || name === "password";
+}
+
 const inputClass =
   "w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 " +
   "placeholder:text-gray-400 focus:border-brand-teal focus:outline-none focus:ring-1 focus:ring-brand-teal";
@@ -47,11 +52,31 @@ export default function LoginPage() {
       await login(data.email, data.password);
       router.replace("/admin");
     } catch (err) {
+      if (!(err instanceof ApiRequestError)) {
+        setError("root", {
+          message: "Something went wrong. Please try again.",
+        });
+        return;
+      }
+
+      const unmatched: string[] = [];
+      let matchedAny = false;
+      for (const issue of err.details ?? []) {
+        if (isLoginField(issue.field)) {
+          setError(issue.field, { type: "server", message: issue.message });
+          matchedAny = true;
+        } else {
+          unmatched.push(issue.message);
+        }
+      }
+
       setError("root", {
         message:
-          err instanceof ApiRequestError
-            ? err.message
-            : "Something went wrong. Please try again.",
+          unmatched.length > 0
+            ? [err.message, ...unmatched].join(" ")
+            : matchedAny
+              ? "Please fix the highlighted field(s) below."
+              : err.message,
       });
     }
   }

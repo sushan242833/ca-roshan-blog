@@ -94,6 +94,11 @@ const EMPTY_FORM_VALUES: PostFormValues = {
   featured: false,
 };
 
+// Backend validation `field` names match the form field names 1:1.
+function isPostFormField(name: string): name is keyof PostFormValues {
+  return name in EMPTY_FORM_VALUES;
+}
+
 const STATUS_LABEL: Record<PostStatus, string> = {
   PUBLISHED: "Published",
   DRAFT: "Draft",
@@ -312,9 +317,30 @@ export default function PostEditor({ postId }: PostEditorProps) {
   }
 
   function surfaceError(err: unknown) {
-    setFormError(
-      err instanceof ApiRequestError ? err.message : "Failed to save post.",
-    );
+    if (!(err instanceof ApiRequestError)) {
+      setFormError("Failed to save post.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    const unmatched: string[] = [];
+    let matchedAny = false;
+    for (const issue of err.details ?? []) {
+      if (isPostFormField(issue.field)) {
+        setError(issue.field, { type: "server", message: issue.message });
+        matchedAny = true;
+      } else {
+        unmatched.push(issue.message);
+      }
+    }
+
+    if (unmatched.length > 0) {
+      setFormError([err.message, ...unmatched].join(" "));
+    } else if (matchedAny) {
+      setFormError("Please fix the highlighted field(s) below.");
+    } else {
+      setFormError(err.message);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 

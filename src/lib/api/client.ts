@@ -17,15 +17,43 @@ export type ApiRequestOptions = RequestInit & {
   next?: { revalidate?: number | false };
 };
 
+export type ValidationIssue = { field: string; message: string };
+
 export class ApiRequestError extends Error {
   constructor(
     message: string,
     public readonly status: number,
     public readonly code?: string,
+    public readonly details?: ValidationIssue[],
   ) {
     super(message);
     this.name = "ApiRequestError";
   }
+}
+
+// error.details is untrusted (typed `unknown`), so validate each entry before
+// use; malformed entries are skipped and an empty result collapses to undefined.
+function parseValidationIssues(details: unknown): ValidationIssue[] | undefined {
+  if (!Array.isArray(details)) {
+    return undefined;
+  }
+
+  const issues: ValidationIssue[] = [];
+  for (const item of details) {
+    if (
+      typeof item === "object" &&
+      item !== null &&
+      "field" in item &&
+      "message" in item
+    ) {
+      const { field, message } = item;
+      if (typeof field === "string" && typeof message === "string") {
+        issues.push({ field, message });
+      }
+    }
+  }
+
+  return issues.length > 0 ? issues : undefined;
 }
 
 async function unwrapResponse<T>(res: Response): Promise<T> {
@@ -45,7 +73,10 @@ async function unwrapResponse<T>(res: Response): Promise<T> {
   if (!res.ok || !body.success) {
     const message = !body.success ? body.message : "Request failed.";
     const code = !body.success ? body.error?.code : undefined;
-    throw new ApiRequestError(message, res.status, code);
+    const details = !body.success
+      ? parseValidationIssues(body.error?.details)
+      : undefined;
+    throw new ApiRequestError(message, res.status, code, details);
   }
 
   return body.data;
