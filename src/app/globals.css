@@ -156,6 +156,16 @@
 .article-body p {
   margin-bottom: 1.5rem;
 }
+/* h1 is available in the editor but sits below the page title; render it as
+   the largest in-body heading, in brand navy. */
+.article-body h1 {
+  font-family: var(--font-serif);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #0D1B2A;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
 /* h2 headings render in the brand teal (no underline) to match the article
    detail design; h3/h4 stay navy. */
 .article-body h2 {
