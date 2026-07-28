@@ -16,7 +16,9 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { slug } = await params;
   try {
     const post = await apiRequest<PostDetailResponse>(`/v1/posts/${slug}`);
@@ -75,20 +77,18 @@ export default async function ArticlePage({ params }: PageProps) {
         `/v1/posts?category=${post.category.slug}&limit=4`,
         { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
       );
-      relatedPosts = related.items
-        .filter((p) => p.id !== post.id)
-        .slice(0, 3);
+      relatedPosts = related.items.filter((p) => p.id !== post.id).slice(0, 3);
     } catch {
       // silently fall through — related section will be hidden
     }
   }
 
   return (
-    <div className="bg-[#f9f9ff]">
+    <div>
       <ArticleView post={post} shareUrl={`${SITE_URL}/blogs/${slug}`} />
 
       {relatedPosts.length > 0 && (
-        <section className="bg-[#f9f9ff] px-6 py-20">
+        <section className=" px-6 py-20">
           <div className="mx-auto max-w-[1200px]">
             <h2 className="mb-8 border-b border-[#bec9c4] pb-4 font-serif text-[32px] font-bold leading-[1.3] tracking-normal text-[#121c2a]">
               Recommended for You
