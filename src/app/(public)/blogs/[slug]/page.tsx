@@ -89,8 +89,8 @@ export default async function ArticlePage({ params }: PageProps) {
 
       {relatedPosts.length > 0 && (
         <section className=" px-6 py-20">
-          <div className="mx-auto max-w-[1200px]">
-            <h2 className="mb-8 border-b border-[#bec9c4] pb-4 font-serif text-[32px] font-bold leading-[1.3] tracking-normal text-[#121c2a]">
+          <div className="mx-auto max-w-300">
+            <h2 className="mb-8 border-b border-brand-muted pb-4 font-serif text-[32px] font-bold leading-[1.3] tracking-normal text-[#121c2a]">
               Recommended for You
             </h2>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">

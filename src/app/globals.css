@@ -156,9 +156,15 @@
 .article-body p {
   margin-bottom: 1.5rem;
 }
+/* Headings come in two forms: `p.heading-<level>` written by the editor (see
+   lib/tiptap/heading-paragraph-extension.ts) and real h1–h4 tags on posts
+   published before that change. Every heading rule below covers both, and the
+   class selectors also outrank `.article-body p` so the heading margins win. */
+
 /* h1 is available in the editor but sits below the page title; render it as
    the largest in-body heading, in brand navy. */
-.article-body h1 {
+.article-body h1,
+.article-body .heading-1 {
   font-family: var(--font-serif);
   font-size: 2.25rem;
   font-weight: 700;
@@ -166,17 +172,19 @@
   margin-top: 2.5rem;
   margin-bottom: 1rem;
 }
-/* h2 headings render in the brand teal (no underline) to match the article
-   detail design; h3/h4 stay navy. */
-.article-body h2 {
+/* h2 headings match the other in-body headings (brand navy, no underline) so an
+   author's own colour choice is the only thing that tints a heading. */
+.article-body h2,
+.article-body .heading-2 {
   font-family: var(--font-serif);
   font-size: 1.875rem;
   font-weight: 700;
-  color: #005243;
+  color: #0d1b2a;
   margin-top: 2.5rem;
   margin-bottom: 1rem;
 }
-.article-body h3 {
+.article-body h3,
+.article-body .heading-3 {
   font-family: var(--font-serif);
   font-size: 1.5rem;
   font-weight: 700;
@@ -184,7 +192,8 @@
   margin-top: 2rem;
   margin-bottom: 0.5rem;
 }
-.article-body h4 {
+.article-body h4,
+.article-body .heading-4 {
   font-family: var(--font-serif);
   font-size: 1.125rem;
   font-weight: 700;
@@ -367,8 +376,12 @@
 
 /* Offset in-content headings so TOC jumps clear the sticky site header
    (h-14 mobile / h-16 desktop). */
+.article-body h1,
 .article-body h2,
-.article-body h3 {
+.article-body h3,
+.article-body .heading-1,
+.article-body .heading-2,
+.article-body .heading-3 {
   scroll-margin-top: 5rem;
 }
 
@@ -405,16 +418,18 @@
 .article-body-detail > :first-child {
   margin-top: 0;
 }
-.article-body-detail h2 {
+.article-body-detail h2,
+.article-body-detail .heading-2 {
   margin-top: 4rem;
   margin-bottom: 2rem;
   font-family: var(--font-serif);
   font-size: 2rem;
   font-weight: 700;
   line-height: 1.3;
-  color: #005243;
+  color: #121c2a;
 }
-.article-body-detail h3 {
+.article-body-detail h3,
+.article-body-detail .heading-3 {
   margin-top: 3rem;
   margin-bottom: 1.5rem;
   font-family: var(--font-serif);
@@ -423,7 +438,8 @@
   line-height: 1.4;
   color: #121c2a;
 }
-.article-body-detail h4 {
+.article-body-detail h4,
+.article-body-detail .heading-4 {
   margin-top: 2rem;
   margin-bottom: 1rem;
   font-family: var(--font-serif);
