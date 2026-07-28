@@ -8,17 +8,22 @@ import TableRow from "@tiptap/extension-table-row";
 import TableHeader from "@tiptap/extension-table-header";
 import TableCell from "@tiptap/extension-table-cell";
 import TiptapImage from "@tiptap/extension-image";
+import { TextStyle, Color } from "@tiptap/extension-text-style";
+import Highlight from "@tiptap/extension-highlight";
 import {
   AlignCenter,
   AlignJustify,
   AlignLeft,
   AlignRight,
+  Baseline,
   Bold,
   Captions,
   FileText,
+  Heading1,
   Heading2,
   Heading3,
   Heading4,
+  Highlighter,
   Image as ImageIcon,
   Info,
   Italic,
@@ -43,6 +48,13 @@ import { PdfLink } from "@/lib/tiptap/pdf-link-extension";
 import { TextAlign } from "@/lib/tiptap/text-align-extension";
 import { DEFAULT_PDF_LABEL } from "@/lib/constants";
 import type { MediaResponse } from "@/types/media";
+
+// Fixed palette for the toolbar. Kept small and explicit (not a free colour
+// picker) so the values are the only ones sanitize-html has to allow through on
+// the public article page — see allowedStyles in src/lib/sanitize-html.ts.
+const TEXT_RED = "#dc2626";
+const TEXT_BLUE = "#2563eb";
+const HIGHLIGHT_PINK = "#fbcfe8";
 
 interface RichTextEditorProps {
   /** HTML string, e.g. from react-hook-form's Controller. */
@@ -173,13 +185,20 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: { levels: [2, 3, 4] },
+        heading: { levels: [1, 2, 3, 4] },
         // StarterKit v3 bundles the Link extension (@tiptap/extension-link).
         link: {
           openOnClick: false,
           defaultProtocol: "https",
         },
       }),
+      // TextStyle carries the inline `style` mark; Color writes color onto it.
+      // Restricted to the toolbar's fixed palette (red/blue) in practice.
+      TextStyle,
+      Color,
+      // multicolor lets a highlight carry its own colour (pink) rather than one
+      // hard-coded default; emitted as <mark style="background-color:…">.
+      Highlight.configure({ multicolor: true }),
       // Fixed column widths only — resizable adds drag handles and inline
       // colwidth styles that aren't worth the complexity here.
       Table.configure({ resizable: false }),
@@ -237,6 +256,13 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           <Pilcrow size={16} />
         </ToolbarButton>
         <ToolbarButton
+          label="Heading 1"
+          active={editor.isActive("heading", { level: 1 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        >
+          <Heading1 size={16} />
+        </ToolbarButton>
+        <ToolbarButton
           label="Heading 2"
           active={editor.isActive("heading", { level: 2 })}
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
@@ -273,6 +299,38 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <Italic size={16} />
+        </ToolbarButton>
+
+        <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />
+
+        <ToolbarButton
+          label="Red text"
+          active={editor.isActive("textStyle", { color: TEXT_RED })}
+          onClick={() => editor.chain().focus().setColor(TEXT_RED).run()}
+        >
+          <Baseline size={16} style={{ color: TEXT_RED }} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Blue text"
+          active={editor.isActive("textStyle", { color: TEXT_BLUE })}
+          onClick={() => editor.chain().focus().setColor(TEXT_BLUE).run()}
+        >
+          <Baseline size={16} style={{ color: TEXT_BLUE }} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Default text colour"
+          onClick={() => editor.chain().focus().unsetColor().run()}
+        >
+          <Baseline size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Pink highlight"
+          active={editor.isActive("highlight", { color: HIGHLIGHT_PINK })}
+          onClick={() =>
+            editor.chain().focus().toggleHighlight({ color: HIGHLIGHT_PINK }).run()
+          }
+        >
+          <Highlighter size={16} style={{ color: HIGHLIGHT_PINK }} />
         </ToolbarButton>
 
         <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />

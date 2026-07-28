@@ -12,14 +12,17 @@ import { isValidPdfUrl } from "@/lib/pdf-url";
 // (src/components/admin/rich-text-editor.tsx) can emit, NOT from sanitize-html's
 // much narrower default, so HTML already stored on published posts is never
 // silently stripped:
-//   - StarterKit: p, headings (levels 2-4 only), strong, em, s, code, pre,
+//   - StarterKit: p, headings (levels 1-4), strong, em, s, code, pre,
 //     blockquote, ul, ol, li, hr, br, a
 //   - Table extensions: table, thead, tbody, tr, th, td
 //   - Image extension: img
 //   - Callout custom node: div (marked with data-callout / data-variant)
 //   - PdfLink custom node: a.pdf-link-block
+//   - Color (TextStyle): span with an inline `color`
+//   - Highlight: mark with an inline `background-color`
 const ALLOWED_TAGS = [
   "p",
+  "h1",
   "h2",
   "h3",
   "h4",
@@ -43,27 +46,44 @@ const ALLOWED_TAGS = [
   "td",
   "img",
   "div",
+  "span",
+  "mark",
 ];
+
+// Exactly the values the editor's fixed colour/highlight palette can produce
+// (see TEXT_RED / TEXT_BLUE / HIGHLIGHT_PINK in rich-text-editor.tsx). Style
+// values are matched against these regexes, so authored colours survive while
+// arbitrary CSS is dropped — no open pattern that would accept any colour.
+const TEXT_RED = /^#dc2626$/i;
+const TEXT_BLUE = /^#2563eb$/i;
+// The Highlight mark renders as `background-color: <pink>; color: inherit`, so
+// `inherit` is permitted on `color` purely to keep that mark intact.
+const COLOR_INHERIT = /^inherit$/i;
+const HIGHLIGHT_PINK = /^#fbcfe8$/i;
 
 const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: ALLOWED_TAGS,
   allowedAttributes: {
     // class is used everywhere — the Callout node (`callout callout-*`), the
     // pdf-link-block chip, and the TextAlign extension's `text-align-*` class.
-    // A style attribute is permitted but clamped to text-align only (see
-    // allowedStyles) so legacy/pasted `style="text-align:..."` still renders.
+    // A style attribute is permitted but clamped by allowedStyles below.
     "*": ["class", "style"],
     a: ["href", "target", "rel", "data-pdf-label"],
     img: ["src", "alt", "width", "height"],
     th: ["colspan", "rowspan"],
     td: ["colspan", "rowspan"],
     div: ["data-callout", "data-variant"],
+    // Highlight records its colour on data-color for editor round-tripping.
+    mark: ["data-color"],
   },
-  // Only text-align survives on the style attribute — the TextAlign extension
-  // is the sole legitimate source of inline styles. Everything else is dropped.
+  // Inline styles are clamped to a closed set of properties AND values: the
+  // TextAlign extension's alignment, the Color mark's red/blue text, and the
+  // Highlight mark's pink background. Anything else on `style` is dropped.
   allowedStyles: {
     "*": {
       "text-align": [/^(?:left|right|center|justify)$/],
+      color: [TEXT_RED, TEXT_BLUE, COLOR_INHERIT],
+      "background-color": [HIGHLIGHT_PINK],
     },
   },
   // Mirrors the previous DOMPurify default: http(s)/ftp/mailto/tel links are
