@@ -147,6 +147,7 @@ const nextConfig: NextConfig = {
     // In production the optimizer runs normally via remotePatterns.
     unoptimized: !isProduction,
     remotePatterns,
+    contentDispositionType: "inline" as const,
   },
 
   async headers() {
