@@ -77,7 +77,7 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
   const legacyPdfLabel = post.pdfLabel?.trim() || DEFAULT_PDF_LABEL;
 
   return (
-    <article className="bg-[#f9f9ff] text-[#121c2a] selection:bg-[#a6f1db] selection:text-[#002019]">
+    <article className="text-[#121c2a]">
       <header className="px-6 pb-8 pt-16 text-center">
         <div className="mx-auto max-w-[800px]">
           {categoryList.length > 0 && (
