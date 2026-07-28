@@ -6,6 +6,11 @@ import { FileUp, Info, X } from "lucide-react";
 import Spinner from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
+import {
+  applyImportedColors,
+  tagColoredRuns,
+  WORD_COLOR_STYLE_MAP,
+} from "@/lib/word-color-import";
 
 // Word .docx files with embedded images can get large; guard well above a
 // typical article but below anything that would choke the browser.
@@ -69,9 +74,7 @@ const MAX_HEADING_LEVEL = 4;
 
 function remapHeadingLevels(html: string): string {
   const doc = new DOMParser().parseFromString(html, "text/html");
-  const headings = Array.from(
-    doc.body.querySelectorAll("h1,h2,h3,h4,h5,h6"),
-  );
+  const headings = Array.from(doc.body.querySelectorAll("h1,h2,h3,h4,h5,h6"));
   if (headings.length === 0) return html;
 
   const levelOf = (el: Element) => parseInt(el.tagName.substring(1), 10);
@@ -188,9 +191,7 @@ export default function WordImport({
     }
     if (
       hasExistingContent() &&
-      !window.confirm(
-        "This will replace your current draft content. Continue?",
-      )
+      !window.confirm("This will replace your current draft content. Continue?")
     ) {
       return;
     }
@@ -219,15 +220,22 @@ export default function WordImport({
     });
 
     try {
-      const arrayBuffer = await file.arrayBuffer();
+      // Coloured runs are tagged with a character style first: mammoth discards
+      // a run's font colour while reading the document, so red/blue text has to
+      // be turned into something it does read before conversion starts.
+      const arrayBuffer = await tagColoredRuns(await file.arrayBuffer());
       const { value, messages } = await mammoth.convertToHtml(
         { arrayBuffer },
-        { convertImage, transformDocument: stripTocParagraphs },
+        {
+          convertImage,
+          transformDocument: stripTocParagraphs,
+          styleMap: WORD_COLOR_STYLE_MAP,
+        },
       );
 
       // Extract the leading H1 title BEFORE remapping — the split checks for a
       // genuine leading <h1>, which remapping would turn into an <h2> first.
-      const titleSplit = splitLeadingTitle(value);
+      const titleSplit = splitLeadingTitle(applyImportedColors(value));
       const result = {
         title: titleSplit.title,
         html: remapHeadingLevels(titleSplit.html),
@@ -262,7 +270,9 @@ export default function WordImport({
           <p className="mt-1 max-w-2xl text-xs text-gray-500">
             Works best when your Word document uses Word&apos;s built-in Heading
             styles (Heading 1, Heading 2) rather than manually bolded text.
-            Images and tables are imported automatically; please review
+            Images and tables are imported automatically. Red and blue text and
+            highlighted text carry over, mapped onto this editor&apos;s own
+            colours; other colours are imported as plain text. Please review
             formatting after import.
           </p>
         </div>
@@ -272,11 +282,7 @@ export default function WordImport({
           disabled={isImporting}
           className="inline-flex shrink-0 items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-50 disabled:opacity-60"
         >
-          {isImporting ? (
-            <Spinner size={16} />
-          ) : (
-            <FileUp size={16} />
-          )}
+          {isImporting ? <Spinner size={16} /> : <FileUp size={16} />}
           {isImporting ? "Importing…" : "Import from Word"}
         </button>
         <input

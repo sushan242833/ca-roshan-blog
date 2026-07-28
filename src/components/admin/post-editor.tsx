@@ -178,7 +178,9 @@ export default function PostEditor({ postId }: PostEditorProps) {
   });
 
   // Wraps the rich-text editor so the outline can scroll to a heading by
-  // index — the editor's h2/h3 elements are in the same order as parseHeadings.
+  // index. Headings render as `p.heading-<level>` (see
+  // lib/tiptap/heading-paragraph-extension.ts) and are in the same order as
+  // parseHeadings, so the two must cover the same set of levels.
   const editorWrapperRef = useRef<HTMLDivElement>(null);
   // Lets a failed publish (missing featured image) scroll the field into view.
   const featuredImageRef = useRef<HTMLDivElement>(null);
@@ -204,8 +206,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
   });
   const postQuery = useQuery({
     queryKey: queryKeys.post(postId ?? ""),
-    queryFn: () =>
-      authedFetch<PostDetailResponse>(`/v1/posts/admin/${postId}`),
+    queryFn: () => authedFetch<PostDetailResponse>(`/v1/posts/admin/${postId}`),
     enabled: isEditMode,
   });
 
@@ -289,7 +290,10 @@ export default function PostEditor({ postId }: PostEditorProps) {
   // Status is never sent on updates — it is managed by the transition
   // endpoints so the newsletter logic stays in one backend path.
   const updatePostMutation = useMutation({
-    mutationFn: (vars: { id: string; payload: ReturnType<typeof buildPayload> }) =>
+    mutationFn: (vars: {
+      id: string;
+      payload: ReturnType<typeof buildPayload>;
+    }) =>
       authedFetch<PostDetailResponse>(`/v1/posts/${vars.id}`, {
         method: "PATCH",
         body: JSON.stringify(vars.payload),
@@ -429,9 +433,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
         body: JSON.stringify({ name }),
       });
       queryClient.setQueryData<TagResponse[]>(queryKeys.tags, (prev) =>
-        [...(prev ?? []), created].sort((a, b) =>
-          a.name.localeCompare(b.name),
-        ),
+        [...(prev ?? []), created].sort((a, b) => a.name.localeCompare(b.name)),
       );
       queryClient.invalidateQueries({ queryKey: queryKeys.tags });
       selectTag(created.id);
@@ -453,7 +455,9 @@ export default function PostEditor({ postId }: PostEditorProps) {
         }
       } else {
         toast.error(
-          err instanceof ApiRequestError ? err.message : "Failed to create tag.",
+          err instanceof ApiRequestError
+            ? err.message
+            : "Failed to create tag.",
         );
       }
     } finally {
@@ -464,7 +468,11 @@ export default function PostEditor({ postId }: PostEditorProps) {
   // True when the content field holds visible text (mirrors the zod check),
   // used to warn before a Word import overwrites an in-progress draft.
   function hasContent() {
-    return getValues("content").replace(/<[^>]*>/g, " ").trim().length > 0;
+    return (
+      getValues("content")
+        .replace(/<[^>]*>/g, " ")
+        .trim().length > 0
+    );
   }
 
   // Populate the form from a converted Word document, exactly as if typed:
@@ -481,8 +489,9 @@ export default function PostEditor({ postId }: PostEditorProps) {
   // inside the editor (those are injected only at render time), so match by
   // document order against the live h2/h3 elements.
   function scrollToHeading(index: number) {
-    const headings =
-      editorWrapperRef.current?.querySelectorAll<HTMLElement>("h2, h3");
+    const headings = editorWrapperRef.current?.querySelectorAll<HTMLElement>(
+      "p.heading-1, p.heading-2, p.heading-3",
+    );
     headings?.[index]?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
@@ -598,7 +607,9 @@ export default function PostEditor({ postId }: PostEditorProps) {
               className="w-full border-none bg-transparent p-0 font-serif text-2xl font-bold text-brand-navy placeholder:text-gray-300 focus:outline-none focus:ring-0"
             />
             {errors.title && (
-              <p className="mt-2 text-xs text-red-600">{errors.title.message}</p>
+              <p className="mt-2 text-xs text-red-600">
+                {errors.title.message}
+              </p>
             )}
 
             <div className="mt-4 flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 font-mono text-xs text-gray-500">
@@ -630,7 +641,9 @@ export default function PostEditor({ postId }: PostEditorProps) {
             />
           </div>
           {errors.content && (
-            <p className="-mt-4 text-xs text-red-600">{errors.content.message}</p>
+            <p className="-mt-4 text-xs text-red-600">
+              {errors.content.message}
+            </p>
           )}
         </div>
 
@@ -885,11 +898,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
                   disabled={isPreviewing || isSubmitting}
                   className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-50 disabled:opacity-50"
                 >
-                  {isPreviewing ? (
-                    <Spinner size={16} />
-                  ) : (
-                    <Eye size={16} />
-                  )}
+                  {isPreviewing ? <Spinner size={16} /> : <Eye size={16} />}
                   Preview
                 </button>
                 <button
