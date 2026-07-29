@@ -1,22 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
+import {
+  TEXT_AMBER,
+  TEXT_BLUE,
+  TEXT_BROWN,
+  TEXT_PINK,
+  TEXT_RED,
+} from "@/lib/editor-palette";
 
 describe("sanitizeArticleHtml", () => {
-  it("keeps Tiptap text colors and highlights after browser serialization", () => {
+  it("keeps Tiptap text colors and turns old highlights into pink text", () => {
     const input =
-      '<p><span style="color: rgb(220, 38, 38)">Sushan</span></p>' +
-      '<p><span style="color: rgb(37, 99, 235)">ckmkmc</span></p>' +
+      `<p><span style="color: ${TEXT_BLUE}">blue</span></p>` +
+      `<p><span style="color: ${TEXT_BROWN}">brown</span></p>` +
+      `<p><span style="color: ${TEXT_AMBER}">amber</span></p>` +
+      `<p><span style="color: ${TEXT_RED}">red</span></p>` +
+      `<p><span style="color: ${TEXT_PINK}">pink</span></p>` +
       '<p><mark style="background-color: rgb(251, 207, 232); color: inherit" ' +
       'data-color="rgb(251, 207, 232)">hahaha</mark></p>';
 
     const output = sanitizeArticleHtml(input);
 
-    expect(output).toContain('style="color:rgb(220, 38, 38)"');
-    expect(output).toContain('style="color:rgb(37, 99, 235)"');
-    expect(output).toContain(
-      'style="background-color:rgb(251, 207, 232);color:inherit"',
-    );
-    expect(output).toContain('data-color="rgb(251, 207, 232)"');
+    expect(output).toContain(`style="color:${TEXT_BLUE}"`);
+    expect(output).toContain(`style="color:${TEXT_BROWN}"`);
+    expect(output).toContain(`style="color:${TEXT_AMBER}"`);
+    expect(output).toContain(`style="color:${TEXT_RED}"`);
+    expect(output).toContain(`style="color:${TEXT_PINK}"`);
+    expect(output).not.toContain("<mark");
+    expect(output).not.toContain("background-color");
+    expect(output).not.toContain("data-color");
   });
 
   it("keeps strikethrough text", () => {
