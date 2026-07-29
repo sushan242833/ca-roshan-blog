@@ -4,24 +4,36 @@ import {
   classifyWordColor,
   WORD_COLOR_STYLE_MAP,
 } from "@/lib/word-color-import";
-import { HIGHLIGHT_PINK, TEXT_BLUE, TEXT_RED } from "@/lib/editor-palette";
+import {
+  TEXT_AMBER,
+  TEXT_BLUE,
+  TEXT_BROWN,
+  TEXT_PINK,
+  TEXT_RED,
+} from "@/lib/editor-palette";
 
 describe("classifyWordColor", () => {
   it("classifies the reds in Word's standard palette", () => {
     // Standard red, dark red, and the editor's own red.
     expect(classifyWordColor("FF0000")).toBe("red");
     expect(classifyWordColor("C00000")).toBe("red");
-    expect(classifyWordColor("dc2626")).toBe("red");
+    expect(classifyWordColor("EE0000")).toBe("red");
   });
 
   it("classifies the blues in Word's standard palette", () => {
     // Standard blue, the Office accent blue, and the editor's own blue.
     expect(classifyWordColor("0000FF")).toBe("blue");
     expect(classifyWordColor("4472C4")).toBe("blue");
-    expect(classifyWordColor("2563eb")).toBe("blue");
+    expect(classifyWordColor("0070C0")).toBe("blue");
   });
 
-  it("leaves colours outside the palette's two hues alone", () => {
+  it("classifies brown, amber and pink palette colours", () => {
+    expect(classifyWordColor("806000")).toBe("brown");
+    expect(classifyWordColor("FFC000")).toBe("amber");
+    expect(classifyWordColor("C00080")).toBe("pink");
+  });
+
+  it("leaves colours outside the palette hues alone", () => {
     expect(classifyWordColor("70AD47")).toBeNull(); // green
     expect(classifyWordColor("ED7D31")).toBeNull(); // orange
     expect(classifyWordColor("7030A0")).toBeNull(); // purple
@@ -59,11 +71,25 @@ describe("applyImportedColors", () => {
     expect(output).toBe(`<p><span style="color: ${TEXT_BLUE}">blue</span></p>`);
   });
 
-  it("gives a bare mark the toolbar's own highlight markup", () => {
+  it("paints brown, amber and pink marker spans with their palette colours", () => {
+    const output = applyImportedColors(
+      '<p><span class="word-import-brown">brown</span> ' +
+        '<span class="word-import-amber">amber</span> ' +
+        '<span class="word-import-pink">pink</span></p>',
+    );
+
+    expect(output).toBe(
+      `<p><span style="color: ${TEXT_BROWN}">brown</span> ` +
+        `<span style="color: ${TEXT_AMBER}">amber</span> ` +
+        `<span style="color: ${TEXT_PINK}">pink</span></p>`,
+    );
+  });
+
+  it("turns a bare mark into the toolbar's pink text markup", () => {
     const output = applyImportedColors("<p><mark>hl</mark></p>");
 
     expect(output).toBe(
-      `<p><mark data-color="${HIGHLIGHT_PINK}" style="background-color: ${HIGHLIGHT_PINK}; color: inherit">hl</mark></p>`,
+      `<p><span style="color: ${TEXT_PINK}">hl</span></p>`,
     );
   });
 
@@ -89,6 +115,9 @@ describe("WORD_COLOR_STYLE_MAP", () => {
     expect(WORD_COLOR_STYLE_MAP).toEqual([
       "r.SiteImportRedText => span.word-import-red",
       "r.SiteImportBlueText => span.word-import-blue",
+      "r.SiteImportBrownText => span.word-import-brown",
+      "r.SiteImportAmberText => span.word-import-amber",
+      "r.SiteImportPinkText => span.word-import-pink",
       "highlight => mark",
     ]);
   });

@@ -1,5 +1,11 @@
 import JSZip from "jszip";
-import { HIGHLIGHT_PINK, TEXT_BLUE, TEXT_RED } from "@/lib/editor-palette";
+import {
+  TEXT_AMBER,
+  TEXT_BLUE,
+  TEXT_BROWN,
+  TEXT_PINK,
+  TEXT_RED,
+} from "@/lib/editor-palette";
 
 // Carries Word's colours through the import onto the editor's fixed palette.
 //
@@ -11,38 +17,82 @@ import { HIGHLIGHT_PINK, TEXT_BLUE, TEXT_RED } from "@/lib/editor-palette";
 // into a span the post-conversion pass paints with the palette value.
 //
 // Word's own colours are deliberately not preserved verbatim. Authors pick from
-// Word's palette (and its highlighter has no pink at all), so anything
-// recognisably red becomes TEXT_RED, anything blue becomes TEXT_BLUE, and every
-// highlight becomes HIGHLIGHT_PINK. The article then uses only the three values
-// the toolbar can produce.
+// Word's palette, so recognisable matches are normalised onto the fixed toolbar
+// palette. Word highlights import as pink text because the editor no longer has
+// a highlight control.
 
 const W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const DOCUMENT_PATH = "word/document.xml";
 const STYLES_PATH = "word/styles.xml";
 
-const RED_RUN_STYLE_ID = "SiteImportRedText";
-const BLUE_RUN_STYLE_ID = "SiteImportBlueText";
-const RED_CLASS = "word-import-red";
-const BLUE_CLASS = "word-import-blue";
+export type ImportedTextColor = "red" | "blue" | "brown" | "amber" | "pink";
+
+const IMPORTED_COLOR_ORDER: ImportedTextColor[] = [
+  "red",
+  "blue",
+  "brown",
+  "amber",
+  "pink",
+];
+
+const TEXT_COLOR_IMPORTS: Record<
+  ImportedTextColor,
+  { styleId: string; className: string; color: string; name: string }
+> = {
+  red: {
+    styleId: "SiteImportRedText",
+    className: "word-import-red",
+    color: TEXT_RED,
+    name: "Site Import Red Text",
+  },
+  blue: {
+    styleId: "SiteImportBlueText",
+    className: "word-import-blue",
+    color: TEXT_BLUE,
+    name: "Site Import Blue Text",
+  },
+  brown: {
+    styleId: "SiteImportBrownText",
+    className: "word-import-brown",
+    color: TEXT_BROWN,
+    name: "Site Import Brown Text",
+  },
+  amber: {
+    styleId: "SiteImportAmberText",
+    className: "word-import-amber",
+    color: TEXT_AMBER,
+    name: "Site Import Amber Text",
+  },
+  pink: {
+    styleId: "SiteImportPinkText",
+    className: "word-import-pink",
+    color: TEXT_PINK,
+    name: "Site Import Pink Text",
+  },
+};
 
 // Appended to mammoth's default style map, so headings/lists/tables keep
 // converting exactly as before.
 export const WORD_COLOR_STYLE_MAP = [
-  `r.${RED_RUN_STYLE_ID} => span.${RED_CLASS}`,
-  `r.${BLUE_RUN_STYLE_ID} => span.${BLUE_CLASS}`,
+  ...IMPORTED_COLOR_ORDER.map((kind) => {
+    const config = TEXT_COLOR_IMPORTS[kind];
+    return `r.${config.styleId} => span.${config.className}`;
+  }),
   "highlight => mark",
 ];
 
-export type ImportedTextColor = "red" | "blue";
-
-// Word's palette holds several reds and blues (FF0000, C00000, 4472C4, …) and an
-// author may pick any of them, so classify by hue rather than matching exact
-// values. Everything else — greens, oranges, purples, greys, automatic/black
-// body text — is left uncoloured rather than forced into the two-colour palette.
+// Word's palette holds nearby variants (FF0000, C00000, 4472C4, …) and an author
+// may pick any of them, so classify by hue rather than matching exact values.
+// Everything outside the five-colour palette is left uncoloured.
 const RED_MAX_HUE = 20;
 const RED_MIN_HUE = 340;
 const BLUE_MIN_HUE = 195;
-const BLUE_MAX_HUE = 270;
+const BLUE_MAX_HUE = 250;
+const PINK_MIN_HUE = 300;
+const PINK_MAX_HUE = 330;
+const AMBER_BROWN_MIN_HUE = 35;
+const AMBER_BROWN_MAX_HUE = 55;
+const AMBER_MIN_BRIGHTNESS = 180;
 // Below these a colour is a grey or near-black, i.e. ordinary body text.
 const MIN_CHROMA = 40;
 const MIN_BRIGHTNESS = 60;
@@ -75,6 +125,12 @@ export function classifyWordColor(
   }
   if (hue >= BLUE_MIN_HUE && hue <= BLUE_MAX_HUE) {
     return "blue";
+  }
+  if (hue >= PINK_MIN_HUE && hue <= PINK_MAX_HUE) {
+    return "pink";
+  }
+  if (hue >= AMBER_BROWN_MIN_HUE && hue <= AMBER_BROWN_MAX_HUE) {
+    return max >= AMBER_MIN_BRIGHTNESS ? "amber" : "brown";
   }
   return null;
 }
@@ -154,7 +210,7 @@ function patchRunStyles(xml: string): { xml: string; changed: boolean } {
     runStyle.setAttributeNS(
       W_NS,
       "w:val",
-      kind === "red" ? RED_RUN_STYLE_ID : BLUE_RUN_STYLE_ID,
+      TEXT_COLOR_IMPORTS[kind].styleId,
     );
     // The OOXML schema requires w:rStyle to be the first child of w:rPr.
     runProps.insertBefore(runStyle, runProps.firstChild);
@@ -177,10 +233,8 @@ function declareRunStyles(xml: string): string {
     ),
   );
 
-  for (const [styleId, name] of [
-    [RED_RUN_STYLE_ID, "Site Import Red Text"],
-    [BLUE_RUN_STYLE_ID, "Site Import Blue Text"],
-  ]) {
+  for (const kind of IMPORTED_COLOR_ORDER) {
+    const { styleId, name } = TEXT_COLOR_IMPORTS[kind];
     if (existing.has(styleId)) {
       continue;
     }
@@ -206,20 +260,18 @@ function serializeXml(doc: Document): string {
 }
 
 // Turns the marker spans and mammoth's bare <mark> elements into the same
-// markup the toolbar writes, so TipTap parses them back into Color and
-// Highlight marks and the public page renders them like any authored colour.
+// markup the toolbar writes, so TipTap parses them back into Color marks and the
+// public page renders them like any authored colour.
 export function applyImportedColors(html: string): string {
   const doc = new DOMParser().parseFromString(html, "text/html");
 
-  paintTextColor(doc, RED_CLASS, TEXT_RED);
-  paintTextColor(doc, BLUE_CLASS, TEXT_BLUE);
+  for (const kind of IMPORTED_COLOR_ORDER) {
+    const { className, color } = TEXT_COLOR_IMPORTS[kind];
+    paintTextColor(doc, className, color);
+  }
 
   doc.body.querySelectorAll("mark").forEach((element) => {
-    element.setAttribute("data-color", HIGHLIGHT_PINK);
-    element.setAttribute(
-      "style",
-      `background-color: ${HIGHLIGHT_PINK}; color: inherit`,
-    );
+    replaceWithTextColor(element, TEXT_PINK);
   });
 
   return doc.body.innerHTML;
@@ -233,4 +285,13 @@ function paintTextColor(doc: Document, className: string, color: string): void {
     }
     element.setAttribute("style", `color: ${color}`);
   });
+}
+
+function replaceWithTextColor(element: Element, color: string): void {
+  const span = element.ownerDocument.createElement("span");
+  span.setAttribute("style", `color: ${color}`);
+  while (element.firstChild) {
+    span.appendChild(element.firstChild);
+  }
+  element.replaceWith(span);
 }
