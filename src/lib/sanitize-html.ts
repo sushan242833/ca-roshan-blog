@@ -19,6 +19,8 @@ const ALLOWED_TAGS = [
   "strong",
   "em",
   "s",
+  "del",
+  "strike",
   "code",
   "pre",
   "blockquote",

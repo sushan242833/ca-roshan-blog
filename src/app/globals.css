@@ -256,6 +256,13 @@
   font-weight: 700;
   color: #0D1B2A;
 }
+/* The Strike mark serialises as <s>. Stated explicitly rather than left to the
+   UA default so the strike survives any future reset. */
+.article-body s,
+.article-body del,
+.article-body strike {
+  text-decoration: line-through;
+}
 .article-body code {
   background: #f3f4f6;
   padding: 0.125rem 0.375rem;
