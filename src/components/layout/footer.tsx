@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CONTACT_EMAIL, LINKEDIN_URL, SITE_NAME } from "@/config/site.config";
+import {
+  CONTACT_EMAIL,
+  LINKEDIN_URL,
+  SITE_NAME,
+  FACEBOOK_URL,
+  WHATSAPP_URL,
+} from "@/config/site.config";
 import { apiRequest, ApiRequestError } from "@/lib/api";
 import {
   MailIcon,
   CheckBadgeIcon,
   CheckCircleIcon,
   LinkedInIcon,
+  FacebookIcon,
+  WhatsAppIcon,
 } from "@/components/icons";
 
 type NewsletterState = "idle" | "loading" | "sent" | "confirmed" | "error";
@@ -165,16 +173,41 @@ export default function Footer({
               <MailIcon size={18} className="text-brand-mint" />
               <span className="text-sm">{CONTACT_EMAIL}</span>
             </a>
-            {/* LinkedIn */}
-            <a
-              href={LINKEDIN_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`${SITE_NAME} on LinkedIn`}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:bg-white/10"
-            >
-              <LinkedInIcon size={18} />
-            </a>
+
+            <div className="flex gap-4">
+              {/* LinkedIn */}
+              <a
+                href={LINKEDIN_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${SITE_NAME} on LinkedIn`}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:bg-white/10"
+              >
+                <LinkedInIcon size={18} />
+              </a>
+
+              {/* Facebook */}
+              <a
+                href={FACEBOOK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${SITE_NAME} on Facebook`}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:bg-white/10"
+              >
+                <FacebookIcon size={18} />
+              </a>
+
+              {/* WhatsApp */}
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${SITE_NAME} on WhatsApp`}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:bg-white/10"
+              >
+                <WhatsAppIcon size={18} />
+              </a>
+            </div>
           </div>
         </div>
       </div>
