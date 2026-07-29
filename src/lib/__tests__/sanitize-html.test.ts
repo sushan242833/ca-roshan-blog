@@ -19,6 +19,16 @@ describe("sanitizeArticleHtml", () => {
     expect(output).toContain('data-color="rgb(251, 207, 232)"');
   });
 
+  it("keeps strikethrough text", () => {
+    const output = sanitizeArticleHtml(
+      "<p>Old <s>price</s> <del>discount</del> <strike>legacy</strike> new</p>",
+    );
+
+    expect(output).toBe(
+      "<p>Old <s>price</s> <del>discount</del> <strike>legacy</strike> new</p>",
+    );
+  });
+
   it("strips unsafe or malformed inline color values", () => {
     const input =
       '<p><span style="color: var(--brand); background-color: url(javascript:alert(1))">Bad</span></p>' +

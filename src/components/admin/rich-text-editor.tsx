@@ -34,6 +34,7 @@ import {
   Quote,
   Redo2,
   SquareX,
+  Strikethrough,
   Table as TableIcon,
   TriangleAlert,
   Undo2,
@@ -240,7 +241,7 @@ export default function RichTextEditor({
 
   if (!editor) {
     return (
-      <div className="min-h-[400px] rounded-b-lg bg-white px-6 py-5 text-sm text-gray-400">
+      <div className="min-h-100 rounded-b-lg bg-white px-6 py-5 text-sm text-gray-400">
         Loading editor…
       </div>
     );
@@ -308,6 +309,13 @@ export default function RichTextEditor({
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <Italic size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Strikethrough"
+          active={editor.isActive("strike")}
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+        >
+          <Strikethrough size={16} />
         </ToolbarButton>
 
         <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />
