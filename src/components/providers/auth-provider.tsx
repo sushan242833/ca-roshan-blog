@@ -31,14 +31,27 @@ export interface AuthContextValue {
 // the mount-time session restore and the proactive token-refresh timer. It no
 // longer provides a Context — hence no <Provider> value — but keeps the same
 // name and mount points (admin + login layouts) so nothing else changes.
-export default function AuthProvider({ children }: { children: ReactNode }) {
+interface AuthProviderProps {
+  children: ReactNode;
+  restoreSessionOnMount?: boolean;
+}
+
+export default function AuthProvider({
+  children,
+  restoreSessionOnMount = true,
+}: AuthProviderProps) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const restoreSession = useAuthStore((state) => state.restoreSession);
   const refreshAccessToken = useAuthStore((state) => state.refreshAccessToken);
 
   useEffect(() => {
-    void restoreSession();
-  }, [restoreSession]);
+    if (restoreSessionOnMount) {
+      void restoreSession();
+      return;
+    }
+
+    useAuthStore.setState({ isLoading: false });
+  }, [restoreSession, restoreSessionOnMount]);
 
   // Proactive renewal: refresh shortly before the exp claim so the 401-retry
   // path is the fallback, not the norm. Rescheduled automatically because a

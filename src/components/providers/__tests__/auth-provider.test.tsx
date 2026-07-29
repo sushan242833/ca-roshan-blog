@@ -116,6 +116,21 @@ afterEach(() => {
 });
 
 describe("authedFetch 401 refresh behavior", () => {
+  it("can skip mount-time session restore on routes that should render anonymously", async () => {
+    const harness = stubFetch();
+
+    render(
+      <AuthProvider restoreSessionOnMount={false}>
+        <CaptureAuth />
+      </AuthProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("auth-state")).toHaveTextContent("anon"),
+    );
+    expect(harness.fetchMock).not.toHaveBeenCalled();
+  });
+
   it("re-establishes the session presence cookie on a successful refresh", async () => {
     // Simulate a browser whose presence cookie expired while the httpOnly
     // refresh cookie is still valid — proxy.ts gates /admin on this cookie,
