@@ -9,9 +9,11 @@ export const SITE_NAME = "CA Roshan";
 export const SITE_TAGLINE = "Clear thinking on tax, finance, and policy";
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-export const CONTACT_EMAIL = "great.poudel12@gmail.com";
+export const CONTACT_EMAIL = "caroshanpoudel@outlook.com";
 export const LINKEDIN_URL =
-  "https://www.linkedin.com/in/ca-roshan-poudel-485514308/"; // TODO: replace with the real LinkedIn profile URL
+  "https://www.linkedin.com/in/ca-roshan-poudel-485514308/";
+export const FACEBOOK_URL = "https://www.facebook.com/roshan.poudel.1610092";
+export const WHATSAPP_URL = "https://wa.me/9779841339119";
 
 function resolveApiBaseUrl(): string {
   const value = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
