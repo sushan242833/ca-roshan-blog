@@ -1,5 +1,6 @@
 import sanitizeHtml from "sanitize-html";
 import { isValidPdfUrl } from "@/lib/pdf-url";
+import { TEXT_PINK } from "@/lib/editor-palette";
 
 // Server-side sanitiser for public/preview article HTML, and the only XSS
 // defence for it — the backend stores post content unsanitised. sanitize-html
@@ -54,12 +55,6 @@ const RGB_COLOR = new RegExp(
   "i",
 );
 const COLOR_VALUES = [HEX_COLOR, RGB_COLOR];
-// The Highlight mark serialises as `background-color: <colour>; color: inherit`.
-const COLOR_INHERIT = /^inherit$/i;
-
-function isAllowedColor(value: string): boolean {
-  return COLOR_VALUES.some((pattern) => pattern.test(value));
-}
 
 const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: ALLOWED_TAGS,
@@ -72,15 +67,13 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     th: ["colspan", "rowspan"],
     td: ["colspan", "rowspan"],
     div: ["data-callout", "data-variant"],
-    mark: ["data-color"],
   },
   // Clamped to a closed set of properties AND values, so no styling beyond what
-  // the editor's alignment, colour and highlight controls emit survives.
+  // the editor's alignment and colour controls emit survives.
   allowedStyles: {
     "*": {
       "text-align": [/^(?:left|right|center|justify)$/],
-      color: [...COLOR_VALUES, COLOR_INHERIT],
-      "background-color": COLOR_VALUES,
+      color: COLOR_VALUES,
     },
   },
   transformTags: {
@@ -106,20 +99,8 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
       return { tagName, attribs };
     },
 
-    // allowedAttributes allowlists attribute NAMES only, so data-color (where
-    // Highlight records its colour for editor round-tripping) arrives with
-    // whatever value was authored — hold it to the same colour shapes as style.
-    mark: (tagName, attribs) => {
-      const dataColor = attribs["data-color"]?.trim();
-      if (dataColor !== undefined) {
-        if (isAllowedColor(dataColor)) {
-          attribs["data-color"] = dataColor;
-        } else {
-          delete attribs["data-color"];
-        }
-      }
-
-      return { tagName, attribs };
+    mark: () => {
+      return { tagName: "span", attribs: { style: `color: ${TEXT_PINK}` } };
     },
   },
 };

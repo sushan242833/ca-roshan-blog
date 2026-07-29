@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Table } from "@tiptap/extension-table";
@@ -9,7 +9,6 @@ import TableHeader from "@tiptap/extension-table-header";
 import TableCell from "@tiptap/extension-table-cell";
 import TiptapImage from "@tiptap/extension-image";
 import { TextStyle, Color } from "@tiptap/extension-text-style";
-import Highlight from "@tiptap/extension-highlight";
 import {
   AlignCenter,
   AlignJustify,
@@ -23,7 +22,6 @@ import {
   Heading2,
   Heading3,
   Heading4,
-  Highlighter,
   Image as ImageIcon,
   Info,
   Italic,
@@ -49,7 +47,13 @@ import { PdfLink } from "@/lib/tiptap/pdf-link-extension";
 import { TextAlign } from "@/lib/tiptap/text-align-extension";
 import { HeadingParagraph } from "@/lib/tiptap/heading-paragraph-extension";
 import { DEFAULT_PDF_LABEL } from "@/lib/constants";
-import { HIGHLIGHT_PINK, TEXT_BLUE, TEXT_RED } from "@/lib/editor-palette";
+import {
+  TEXT_AMBER,
+  TEXT_BLUE,
+  TEXT_BROWN,
+  TEXT_PINK,
+  TEXT_RED,
+} from "@/lib/editor-palette";
 import type { MediaResponse } from "@/types/media";
 
 interface RichTextEditorProps {
@@ -168,6 +172,24 @@ function applyCallout(editor: Editor, variant: "note" | "warning") {
   }
 }
 
+function normalizeHighlightsToPinkText(html: string): string {
+  if (!html || !html.includes("<mark") || typeof window === "undefined") {
+    return html;
+  }
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc.body.querySelectorAll("mark").forEach((element) => {
+    const span = doc.createElement("span");
+    span.setAttribute("style", `color: ${TEXT_PINK}`);
+    while (element.firstChild) {
+      span.appendChild(element.firstChild);
+    }
+    element.replaceWith(span);
+  });
+
+  return doc.body.innerHTML;
+}
+
 // HTML in, HTML out — plugs into react-hook-form via Controller. The editor
 // body reuses the public .article-body typography so authors see what
 // readers will see.
@@ -180,6 +202,10 @@ export default function RichTextEditor({
   // uploadFile is referentially stable (its whole dependency chain in the
   // auth provider is ref-backed), so the editor can capture it once.
   const { uploadFile } = useMediaUpload();
+  const normalizedValue = useMemo(
+    () => normalizeHighlightsToPinkText(value),
+    [value],
+  );
 
   const editor = useEditor({
     extensions: [
@@ -195,12 +221,9 @@ export default function RichTextEditor({
       }),
       HeadingParagraph.configure({ levels: [1, 2, 3, 4] }),
       // TextStyle carries the inline `style` mark; Color writes color onto it.
-      // Restricted to the toolbar's fixed palette (red/blue) in practice.
+      // Restricted to the toolbar's fixed palette in practice.
       TextStyle,
       Color,
-      // multicolor lets a highlight carry its own colour (pink) rather than one
-      // hard-coded default; emitted as <mark style="background-color:…">.
-      Highlight.configure({ multicolor: true }),
       // Fixed column widths only — resizable adds drag handles and inline
       // colwidth styles that aren't worth the complexity here.
       Table.configure({ resizable: false }),
@@ -214,7 +237,7 @@ export default function RichTextEditor({
       PdfLink,
       TextAlign,
     ],
-    content: value,
+    content: normalizedValue,
     // The admin shell is prerendered; rendering on mount avoids SSR
     // hydration mismatches.
     immediatelyRender: false,
@@ -234,10 +257,13 @@ export default function RichTextEditor({
   // the post loads) without echoing them back through onChange.
   useEffect(() => {
     if (!editor) return;
-    if (value !== editor.getHTML()) {
-      editor.commands.setContent(value || "", { emitUpdate: false });
+    if (normalizedValue !== editor.getHTML()) {
+      editor.commands.setContent(normalizedValue || "", { emitUpdate: false });
     }
-  }, [editor, value]);
+    if (normalizedValue !== value) {
+      onChange(normalizedValue);
+    }
+  }, [editor, normalizedValue, onChange, value]);
 
   if (!editor) {
     return (
@@ -335,23 +361,31 @@ export default function RichTextEditor({
           <Baseline size={16} style={{ color: TEXT_BLUE }} />
         </ToolbarButton>
         <ToolbarButton
+          label="Brown text"
+          active={editor.isActive("textStyle", { color: TEXT_BROWN })}
+          onClick={() => editor.chain().focus().setColor(TEXT_BROWN).run()}
+        >
+          <Baseline size={16} style={{ color: TEXT_BROWN }} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Amber text"
+          active={editor.isActive("textStyle", { color: TEXT_AMBER })}
+          onClick={() => editor.chain().focus().setColor(TEXT_AMBER).run()}
+        >
+          <Baseline size={16} style={{ color: TEXT_AMBER }} />
+        </ToolbarButton>
+        <ToolbarButton
+          label="Pink text"
+          active={editor.isActive("textStyle", { color: TEXT_PINK })}
+          onClick={() => editor.chain().focus().setColor(TEXT_PINK).run()}
+        >
+          <Baseline size={16} style={{ color: TEXT_PINK }} />
+        </ToolbarButton>
+        <ToolbarButton
           label="Default text colour"
           onClick={() => editor.chain().focus().unsetColor().run()}
         >
           <Baseline size={16} />
-        </ToolbarButton>
-        <ToolbarButton
-          label="Pink highlight"
-          active={editor.isActive("highlight", { color: HIGHLIGHT_PINK })}
-          onClick={() =>
-            editor
-              .chain()
-              .focus()
-              .toggleHighlight({ color: HIGHLIGHT_PINK })
-              .run()
-          }
-        >
-          <Highlighter size={16} style={{ color: HIGHLIGHT_PINK }} />
         </ToolbarButton>
 
         <span className="mx-1 h-4 w-px bg-gray-300" aria-hidden="true" />
