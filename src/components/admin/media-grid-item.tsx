@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { FileText, ImageOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { MediaResponse } from "@/types/media";
 
 interface MediaGridItemProps {
@@ -13,6 +14,11 @@ interface MediaGridItemProps {
   meta?: ReactNode;
   /** Hover actions overlaid on the thumbnail (Media Library). */
   actions?: ReactNode;
+  /** Optional checkbox affordance for bulk selection in the Media Library. */
+  selected?: boolean;
+  onSelectionChange?: (selected: boolean) => void;
+  selectionLabel?: string;
+  selectionDisabled?: boolean;
 }
 
 // Media card shared by the picker dialog and the Media Library grid:
@@ -23,6 +29,10 @@ export default function MediaGridItem({
   onClick,
   meta,
   actions,
+  selected = false,
+  onSelectionChange,
+  selectionLabel,
+  selectionDisabled = false,
 }: MediaGridItemProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const isDocument = media.kind === "document";
@@ -30,6 +40,21 @@ export default function MediaGridItem({
   const body = (
     <>
       <div className="relative aspect-square w-full bg-gray-100">
+        {onSelectionChange && (
+          <label
+            onClick={(event) => event.stopPropagation()}
+            className="absolute left-2 top-2 z-10 inline-flex size-8 items-center justify-center rounded-md bg-white/95 shadow ring-1 ring-gray-200 transition-colors hover:bg-white"
+          >
+            <input
+              type="checkbox"
+              checked={selected}
+              disabled={selectionDisabled}
+              onChange={(event) => onSelectionChange(event.target.checked)}
+              aria-label={selectionLabel ?? `Select ${media.originalName}`}
+              className="size-4 accent-brand-teal-dark"
+            />
+          </label>
+        )}
         {isDocument ? (
           // Documents (PDFs) have no thumbnail — show an icon + extension so
           // the card reads as a file rather than a broken image.
@@ -63,7 +88,9 @@ export default function MediaGridItem({
         <p className="truncate text-xs font-medium text-gray-600 group-hover:text-brand-navy">
           {media.originalName}
         </p>
-        {meta && <p className="mt-0.5 truncate text-xs text-gray-400">{meta}</p>}
+        {meta && (
+          <p className="mt-0.5 truncate text-xs text-gray-400">{meta}</p>
+        )}
       </div>
     </>
   );
@@ -73,7 +100,12 @@ export default function MediaGridItem({
       <button
         type="button"
         onClick={onClick}
-        className="group overflow-hidden rounded-md border border-gray-200 bg-white text-left transition-colors hover:border-brand-teal focus:outline-none focus:ring-1 focus:ring-brand-teal"
+        className={cn(
+          "group overflow-hidden rounded-md border bg-white text-left transition-colors hover:border-brand-teal focus:outline-none focus:ring-1 focus:ring-brand-teal",
+          selected
+            ? "border-brand-teal ring-2 ring-brand-teal/30"
+            : "border-gray-200",
+        )}
       >
         {body}
       </button>
@@ -81,7 +113,14 @@ export default function MediaGridItem({
   }
 
   return (
-    <div className="group overflow-hidden rounded-md border border-gray-200 bg-white">
+    <div
+      className={cn(
+        "group overflow-hidden rounded-md border bg-white transition-colors",
+        selected
+          ? "border-brand-teal ring-2 ring-brand-teal/30"
+          : "border-gray-200",
+      )}
+    >
       {body}
     </div>
   );

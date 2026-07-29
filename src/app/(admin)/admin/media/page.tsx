@@ -2,7 +2,15 @@
 
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link as LinkIcon, Search, Trash2, Upload } from "lucide-react";
+import {
+  CheckSquare2,
+  Link as LinkIcon,
+  Search,
+  Square,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import Spinner from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api";
@@ -25,6 +33,7 @@ const TYPE_FILTERS: { value: MediaTypeFilter; label: string }[] = [
   { value: "image", label: "Images" },
   { value: "document", label: "PDFs" },
 ];
+const EMPTY_MEDIA_ITEMS: MediaResponse[] = [];
 
 export default function AdminMediaPage() {
   const { authedFetch, getAccessToken } = useAuth();
@@ -36,6 +45,8 @@ export default function AdminMediaPage() {
   // Kind filter uses the backend ?type param so each list is a separate cache.
   const [typeFilter, setTypeFilter] = useState<MediaTypeFilter>("all");
   const [deleteTarget, setDeleteTarget] = useState<MediaResponse | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // The API returns media newest-first (createdAt DESC) — no client sort
@@ -50,7 +61,7 @@ export default function AdminMediaPage() {
       ),
   });
 
-  const items = mediaQuery.data ?? [];
+  const items = mediaQuery.data ?? EMPTY_MEDIA_ITEMS;
   const isLoading = mediaQuery.isPending;
   const error = mediaQuery.isError
     ? mediaQuery.error instanceof ApiRequestError
@@ -58,10 +69,85 @@ export default function AdminMediaPage() {
       : "Failed to load media."
     : "";
 
+  const filteredItems = search.trim()
+    ? items.filter((media) =>
+        media.originalName.toLowerCase().includes(search.trim().toLowerCase()),
+      )
+    : items;
+
+  const selectedItems = items.filter((media) => selectedIds.has(media.id));
+  const selectedCount = selectedItems.length;
+  const allVisibleSelected =
+    filteredItems.length > 0 &&
+    filteredItems.every((media) => selectedIds.has(media.id));
+
   const deleteMutation = useMutation({
-    mutationFn: (id: string) =>
-      authedFetch<void>(`/v1/media/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => deleteMediaById(id),
   });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (targets: MediaResponse[]) => {
+      const results = await Promise.allSettled(
+        targets.map(async (media) => {
+          await deleteMediaById(media.id);
+          return media.id;
+        }),
+      );
+
+      return results.map((result, index) => ({
+        id: targets[index].id,
+        ok: result.status === "fulfilled",
+      }));
+    },
+  });
+
+  function deleteMediaById(id: string) {
+    return authedFetch<void>(`/v1/media/${id}`, { method: "DELETE" });
+  }
+
+  function removeMediaFromCachedLists(ids: string[]) {
+    const idSet = new Set(ids);
+    const withoutDeleted = (previous: MediaResponse[] | undefined) =>
+      previous?.filter((media) => !idSet.has(media.id));
+
+    queryClient.setQueryData<MediaResponse[]>(queryKeys.media, withoutDeleted);
+    queryClient.setQueryData<MediaResponse[]>(
+      queryKeys.mediaByType("image"),
+      withoutDeleted,
+    );
+    queryClient.setQueryData<MediaResponse[]>(
+      queryKeys.mediaByType("document"),
+      withoutDeleted,
+    );
+  }
+
+  function toggleMediaSelection(id: string, selected: boolean) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (selected) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleVisibleSelection() {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) {
+        filteredItems.forEach((media) => next.delete(media.id));
+      } else {
+        filteredItems.forEach((media) => next.add(media.id));
+      }
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
 
   function handleFilesChange(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
@@ -95,7 +181,13 @@ export default function AdminMediaPage() {
       // Public pages may render the removed image on cards/articles.
       await revalidatePublicContent("posts", getAccessToken());
       toast.success("Media deleted successfully");
+      removeMediaFromCachedLists([deleteTarget.id]);
       queryClient.invalidateQueries({ queryKey: queryKeys.media });
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        next.delete(deleteTarget.id);
+        return next;
+      });
       setDeleteTarget(null);
     } catch (err) {
       toast.error(
@@ -106,11 +198,43 @@ export default function AdminMediaPage() {
     }
   }
 
-  const filteredItems = search.trim()
-    ? items.filter((media) =>
-        media.originalName.toLowerCase().includes(search.trim().toLowerCase()),
-      )
-    : items;
+  async function handleBulkDeleteConfirm() {
+    const targets = selectedItems;
+    if (targets.length === 0) {
+      setBulkDeleteOpen(false);
+      return;
+    }
+
+    const results = await bulkDeleteMutation.mutateAsync(targets);
+    const deletedIds = results
+      .filter((result) => result.ok)
+      .map((result) => result.id);
+    const failedCount = results.length - deletedIds.length;
+
+    if (deletedIds.length > 0) {
+      // Public pages may render removed images on cards/articles.
+      await revalidatePublicContent("posts", getAccessToken());
+      removeMediaFromCachedLists(deletedIds);
+      queryClient.invalidateQueries({ queryKey: queryKeys.media });
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        deletedIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    }
+
+    if (failedCount > 0) {
+      toast.error(
+        `${deletedIds.length} deleted, ${failedCount} failed. Please try again.`,
+      );
+    } else {
+      toast.success(
+        `${deletedIds.length} media ${deletedIds.length === 1 ? "item" : "items"} deleted successfully`,
+      );
+    }
+
+    setBulkDeleteOpen(false);
+  }
 
   const uploadButton = (
     <button
@@ -176,7 +300,10 @@ export default function AdminMediaPage() {
             <button
               key={filter.value}
               type="button"
-              onClick={() => setTypeFilter(filter.value)}
+              onClick={() => {
+                setTypeFilter(filter.value);
+                clearSelection();
+              }}
               aria-pressed={typeFilter === filter.value}
               className={`rounded px-3 py-1.5 text-sm font-medium transition-colors ${
                 typeFilter === filter.value
@@ -189,6 +316,56 @@ export default function AdminMediaPage() {
           ))}
         </div>
       </div>
+
+      {(filteredItems.length > 0 || selectedCount > 0) && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleVisibleSelection}
+              disabled={filteredItems.length === 0}
+              className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-brand-navy transition-colors hover:border-brand-teal hover:text-brand-teal disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {allVisibleSelected ? (
+                <CheckSquare2 size={16} />
+              ) : (
+                <Square size={16} />
+              )}
+              {allVisibleSelected ? "Unselect shown" : "Select shown"}
+            </button>
+            <span className="text-sm text-gray-500">
+              {selectedCount} selected
+            </span>
+          </div>
+
+          {selectedCount > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={clearSelection}
+                disabled={bulkDeleteMutation.isPending}
+                className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-brand-navy disabled:opacity-50"
+              >
+                <X size={16} />
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => setBulkDeleteOpen(true)}
+                disabled={bulkDeleteMutation.isPending}
+                className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+              >
+                {bulkDeleteMutation.isPending ? (
+                  <Spinner size={16} />
+                ) : (
+                  <Trash2 size={16} />
+                )}
+                Delete selected
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {error && (
         <FormMessage type="error" className="mt-6" message={error} />
@@ -213,6 +390,12 @@ export default function AdminMediaPage() {
               key={media.id}
               media={media}
               meta={`${formatFileSize(media.size)} · ${formatPostDate(media.createdAt)}`}
+              selected={selectedIds.has(media.id)}
+              onSelectionChange={(selected) =>
+                toggleMediaSelection(media.id, selected)
+              }
+              selectionLabel={`Select ${media.originalName}`}
+              selectionDisabled={bulkDeleteMutation.isPending}
               actions={
                 <>
                   <button
@@ -251,6 +434,26 @@ export default function AdminMediaPage() {
             if (!open) setDeleteTarget(null);
           }}
           onConfirm={handleDeleteConfirm}
+        />
+      )}
+
+      {bulkDeleteOpen && selectedCount > 0 && (
+        <DeleteEntityDialog
+          entityLabel="Selected Media"
+          entityName={`${selectedCount} selected ${
+            selectedCount === 1 ? "item" : "items"
+          }`}
+          warning={`The selected ${
+            selectedCount === 1 ? "file" : "files"
+          } will be permanently removed from storage. Any post using ${
+            selectedCount === 1 ? "it" : "these files"
+          } will lose ${
+            selectedCount === 1 ? "it" : "them"
+          } and fall back to a placeholder.`}
+          onOpenChange={(open) => {
+            if (!open) setBulkDeleteOpen(false);
+          }}
+          onConfirm={handleBulkDeleteConfirm}
         />
       )}
     </div>
