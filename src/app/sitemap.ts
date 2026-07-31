@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { apiRequest } from "@/lib/api";
 import { FEATURES } from "@/config/features";
 import { SITE_URL } from "@/config/site.config";
+import { SITEMAP_REVALIDATE_SECONDS } from "@/lib/constants";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 import type { CategoryResponse } from "@/types/category";
 
@@ -14,6 +15,8 @@ const STATIC_PATHS = [
 ];
 const SITEMAP_POSTS_PAGE_SIZE = 100;
 
+export const revalidate = SITEMAP_REVALIDATE_SECONDS;
+
 // GET /v1/posts only returns published posts; walk every page so the sitemap
 // stays complete beyond the first page.
 async function fetchAllPublishedPosts(): Promise<PostSummaryResponse[]> {
@@ -24,6 +27,7 @@ async function fetchAllPublishedPosts(): Promise<PostSummaryResponse[]> {
   do {
     const data = await apiRequest<PaginatedResponse<PostSummaryResponse>>(
       `/v1/posts?page=${page}&limit=${SITEMAP_POSTS_PAGE_SIZE}`,
+      { next: { revalidate: SITEMAP_REVALIDATE_SECONDS } },
     );
     posts.push(...data.items);
     totalPages = data.pagination.totalPages;
@@ -53,7 +57,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   try {
-    const categories = await apiRequest<CategoryResponse[]>("/v1/categories");
+    const categories = await apiRequest<CategoryResponse[]>(
+      "/v1/categories",
+      { next: { revalidate: SITEMAP_REVALIDATE_SECONDS } },
+    );
     entries.push(
       ...categories.map((category) => ({
         url: `${SITE_URL}/categories/${category.slug}`,

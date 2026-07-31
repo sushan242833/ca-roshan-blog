@@ -1,6 +1,9 @@
 // ISR revalidation windows (seconds) for public pages fetched via the API.
 export const CONTENT_REVALIDATE_SECONDS = 60; // post lists & article pages
 export const STATIC_PAGE_REVALIDATE_SECONDS = 300; // about & category pages
+// The sitemap walks EVERY published post, and crawlers request it far more often
+// than the corpus changes — hence its own, much longer window.
+export const SITEMAP_REVALIDATE_SECONDS = 3600;
 
 // Pagination
 export const POSTS_PER_PAGE = 9;
