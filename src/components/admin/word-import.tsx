@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
 import {
   applyImportedColors,
+  preserveBlankParagraphs,
   tagColoredRuns,
   WORD_COLOR_STYLE_MAP,
 } from "@/lib/word-color-import";
@@ -220,10 +221,15 @@ export default function WordImport({
     });
 
     try {
-      // Coloured runs are tagged with a character style first: mammoth discards
-      // a run's font colour while reading the document, so red/blue text has to
-      // be turned into something it does read before conversion starts.
-      const arrayBuffer = await tagColoredRuns(await file.arrayBuffer());
+      // Two independent rewrites of the .docx before mammoth sees it, both
+      // making it read something it otherwise ignores. Blank paragraphs get a
+      // spacer run (mammoth drops a run-less paragraph entirely), then coloured
+      // runs get a character style (mammoth discards a run's font colour while
+      // reading the document). They touch different parts of the run, so the
+      // order between them does not matter.
+      const arrayBuffer = await tagColoredRuns(
+        await preserveBlankParagraphs(await file.arrayBuffer()),
+      );
       const { value, messages } = await mammoth.convertToHtml(
         { arrayBuffer },
         {
