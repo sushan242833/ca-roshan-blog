@@ -15,7 +15,12 @@ const STATIC_PATHS = [
 ];
 const SITEMAP_POSTS_PAGE_SIZE = 100;
 
-export const revalidate = SITEMAP_REVALIDATE_SECONDS;
+// Next statically PARSES route segment config exports at build time rather than
+// evaluating them, so this must be a literal number — the imported
+// SITEMAP_REVALIDATE_SECONDS would not be resolved. The constant is still used
+// in the fetch() calls below; those run as ordinary code and only this
+// top-level `export const` is restricted.
+export const revalidate = 3600;
 
 // GET /v1/posts only returns published posts; walk every page so the sitemap
 // stays complete beyond the first page.
