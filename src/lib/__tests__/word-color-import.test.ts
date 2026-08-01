@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import JSZip from "jszip";
 import {
   applyImportedColors,
   classifyWordColor,
+  preserveBlankParagraphs,
   WORD_COLOR_STYLE_MAP,
 } from "@/lib/word-color-import";
 import {
@@ -120,5 +122,83 @@ describe("WORD_COLOR_STYLE_MAP", () => {
       "r.SiteImportPinkText => span.word-import-pink",
       "highlight => mark",
     ]);
+  });
+});
+
+const W_XMLNS =
+  'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+
+// preserveBlankParagraphs only reads word/document.xml, so a one-entry zip is a
+// sufficient stand-in for a .docx here.
+async function docxWithBody(body: string): Promise<ArrayBuffer> {
+  const zip = new JSZip();
+  zip.file(
+    "word/document.xml",
+    `<?xml version="1.0" encoding="UTF-8"?>` +
+      `<w:document ${W_XMLNS}><w:body>${body}</w:body></w:document>`,
+  );
+  return zip.generateAsync({ type: "arraybuffer" });
+}
+
+async function documentXmlOf(docx: ArrayBuffer): Promise<string> {
+  const zip = await JSZip.loadAsync(docx);
+  return zip.file("word/document.xml")!.async("string");
+}
+
+const textParagraph = (value: string) =>
+  `<w:p><w:r><w:t>${value}</w:t></w:r></w:p>`;
+
+describe("preserveBlankParagraphs", () => {
+  it("gives a run-less paragraph a non-breaking-space run", async () => {
+    const xml = await documentXmlOf(
+      await preserveBlankParagraphs(
+        await docxWithBody(
+          `${textParagraph("A")}<w:p/>${textParagraph("B")}`,
+        ),
+      ),
+    );
+
+    // The blank paragraph now carries exactly one nbsp run, and it is marked
+    // xml:space="preserve" so the whitespace is not trimmed back out.
+    expect(xml).toContain(`<w:t xml:space="preserve">\u00a0</w:t>`);
+    expect((xml.match(/xml:space="preserve"/g) ?? []).length).toBe(1);
+  });
+
+  it("gives a paragraph holding only whitespace text a spacer too", async () => {
+    const xml = await documentXmlOf(
+      await preserveBlankParagraphs(
+        await docxWithBody(`<w:p><w:r><w:t>   </w:t></w:r></w:p>`),
+      ),
+    );
+
+    expect((xml.match(/xml:space="preserve"/g) ?? []).length).toBe(1);
+  });
+
+  it("leaves paragraphs that already have text alone", async () => {
+    const body = `${textParagraph("A")}${textParagraph("B")}`;
+    const docx = await docxWithBody(body);
+
+    // Nothing to change, so the original buffer comes straight back.
+    expect(await preserveBlankParagraphs(docx)).toBe(docx);
+  });
+
+  it("does not add a spacer beside an image-only paragraph", async () => {
+    // Such a paragraph already converts to <p><img></p>, so it is not one of
+    // the paragraphs mammoth drops and must not gain a stray nbsp.
+    const xml = await documentXmlOf(
+      await preserveBlankParagraphs(
+        await docxWithBody(`<w:p><w:r><w:drawing/></w:r></w:p>`),
+      ),
+    );
+
+    expect(xml).not.toContain("xml:space");
+  });
+
+  it("returns the original buffer when there is no document.xml", async () => {
+    const zip = new JSZip();
+    zip.file("word/other.xml", "<x/>");
+    const docx = await zip.generateAsync({ type: "arraybuffer" });
+
+    expect(await preserveBlankParagraphs(docx)).toBe(docx);
   });
 });
