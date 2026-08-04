@@ -5,6 +5,10 @@ import ArticleToc from "@/components/blogs/article-toc";
 import { EyeIcon } from "@/components/icons";
 import { buildToc } from "@/lib/toc";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
+import {
+  optimizeArticleImages,
+  optimizeCloudinaryUrl,
+} from "@/lib/article-images";
 import { isValidPdfUrl } from "@/lib/pdf-url";
 import { DEFAULT_PDF_LABEL } from "@/lib/constants";
 import { SITE_NAME } from "@/config/site.config";
@@ -41,13 +45,17 @@ function formatViewCount(count: number): string {
 // The article presentation shared by the public post page and the admin
 // draft preview: centered editorial header, featured image, body, tags, share.
 export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
-  // Sanitise first, then inject heading ids from the sanitised HTML, and finally
-  // wrap tables in a horizontal-scroll container.
+  // Sanitise first, then inject heading ids from the sanitised HTML, then wrap
+  // tables in a horizontal-scroll container. Image optimisation comes last: it
+  // adds loading/decoding/fetchpriority attributes, which the sanitiser's img
+  // allowlist does not include and would strip if it ran afterwards.
   const sanitized = sanitizeArticleHtml(post.content ?? "");
   const { html: withHeadingIds, headings } = buildToc(sanitized);
-  const cleanContent = withHeadingIds
-    .replace(/<table(?=[\s>])/g, '<div class="table-scroll"><table')
-    .replace(/<\/table>/g, "</table></div>");
+  const cleanContent = optimizeArticleImages(
+    withHeadingIds
+      .replace(/<table(?=[\s>])/g, '<div class="table-scroll"><table')
+      .replace(/<\/table>/g, "</table></div>"),
+  );
 
   const authorInitial = post.author?.name?.charAt(0).toUpperCase() ?? "A";
   const publishDate = formatArticleDate(post.publishedAt ?? post.createdAt);
@@ -135,14 +143,21 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
         <section className="mb-20 px-6">
           <div className="mx-auto max-w-[1000px]">
             <figure className="h-[260px] overflow-hidden rounded-xl shadow-lg sm:h-[360px] lg:h-[500px]">
+              {/* Same Cloudinary rewrite as the body images. It matters most in
+                  development, where next/image runs with `unoptimized` and would
+                  otherwise serve the multi-megabyte original; in production it
+                  also means the optimizer fetches an already-compressed source
+                  instead of the full-size PNG. Above the fold, so eager. */}
               <Image
-                src={post.featuredImage.url}
+                src={optimizeCloudinaryUrl(post.featuredImage.url)}
                 alt={post.title}
                 width={1200}
                 height={675}
                 sizes="(max-width: 768px) 100vw, 1000px"
                 className="h-full w-full object-cover"
                 priority
+                loading="eager"
+                fetchPriority="high"
               />
             </figure>
           </div>

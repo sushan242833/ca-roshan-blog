@@ -5,6 +5,7 @@ import SectionHeading from "@/components/ui/section-heading";
 import { apiRequest } from "@/lib/api";
 import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
 import { ArrowRightIcon } from "@/components/icons";
+import WarmBackend from "@/components/warm-backend";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 
 export const metadata: Metadata = {
@@ -40,6 +41,10 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* Wakes the Render free-tier backend in parallel with rendering. Renders
+          nothing and fails silently. */}
+      <WarmBackend />
+
       {/* Hero */}
       <section className="bg-white py-16 md:py-20">
         <div className="mx-auto max-w-4xl px-6 text-center">
