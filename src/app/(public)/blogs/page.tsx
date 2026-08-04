@@ -5,6 +5,7 @@ import PostCard from "@/components/posts/post-card";
 import Pagination from "@/components/blogs/pagination";
 import { apiRequest } from "@/lib/api";
 import { CONTENT_REVALIDATE_SECONDS, POSTS_PER_PAGE } from "@/lib/constants";
+import WarmBackend from "@/components/warm-backend";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 
 const PAGE_TITLE = "All Articles";
@@ -105,6 +106,7 @@ export default async function BlogPage({
 
   return (
     <div className="bg-white">
+      <WarmBackend />
       <section className="py-12">
         <div className="mx-auto max-w-7xl px-6">
           {/* Page heading + subtitle (previously only in metadata). */}
