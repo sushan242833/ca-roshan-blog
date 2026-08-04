@@ -6,6 +6,7 @@ import { apiRequest, ApiRequestError } from "@/lib/api";
 import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
 import { SITE_NAME, SITE_URL } from "@/config/site.config";
 import { htmlToPlainText } from "@/lib/format";
+import WarmBackend from "@/components/warm-backend";
 import type {
   PostDetailResponse,
   PaginatedResponse,
@@ -85,6 +86,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
   return (
     <div>
+      <WarmBackend />
       <ArticleView post={post} shareUrl={`${SITE_URL}/blogs/${slug}`} />
 
       {relatedPosts.length > 0 && (
