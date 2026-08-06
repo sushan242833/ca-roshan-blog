@@ -8,10 +8,13 @@ import { toast } from "sonner";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
 import {
   applyImportedColors,
-  preserveBlankParagraphs,
   tagColoredRuns,
   WORD_COLOR_STYLE_MAP,
 } from "@/lib/word-color-import";
+import {
+  applyWordNumbering,
+  markWordOrderedLists,
+} from "@/lib/word-numbering-import";
 
 // Word .docx files with embedded images can get large; guard well above a
 // typical article but below anything that would choke the browser.
@@ -221,14 +224,18 @@ export default function WordImport({
     });
 
     try {
-      // Two independent rewrites of the .docx before mammoth sees it, both
-      // making it read something it otherwise ignores. Blank paragraphs get a
-      // spacer run (mammoth drops a run-less paragraph entirely), then coloured
-      // runs get a character style (mammoth discards a run's font colour while
-      // reading the document). They touch different parts of the run, so the
-      // order between them does not matter.
+      // Two rewrites of the .docx before mammoth sees it, each recovering
+      // something mammoth reads too shallowly. Ordered list items get their
+      // Word-rendered label — (a), (b), (iv) — written in as text, because
+      // mammoth keeps only "this is an <ol>". Coloured runs then get a character
+      // style, because mammoth discards a run's font colour. They touch
+      // different parts of the paragraph, so the order between them is free.
+      //
+      // Blank paragraphs are deliberately NOT preserved: mammoth drops a
+      // run-less paragraph, so the empty lines an author left in Word do not
+      // come through, and spacing is left to the article stylesheet.
       const arrayBuffer = await tagColoredRuns(
-        await preserveBlankParagraphs(await file.arrayBuffer()),
+        await applyWordNumbering(await file.arrayBuffer()),
       );
       const { value, messages } = await mammoth.convertToHtml(
         { arrayBuffer },
@@ -241,7 +248,9 @@ export default function WordImport({
 
       // Extract the leading H1 title BEFORE remapping — the split checks for a
       // genuine leading <h1>, which remapping would turn into an <h2> first.
-      const titleSplit = splitLeadingTitle(applyImportedColors(value));
+      const titleSplit = splitLeadingTitle(
+        markWordOrderedLists(applyImportedColors(value)),
+      );
       const result = {
         title: titleSplit.title,
         html: remapHeadingLevels(titleSplit.html),

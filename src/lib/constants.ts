@@ -41,6 +41,12 @@ export const MAX_IMAGE_SIZE_MB = 5;
 export const ALLOWED_DOCUMENT_TYPES = ["application/pdf"];
 export const MAX_DOCUMENT_SIZE_MB = 20;
 
+// Marks an ordered list imported from Word whose items already carry the label
+// the source document renders ("(a)", "(iv)", "1)"). Lives here so both the
+// import pipeline and the editor extension that preserves it can share it
+// without either pulling in the other's dependencies.
+export const WORD_NUMBERED_LIST_CLASS = "word-numbered";
+
 // Preview tokens
 export const PREVIEW_TOKEN_EXPIRY_MINUTES = 60;
 

@@ -81,11 +81,21 @@ const imgSources = [
 ];
 if (apiOrigin) imgSources.push(apiOrigin);
 
+// A local backend on any port, for development only. These lists are built from
+// NEXT_PUBLIC_API_BASE_URL when the config is evaluated, which for `next dev`
+// happens once at server start — so flipping that variable between a local and a
+// remote backend leaves the CSP pinned to the old origin until the dev server is
+// restarted, and every API call is then blocked with an opaque "Something went
+// wrong". Allowing localhost in development removes that trap. Production is
+// unaffected and still allows only the configured API origin.
+const LOCAL_DEV_ORIGINS = ["http://localhost:*", "http://127.0.0.1:*"];
+if (!isProduction) imgSources.push(...LOCAL_DEV_ORIGINS);
+
 const connectSources = ["'self'", CLOUDINARY_ORIGIN];
 if (apiOrigin) connectSources.push(apiOrigin);
 // Turbopack/HMR opens a dev websocket; allow it so dev doesn't log CSP
 // violations. Not added in production (no HMR there).
-if (!isProduction) connectSources.push("ws:", "wss:");
+if (!isProduction) connectSources.push("ws:", "wss:", ...LOCAL_DEV_ORIGINS);
 
 const csp = [
   "default-src 'self'",

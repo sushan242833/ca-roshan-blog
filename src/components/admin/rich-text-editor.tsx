@@ -46,6 +46,7 @@ import { Callout } from "@/lib/tiptap/callout-extension";
 import { PdfLink } from "@/lib/tiptap/pdf-link-extension";
 import { TextAlign } from "@/lib/tiptap/text-align-extension";
 import { HeadingParagraph } from "@/lib/tiptap/heading-paragraph-extension";
+import { WordNumberedList } from "@/lib/tiptap/word-numbered-list-extension";
 import { DEFAULT_PDF_LABEL } from "@/lib/constants";
 import {
   TEXT_AMBER,
@@ -236,6 +237,9 @@ export default function RichTextEditor({
       Callout,
       PdfLink,
       TextAlign,
+      // Preserves the `word-numbered` class on Word-imported ordered lists, so
+      // saving an imported post does not bring back the duplicate marker.
+      WordNumberedList,
     ],
     content: normalizedValue,
     // The admin shell is prerendered; rendering on mount avoids SSR
