@@ -15,6 +15,11 @@ import {
   applyWordNumbering,
   markWordOrderedLists,
 } from "@/lib/word-numbering-import";
+import {
+  applyImportedAlignment,
+  tagAlignedParagraphs,
+  WORD_ALIGN_STYLE_MAP,
+} from "@/lib/word-align-import";
 
 // Word .docx files with embedded images can get large; guard well above a
 // typical article but below anything that would choke the browser.
@@ -235,21 +240,23 @@ export default function WordImport({
       // run-less paragraph, so the empty lines an author left in Word do not
       // come through, and spacing is left to the article stylesheet.
       const arrayBuffer = await tagColoredRuns(
-        await applyWordNumbering(await file.arrayBuffer()),
+        await tagAlignedParagraphs(
+          await applyWordNumbering(await file.arrayBuffer()),
+        ),
       );
       const { value, messages } = await mammoth.convertToHtml(
         { arrayBuffer },
         {
           convertImage,
           transformDocument: stripTocParagraphs,
-          styleMap: WORD_COLOR_STYLE_MAP,
+          styleMap: [...WORD_COLOR_STYLE_MAP, ...WORD_ALIGN_STYLE_MAP],
         },
       );
 
       // Extract the leading H1 title BEFORE remapping — the split checks for a
       // genuine leading <h1>, which remapping would turn into an <h2> first.
       const titleSplit = splitLeadingTitle(
-        markWordOrderedLists(applyImportedColors(value)),
+        markWordOrderedLists(applyImportedAlignment(applyImportedColors(value))),
       );
       const result = {
         title: titleSplit.title,
