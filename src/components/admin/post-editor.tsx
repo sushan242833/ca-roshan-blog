@@ -105,17 +105,46 @@ const STATUS_LABEL: Record<PostStatus, string> = {
   ARCHIVED: "Archived",
 };
 
+// Chip vocabulary shared with the public pages: the taxonomy pill for neutral
+// states, palette teal for live content, muted amber for retired content.
 const STATUS_BADGE_CLASS: Record<PostStatus, string> = {
-  PUBLISHED: "border-brand-teal/20 bg-brand-teal/10 text-brand-teal",
-  DRAFT: "border-gray-200 bg-gray-100 text-gray-600",
-  ARCHIVED: "border-amber-200 bg-amber-100 text-amber-700",
+  PUBLISHED:
+    "border-brand-teal-dark/20 bg-brand-teal-dark/10 text-brand-teal-dark",
+  DRAFT: "border-[#d3e1f6] bg-[#d3e1f6] text-[#566475]",
+  ARCHIVED: "border-amber-200/70 bg-amber-50 text-amber-800",
 };
 
-const inputClass =
-  "w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 " +
-  "placeholder:text-gray-400 focus:border-brand-teal focus:outline-none focus:ring-1 focus:ring-brand-teal";
+// The article pages' small-caps label, reused for field labels and eyebrows.
+const LABEL_CAPS =
+  "text-[12px] font-semibold uppercase tracking-[0.1em] text-[#566475]";
 
-const cardClass = "rounded-lg border border-gray-200 bg-white p-5";
+// Serif teal card heading, matching "Contents" on the public chapter pages.
+const CARD_HEADING = "font-serif text-[18px] font-semibold text-brand-teal-dark";
+
+const HELP_TEXT = "mt-1.5 text-[13px] leading-relaxed text-[#566475]";
+
+const ERROR_TEXT = "mt-1.5 text-[12px] text-red-600";
+
+const inputClass =
+  "w-full rounded border border-brand-muted bg-white px-3 py-2 text-[14px] text-[#121c2a] " +
+  "placeholder:text-[#566475]/70 focus:border-brand-teal-dark focus:outline-none focus:ring-1 focus:ring-brand-teal-dark";
+
+const cardClass =
+  "rounded-xl border border-brand-muted bg-white p-6 shadow-[0_20px_40px_rgba(0,0,0,0.04)]";
+
+const checkboxClass =
+  "h-4 w-4 shrink-0 rounded border-brand-muted accent-brand-teal-dark focus:ring-brand-teal-dark";
+
+// The dark pill from the public "Start reading" CTA, for the one action that
+// commits the post.
+const PRIMARY_BUTTON =
+  "inline-flex items-center justify-center gap-2 rounded bg-[#121c2a] px-6 py-2.5 text-[14px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60";
+
+const TEAL_BUTTON =
+  "inline-flex items-center justify-center gap-2 rounded bg-brand-teal-dark px-6 py-2.5 text-[14px] font-medium text-white transition-colors hover:bg-brand-teal disabled:opacity-60";
+
+const SECONDARY_BUTTON =
+  "inline-flex items-center justify-center gap-2 rounded border border-brand-muted bg-white px-5 py-2.5 text-[14px] font-medium text-[#121c2a] transition-colors hover:border-brand-teal-dark hover:text-brand-teal-dark disabled:opacity-50";
 
 interface PostEditorProps {
   /** When set, the editor loads and edits an existing post. */
@@ -546,8 +575,8 @@ export default function PostEditor({ postId }: PostEditorProps) {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        <div className="mt-10 flex items-center justify-center gap-2 text-sm text-gray-400">
+      <div className="mx-auto max-w-6xl px-6 py-12">
+        <div className="mt-10 flex items-center justify-center gap-2 text-[14px] text-[#44474c]">
           <Spinner size={18} />
           Loading editor…
         </div>
@@ -557,11 +586,11 @@ export default function PostEditor({ postId }: PostEditorProps) {
 
   if (loadError) {
     return (
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <div className="mx-auto max-w-6xl px-6 py-12">
         <FormMessage type="error" message={loadError} />
         <Link
           href="/admin/posts"
-          className="mt-4 inline-block text-sm font-medium text-brand-teal underline-offset-2 hover:underline"
+          className="mt-4 inline-block text-[14px] font-medium text-brand-teal-dark underline-offset-2 hover:underline"
         >
           Back to Posts
         </Link>
@@ -570,19 +599,24 @@ export default function PostEditor({ postId }: PostEditorProps) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8 pb-28">
-      <p className="text-sm text-gray-400">
-        <Link href="/admin/posts" className="hover:text-brand-teal">
+    <div className="mx-auto max-w-6xl bg-white px-6 py-12 pb-28 text-[#121c2a]">
+      <p className={`flex flex-wrap items-center gap-2 ${LABEL_CAPS}`}>
+        <Link
+          href="/admin/posts"
+          className="transition-colors hover:text-brand-teal-dark"
+        >
           Posts
-        </Link>{" "}
-        <span className="mx-1">/</span>{" "}
-        <span className="text-brand-navy">
+        </Link>
+        <span aria-hidden="true">/</span>
+        <span className="text-brand-teal-dark">
           {isEditMode ? "Edit Post" : "Create New Post"}
         </span>
       </p>
-      <h1 className="mt-1 font-serif text-3xl font-bold text-brand-navy">
+      <h1 className="mt-3 font-serif text-[32px] font-bold leading-[1.1] tracking-[-0.02em] text-[#121c2a] md:text-[40px]">
         {isEditMode ? "Edit Post" : "Create New Post"}
       </h1>
+      {/* Short rule under the title, as on the article pages. */}
+      <div className="mt-4 h-px w-24 bg-brand-muted" />
 
       {formError && (
         <FormMessage type="error" className="mt-6" message={formError} />
@@ -603,28 +637,30 @@ export default function PostEditor({ postId }: PostEditorProps) {
         {/* ── Main column ─────────────────────────────────────────── */}
         <div className="space-y-6 lg:col-span-8">
           <div className={cardClass}>
+            <label htmlFor="post-title" className={LABEL_CAPS}>
+              Title
+            </label>
             <input
+              id="post-title"
               {...register("title")}
               placeholder="Enter Post Title..."
               aria-label="Post title"
-              className="w-full border-none bg-transparent p-0 font-serif text-2xl font-bold text-brand-navy placeholder:text-gray-300 focus:outline-none focus:ring-0"
+              className="mt-2 w-full border-none bg-transparent p-0 font-serif text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-[#121c2a] placeholder:text-brand-muted focus:outline-none focus:ring-0"
             />
             {errors.title && (
-              <p className="mt-2 text-xs text-red-600">
-                {errors.title.message}
-              </p>
+              <p className={ERROR_TEXT}>{errors.title.message}</p>
             )}
 
-            <div className="mt-4 flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 font-mono text-xs text-gray-500">
+            <div className="mt-5 flex items-center gap-2 rounded border border-brand-muted bg-[#f8f9ff] px-3 py-2 font-mono text-[12px] text-[#566475]">
               <span className="shrink-0">/blogs/</span>
               <input
                 {...register("slug")}
                 placeholder="post-slug-here"
                 aria-label="Post slug"
-                className="min-w-0 flex-1 border-b border-dashed border-gray-300 bg-transparent px-1 py-0.5 focus:border-brand-teal focus:outline-none"
+                className="min-w-0 flex-1 border-b border-dashed border-brand-muted bg-transparent px-1 py-0.5 text-[#121c2a] focus:border-brand-teal-dark focus:outline-none"
               />
             </div>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className={HELP_TEXT}>
               {isEditMode
                 ? "Leave blank to keep the current slug."
                 : "Leave blank to auto-generate from the title."}
@@ -633,7 +669,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
 
           <div
             ref={editorWrapperRef}
-            className="overflow-hidden rounded-lg border border-gray-200 bg-white"
+            className="overflow-hidden rounded-xl border border-brand-muted bg-white shadow-[0_20px_40px_rgba(0,0,0,0.04)]"
           >
             <Controller
               control={control}
@@ -644,7 +680,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
             />
           </div>
           {errors.content && (
-            <p className="-mt-4 text-xs text-red-600">
+            <p className="-mt-4 text-[12px] text-red-600">
               {errors.content.message}
             </p>
           )}
@@ -655,10 +691,10 @@ export default function PostEditor({ postId }: PostEditorProps) {
           <div className={cardClass}>
             <label
               htmlFor="excerpt"
-              className="flex items-center justify-between text-sm font-medium text-gray-700"
+              className={`flex items-center justify-between ${LABEL_CAPS}`}
             >
               <span>Excerpt</span>
-              <span className="text-xs font-normal text-gray-400">
+              <span className="font-normal tracking-normal text-brand-muted">
                 {excerptValue.length}/{MAX_EXCERPT_LENGTH}
               </span>
             </label>
@@ -669,33 +705,29 @@ export default function PostEditor({ postId }: PostEditorProps) {
               {...register("excerpt")}
               className={`mt-2 ${inputClass}`}
             />
-            <p className="mt-1 text-xs text-gray-400">
+            <p className={HELP_TEXT}>
               Leave blank to auto-generate from content.
             </p>
             {errors.excerpt && (
-              <p className="mt-1 text-xs text-red-600">
-                {errors.excerpt.message}
-              </p>
+              <p className={ERROR_TEXT}>{errors.excerpt.message}</p>
             )}
           </div>
 
           <div className={`${cardClass} max-h-96 overflow-y-auto`}>
-            <h2 className="font-serif text-base font-bold text-brand-navy">
-              Table of Contents
-            </h2>
+            <h2 className={CARD_HEADING}>Table of Contents</h2>
             <EditorOutline content={contentValue} onSelect={scrollToHeading} />
           </div>
 
           <div ref={featuredImageRef} className={cardClass}>
-            <h2 className="font-serif text-base font-bold text-brand-navy">
+            <h2 className={CARD_HEADING}>
               Featured Image{" "}
               <span className="text-red-500" title="Required to publish">
                 *
               </span>
             </h2>
             {featuredImage ? (
-              <div className="relative mt-3 overflow-hidden rounded-md border border-gray-200">
-                <div className="relative aspect-video w-full bg-gray-100">
+              <div className="relative mt-4 overflow-hidden rounded-lg border border-brand-muted">
+                <div className="relative aspect-video w-full bg-[#d5e4f8]">
                   <Image
                     src={featuredImage.url}
                     alt="Featured image preview"
@@ -708,7 +740,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
                   type="button"
                   onClick={removeFeaturedImage}
                   aria-label="Remove featured image"
-                  className="absolute right-2 top-2 rounded-full bg-white/90 p-1 text-gray-500 shadow transition-colors hover:text-red-600"
+                  className="absolute right-2 top-2 rounded-full bg-white/90 p-1 text-[#566475] shadow transition-colors hover:text-red-600"
                 >
                   <X size={14} />
                 </button>
@@ -717,37 +749,35 @@ export default function PostEditor({ postId }: PostEditorProps) {
               <button
                 type="button"
                 onClick={() => setShowMediaPicker(true)}
-                className="mt-3 flex w-full flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-gray-300 py-8 text-gray-400 transition-colors hover:border-brand-teal hover:text-brand-teal"
+                className="mt-4 flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-muted py-10 text-[#566475] transition-colors hover:border-brand-teal-dark hover:text-brand-teal-dark"
               >
                 <ImagePlus size={24} />
-                <span className="text-sm font-medium">Click to select</span>
-                <span className="text-xs">PNG, JPG, WEBP (Max 5MB)</span>
+                <span className="text-[14px] font-medium">Click to select</span>
+                <span className="text-[12px]">PNG, JPG, WEBP (Max 5MB)</span>
               </button>
             )}
             {featuredImage && (
               <button
                 type="button"
                 onClick={() => setShowMediaPicker(true)}
-                className="mt-2 text-xs font-medium text-brand-teal underline-offset-2 hover:underline"
+                className="mt-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-brand-teal-dark underline-offset-2 hover:underline"
               >
                 Change image
               </button>
             )}
             {errors.featuredImageId && (
-              <p className="mt-2 text-xs text-red-600">
-                {errors.featuredImageId.message}
-              </p>
+              <p className={ERROR_TEXT}>{errors.featuredImageId.message}</p>
             )}
 
-            <label className="mt-4 flex cursor-pointer items-start gap-3 border-t border-gray-100 pt-4">
+            <label className="mt-5 flex cursor-pointer items-start gap-3 border-t border-brand-muted/50 pt-5">
               <input
                 type="checkbox"
                 {...register("showFeaturedImage")}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-teal focus:ring-brand-teal"
+                className={`mt-0.5 ${checkboxClass}`}
               />
-              <span className="text-sm text-gray-700">
+              <span className="text-[14px] text-[#121c2a]">
                 <span className="font-medium">Show at top of post</span>
-                <span className="mt-0.5 block text-xs text-gray-400">
+                <span className={`block ${HELP_TEXT}`}>
                   Display this image below the title on the blog detail page.
                   Untick to hide it there (it still appears in post listings).
                 </span>
@@ -756,28 +786,26 @@ export default function PostEditor({ postId }: PostEditorProps) {
           </div>
 
           <div className={cardClass}>
-            <h2 className="font-serif text-base font-bold text-brand-navy">
-              Categories
-            </h2>
-            <p className="mt-1 text-xs text-gray-400">
+            <h2 className={CARD_HEADING}>Categories</h2>
+            <p className={HELP_TEXT}>
               Select one or more categories for this post.
             </p>
             {categories.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-400">
+              <p className="mt-4 text-[14px] text-[#566475]">
                 No categories yet. Create one under Manage Categories.
               </p>
             ) : (
-              <div className="mt-3 space-y-2">
+              <div className="mt-4 space-y-2.5">
                 {categories.map((category) => (
                   <label
                     key={category.id}
-                    className="flex cursor-pointer items-center gap-3 text-sm text-gray-700"
+                    className="flex cursor-pointer items-center gap-3 text-[14px] text-[#121c2a]"
                   >
                     <input
                       type="checkbox"
                       checked={selectedCategoryIds.includes(category.id)}
                       onChange={() => toggleCategory(category.id)}
-                      className="h-4 w-4 rounded border-gray-300 text-brand-teal focus:ring-brand-teal"
+                      className={checkboxClass}
                     />
                     <span>{category.name}</span>
                   </label>
@@ -787,9 +815,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
           </div>
 
           <div className={cardClass}>
-            <h2 className="font-serif text-base font-bold text-brand-navy">
-              Tags
-            </h2>
+            <h2 className={`mb-2 ${CARD_HEADING}`}>Tags</h2>
             <TagCombobox
               tags={tags}
               selectedTagIds={selectedTagIds}
@@ -800,40 +826,34 @@ export default function PostEditor({ postId }: PostEditorProps) {
           </div>
 
           <div className={cardClass}>
-            <h2 className="font-serif text-base font-bold text-brand-navy">
-              SEO
-            </h2>
-            <div className="mt-3">
+            <h2 className={CARD_HEADING}>SEO</h2>
+            <div className="mt-4">
               <label
                 htmlFor="metaTitle"
-                className="flex items-center justify-between text-sm font-medium text-gray-700"
+                className={`flex items-center justify-between ${LABEL_CAPS}`}
               >
                 <span>Meta Title</span>
-                <span className="text-xs font-normal text-gray-400">
+                <span className="font-normal tracking-normal text-brand-muted">
                   {metaTitleValue.length}/{MAX_META_TITLE_LENGTH}
                 </span>
               </label>
               <input
                 id="metaTitle"
                 {...register("metaTitle")}
-                className={`mt-1 ${inputClass}`}
+                className={`mt-2 ${inputClass}`}
               />
-              <p className="mt-1 text-xs text-gray-400">
-                Defaults to the post title.
-              </p>
+              <p className={HELP_TEXT}>Defaults to the post title.</p>
               {errors.metaTitle && (
-                <p className="mt-1 text-xs text-red-600">
-                  {errors.metaTitle.message}
-                </p>
+                <p className={ERROR_TEXT}>{errors.metaTitle.message}</p>
               )}
             </div>
-            <div className="mt-4">
+            <div className="mt-5">
               <label
                 htmlFor="metaDescription"
-                className="flex items-center justify-between text-sm font-medium text-gray-700"
+                className={`flex items-center justify-between ${LABEL_CAPS}`}
               >
                 <span>Meta Description</span>
-                <span className="text-xs font-normal text-gray-400">
+                <span className="font-normal tracking-normal text-brand-muted">
                   {metaDescriptionValue.length}/{MAX_META_DESCRIPTION_LENGTH}
                 </span>
               </label>
@@ -841,15 +861,11 @@ export default function PostEditor({ postId }: PostEditorProps) {
                 id="metaDescription"
                 rows={3}
                 {...register("metaDescription")}
-                className={`mt-1 ${inputClass}`}
+                className={`mt-2 ${inputClass}`}
               />
-              <p className="mt-1 text-xs text-gray-400">
-                Defaults to the excerpt.
-              </p>
+              <p className={HELP_TEXT}>Defaults to the excerpt.</p>
               {errors.metaDescription && (
-                <p className="mt-1 text-xs text-red-600">
-                  {errors.metaDescription.message}
-                </p>
+                <p className={ERROR_TEXT}>{errors.metaDescription.message}</p>
               )}
             </div>
           </div>
@@ -859,9 +875,9 @@ export default function PostEditor({ postId }: PostEditorProps) {
               <input
                 type="checkbox"
                 {...register("featured")}
-                className="h-4 w-4 rounded border-gray-300 text-brand-teal focus:ring-brand-teal"
+                className={checkboxClass}
               />
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-[14px] font-medium text-[#121c2a]">
                 Feature this post on the home page
               </span>
             </label>
@@ -870,15 +886,19 @@ export default function PostEditor({ postId }: PostEditorProps) {
       </form>
 
       {/* ── Bottom action bar ────────────────────────────────────── */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-gray-200 bg-white px-6 py-4 md:left-60">
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-brand-muted bg-white px-6 py-4 md:left-60">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-3">
             <span
               className={`h-2 w-2 rounded-full ${
-                isDirty ? "bg-amber-500" : "bg-gray-300"
+                isDirty ? "bg-amber-500" : "bg-brand-muted"
               }`}
             />
-            <span className={isDirty ? "text-amber-600" : "text-gray-400"}>
+            <span
+              className={`text-[12px] font-semibold uppercase tracking-[0.1em] ${
+                isDirty ? "text-amber-700" : "text-[#566475]"
+              }`}
+            >
               {isDirty ? "Unsaved changes" : "No unsaved changes"}
             </span>
             {post && (
@@ -899,7 +919,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
                     void handlePreview();
                   }}
                   disabled={isPreviewing || isSubmitting}
-                  className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-50 disabled:opacity-50"
+                  className={SECONDARY_BUTTON}
                 >
                   {isPreviewing ? <Spinner size={16} /> : <Eye size={16} />}
                   Preview
@@ -910,11 +930,11 @@ export default function PostEditor({ postId }: PostEditorProps) {
                     void handleSubmit((data) => submitEdit(data, false))();
                   }}
                   disabled={isSubmitting}
-                  className={`rounded-md px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60 ${
-                    post?.status === "DRAFT"
-                      ? "bg-brand-navy hover:bg-brand-navy/90"
-                      : "bg-brand-teal-dark hover:bg-brand-teal"
-                  }`}
+                  // A draft's primary action is Publish (rendered next to this),
+                  // so Save Changes steps back to the teal secondary weight.
+                  className={
+                    post?.status === "DRAFT" ? TEAL_BUTTON : PRIMARY_BUTTON
+                  }
                 >
                   {isSubmitting ? "Saving…" : "Save Changes"}
                 </button>
@@ -925,7 +945,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
                       void requestPublish();
                     }}
                     disabled={isSubmitting}
-                    className="rounded-md bg-brand-teal-dark px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-teal disabled:opacity-60"
+                    className={PRIMARY_BUTTON}
                   >
                     Publish
                   </button>
@@ -939,7 +959,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
                     void handleSubmit((data) => submitCreate(data, "DRAFT"))();
                   }}
                   disabled={isSubmitting}
-                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-brand-navy transition-colors hover:bg-gray-50 disabled:opacity-50"
+                  className={SECONDARY_BUTTON}
                 >
                   {isSubmitting ? "Saving…" : "Save Draft"}
                 </button>
@@ -949,7 +969,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
                     void requestPublish();
                   }}
                   disabled={isSubmitting}
-                  className="rounded-md bg-brand-teal-dark px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-teal disabled:opacity-60"
+                  className={PRIMARY_BUTTON}
                 >
                   Publish
                 </button>

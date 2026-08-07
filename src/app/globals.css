@@ -154,6 +154,7 @@
   color: #1f2937;
 }
 .article-body p {
+  margin-bottom: 0.5rem;
 }
 /* Headings come in two forms: `p.heading-<level>` written by the editor (see
    lib/tiptap/heading-paragraph-extension.ts) and real h1–h4 tags on posts
@@ -168,6 +169,8 @@
   font-size: 2.25rem;
   font-weight: 700;
   color: #0d1b2a;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
 }
 /* h2 headings match the other in-body headings (brand navy, no underline) so an
    author's own colour choice is the only thing that tints a heading. */
@@ -177,6 +180,8 @@
   font-size: 1.875rem;
   font-weight: 700;
   color: #0d1b2a;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
 }
 .article-body h3,
 .article-body .heading-3 {
@@ -184,6 +189,8 @@
   font-size: 1.5rem;
   font-weight: 700;
   color: #0d1b2a;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
 }
 .article-body h4,
 .article-body .heading-4 {
@@ -191,10 +198,13 @@
   font-size: 1.125rem;
   font-weight: 700;
   color: #0d1b2a;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 .article-body blockquote {
   border-left: 4px solid #005243;
   padding: 1.5rem 2rem;
+  margin: 2.5rem 0;
   background: #eff3ff;
   border-radius: 0 0.5rem 0.5rem 0;
   font-style: italic;
@@ -203,10 +213,12 @@
   color: #3f4945;
 }
 .article-body blockquote p:last-child {
+  margin-bottom: 0;
 }
 .article-body ul {
   list-style: none;
   padding: 0;
+  margin: 1rem 0 1.5rem;
 }
 .article-body ul li {
   position: relative;
@@ -225,10 +237,26 @@
 .article-body ol {
   list-style: decimal;
   padding-left: 1.5rem;
+  margin: 1rem 0 1.5rem;
 }
 .article-body ol li {
   padding-left: 0.25rem;
 }
+
+.article-body ol li p {
+  margin-bottom: 0;
+}
+
+/* Ordered lists imported from Word already carry the label the document itself
+   renders — "(a)", "(iv)", "1)" — written into each item by
+   lib/word-numbering-import.ts, because mammoth keeps only "this is an <ol>" and
+   drops the number format. The browser marker would print in front of it
+   ("1. (a) …"), so it is dropped for these lists only. Lists written in the
+   editor are untagged and keep their normal numbering. */
+.article-body ol.word-numbered {
+  list-style: none;
+}
+
 .article-body a {
   color: #1a6b5a;
   text-decoration: underline;
@@ -260,6 +288,7 @@
   padding: 1rem;
   border-radius: 0.5rem;
   overflow-x: auto;
+  margin: 1.5rem 0;
 }
 .article-body pre code {
   background: none;
@@ -268,6 +297,7 @@
 .article-body table {
   width: 100%;
   border-collapse: collapse;
+  margin: 1.5rem 0;
   font-size: 0.9375rem;
   line-height: 1.6;
 }
@@ -292,13 +322,16 @@
 .article-body .table-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  margin: 1.5rem 0;
 }
 .article-body .table-scroll table {
+  margin: 0;
 }
 .article-body img {
   display: block;
   max-width: 100%;
   height: auto;
+  margin: 1.5rem auto;
   border-radius: 0.5rem;
 }
 
@@ -306,8 +339,10 @@
    inside the admin editor and never appear in sanitised public output. */
 .article-body .tableWrapper {
   overflow-x: auto;
+  margin: 1.5rem 0;
 }
 .article-body .tableWrapper table {
+  margin: 0;
 }
 .article-body td.selectedCell,
 .article-body th.selectedCell {
@@ -321,6 +356,7 @@
    error state on failure. Never written into the saved document. */
 .article-body .image-upload-placeholder {
   display: inline-block;
+  margin: 0.5rem 0;
   padding: 0.5rem 0.875rem;
   border: 1px dashed #d1d5db;
   border-radius: 0.375rem;
@@ -338,13 +374,16 @@
    .article-body). Colours use the site's brand-teal (note) and the amber tone
    already used across the admin UI (warning). */
 .article-body .callout {
+  margin: 1.5rem 0;
   padding: 0.875rem 1.25rem;
   border-left: 4px solid;
   border-radius: 0 0.375rem 0.375rem 0;
 }
 .article-body .callout > :first-child {
+  margin-top: 0;
 }
 .article-body .callout > :last-child {
+  margin-bottom: 0;
 }
 .article-body .callout-note {
   border-left-color: #1a6b5a;
@@ -371,6 +410,8 @@
    (which uses .article-body without this modifier). */
 .article-body.has-dropcap > p:first-of-type::first-letter {
   float: left;
+  margin-right: 0.75rem;
+  margin-top: 0.35rem;
   font-family: var(--font-serif);
   font-size: 3.75rem;
   font-weight: 700;
@@ -386,16 +427,21 @@
   color: #121c2a;
 }
 .article-body-detail p {
+  margin-bottom: 2rem;
 }
 .article-body-detail > :last-child {
+  margin-bottom: 0;
 }
 /* The first block (often an h2 with a large top margin) must sit flush with
    the top of the article column — otherwise it leaves a big gap under the
    author meta. */
 .article-body-detail > :first-child {
+  margin-top: 0;
 }
 .article-body-detail h2,
 .article-body-detail .heading-2 {
+  margin-top: 4rem;
+  margin-bottom: 2rem;
   font-family: var(--font-serif);
   font-size: 2rem;
   font-weight: 700;
@@ -404,6 +450,8 @@
 }
 .article-body-detail h3,
 .article-body-detail .heading-3 {
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
   font-family: var(--font-serif);
   font-size: 1.5rem;
   font-weight: 600;
@@ -412,6 +460,8 @@
 }
 .article-body-detail h4,
 .article-body-detail .heading-4 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
   font-family: var(--font-serif);
   font-size: 1.25rem;
   font-weight: 600;
@@ -419,6 +469,7 @@
   color: #121c2a;
 }
 .article-body-detail ul {
+  margin: 2rem 0;
 }
 .article-body-detail ul li {
   min-height: 1.6em;
@@ -432,6 +483,7 @@
   background-color: #005243;
 }
 .article-body-detail blockquote {
+  margin: 2.5rem 0;
   padding: 2rem;
   border-left-color: #005243;
   border-radius: 0 0.5rem 0.5rem 0;
@@ -439,6 +491,7 @@
   color: #3f4945;
 }
 .article-body-detail blockquote p {
+  margin-bottom: 1rem;
   font-family: var(--font-serif);
   font-size: 1.5rem;
   font-weight: 600;
@@ -453,6 +506,8 @@
   color: #005243;
 }
 .article-body-detail.has-dropcap > p:first-of-type::first-letter {
+  margin-top: 0.25rem;
+  margin-right: 0.75rem;
   font-size: 3rem;
   line-height: 0.9;
 }
@@ -484,6 +539,7 @@
   gap: 0.5rem;
   width: max-content;
   max-width: 100%;
+  margin: 1.25rem 0;
   padding: 0.5rem 0.875rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;

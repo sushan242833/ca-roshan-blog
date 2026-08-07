@@ -22,10 +22,8 @@ import {
 // a highlight control.
 
 const W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-const XML_NS = "http://www.w3.org/XML/1998/namespace";
 const DOCUMENT_PATH = "word/document.xml";
 const STYLES_PATH = "word/styles.xml";
-const NBSP = "\u00a0";
 
 export type ImportedTextColor = "red" | "blue" | "brown" | "amber" | "pink";
 
@@ -250,94 +248,6 @@ function declareRunStyles(xml: string): string {
   }
 
   return serializeXml(doc);
-}
-
-// Keeps the blank lines an author made by pressing Enter.
-//
-// A paragraph with no runs in it (<w:p/> or <w:p><w:pPr/></w:p>) carries no text
-// for mammoth to emit, so it produces nothing at all rather than an empty
-// paragraph: "A", blank line, "B" converts to <p>A</p><p>B</p>. Giving each such
-// paragraph one non-breaking-space run makes it real content, and mammoth then
-// emits <p>&nbsp;</p> and the spacing survives into the editor.
-//
-// Same failure contract as tagColoredRuns: any problem returns the original
-// buffer, so a document we cannot rewrite still imports with its text intact,
-// just without its blank lines.
-export async function preserveBlankParagraphs(
-  docx: ArrayBuffer,
-): Promise<ArrayBuffer> {
-  try {
-    const zip = await JSZip.loadAsync(docx);
-    const documentEntry = zip.file(DOCUMENT_PATH);
-    if (!documentEntry) {
-      return docx;
-    }
-
-    const patched = fillBlankParagraphs(await documentEntry.async("string"));
-    if (!patched.changed) {
-      return docx;
-    }
-    zip.file(DOCUMENT_PATH, patched.xml);
-
-    return await zip.generateAsync({ type: "arraybuffer" });
-  } catch {
-    return docx;
-  }
-}
-
-// Run content mammoth renders on its own. A paragraph holding any of these is
-// NOT one that converts to nothing — an image-only paragraph already becomes
-// <p><img></p> — so it must not be given a spacer to render beside.
-const RENDERED_RUN_CONTENT = [
-  "w:drawing",
-  "w:pict",
-  "w:object",
-  "w:br",
-  "w:sym",
-  "w:footnoteReference",
-  "w:endnoteReference",
-];
-
-// Blank means "mammoth will emit nothing for this": no w:t anywhere inside it
-// (including inside a w:hyperlink) holding non-whitespace text, and none of the
-// self-rendering run content above.
-function isBlankParagraph(paragraph: Element): boolean {
-  for (const text of Array.from(paragraph.getElementsByTagName("w:t"))) {
-    if ((text.textContent ?? "").trim() !== "") {
-      return false;
-    }
-  }
-
-  return !RENDERED_RUN_CONTENT.some(
-    (tag) => paragraph.getElementsByTagName(tag).length > 0,
-  );
-}
-
-function fillBlankParagraphs(xml: string): { xml: string; changed: boolean } {
-  const doc = parseXml(xml);
-  if (!doc) {
-    return { xml, changed: false };
-  }
-
-  let changed = false;
-  for (const paragraph of Array.from(doc.getElementsByTagName("w:p"))) {
-    if (!isBlankParagraph(paragraph)) {
-      continue;
-    }
-
-    const run = doc.createElementNS(W_NS, "w:r");
-    const text = doc.createElementNS(W_NS, "w:t");
-    // Without xml:space="preserve" the whitespace-only run can be trimmed back
-    // out, putting the paragraph right back to being dropped.
-    text.setAttributeNS(XML_NS, "xml:space", "preserve");
-    text.appendChild(doc.createTextNode(NBSP));
-    run.appendChild(text);
-    // w:pPr must remain the first child of w:p, so append rather than prepend.
-    paragraph.appendChild(run);
-    changed = true;
-  }
-
-  return { xml: serializeXml(doc), changed };
 }
 
 function parseXml(xml: string): Document | null {

@@ -66,3 +66,35 @@ export interface PaginatedResponse<T> {
   items: T[];
   pagination: PaginationMeta;
 }
+
+// Mirror of the backend chapter DTOs.
+
+export interface ChapterSummary {
+  id: string;
+  title: string;
+  order: number;
+  /** One-line summary shown under the title in chapter listings. */
+  excerpt: string | null;
+}
+
+// GET /v1/posts/:slug/chapters
+export interface ChapterIndexResponse extends PostSummaryResponse {
+  paginated: boolean;
+  totalChapters: number;
+  chapters: ChapterSummary[];
+  content: string | null;
+}
+
+// GET /v1/posts/:slug/chapters/:chapterId
+export interface ChapterDetailResponse extends PostSummaryResponse {
+  totalChapters: number;
+  chapter: {
+    id: string;
+    title: string;
+    order: number;
+    html: string;
+    excerpt: string | null;
+  };
+  prev: ChapterSummary | null;
+  next: ChapterSummary | null;
+}

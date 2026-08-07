@@ -11,6 +11,11 @@ interface ArticleTocProps {
    * "sidebar" — always-open list for the fixed desktop sidebar.
    */
   variant?: "inline" | "sidebar";
+  /**
+   * Prefix each entry with its position (01, 02, …). Used by the chapter reader,
+   * where the rail doubles as a sense of progress through the chapter.
+   */
+  numbered?: boolean;
 }
 
 const MOBILE_QUERY = "(max-width: 767px)";
@@ -57,15 +62,17 @@ function useActiveHeading(headings: TocHeading[]): string | null {
 function TocLinks({
   headings,
   activeId,
+  numbered = false,
 }: {
   headings: TocHeading[];
   activeId: string | null;
+  numbered?: boolean;
 }) {
   const shallowest = shallowestLevel(headings);
 
   return (
     <ul className="border-l border-brand-muted/40 text-sm">
-      {headings.map((heading) => (
+      {headings.map((heading, i) => (
         <li
           key={heading.id}
           className={tocIndentClass(heading.level, shallowest)}
@@ -73,13 +80,23 @@ function TocLinks({
           <a
             href={`#${heading.id}`}
             aria-current={activeId === heading.id ? "true" : undefined}
-            className={`-ml-px block border-l-4 py-1.5 pl-4 leading-snug transition-colors ${
+            className={`-ml-px flex items-start gap-3 border-l-4 py-1.5 pl-4 leading-snug transition-colors ${
               activeId === heading.id
                 ? "border-brand-teal-dark font-semibold text-brand-teal-dark"
                 : "border-transparent text-gray-500 hover:border-gray-300 hover:text-brand-teal-dark"
             }`}
           >
-            {heading.text}
+            {numbered && (
+              <span
+                aria-hidden="true"
+                className={`shrink-0 font-serif text-xs ${
+                  activeId === heading.id ? "" : "opacity-60"
+                }`}
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
+            )}
+            <span>{heading.text}</span>
           </a>
         </li>
       ))}
@@ -93,6 +110,7 @@ function TocLinks({
 export default function ArticleToc({
   headings,
   variant = "inline",
+  numbered = false,
 }: ArticleTocProps) {
   const activeId = useActiveHeading(headings);
 
@@ -102,7 +120,11 @@ export default function ArticleToc({
         <h2 className="mb-6 font-serif text-xl font-bold text-brand-teal-dark">
           Table of Contents
         </h2>
-        <TocLinks headings={headings} activeId={activeId} />
+        <TocLinks
+          headings={headings}
+          activeId={activeId}
+          numbered={numbered}
+        />
       </nav>
     );
   }

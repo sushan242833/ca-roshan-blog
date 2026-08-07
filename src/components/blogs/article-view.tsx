@@ -87,7 +87,7 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
   return (
     <article className="text-[#121c2a]">
       <header className="px-6 pb-8 pt-16 text-center">
-        <div className="mx-auto max-w-[800px]">
+        <div className="mx-auto max-w-200">
           {categoryList.length > 0 && (
             <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
               {categoryList.map((category) => (
@@ -106,7 +106,7 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
             {post.title}
           </h1>
 
-          <div className="flex flex-col items-center justify-center gap-4 border-y border-[#bec9c4]/30 py-6 sm:flex-row">
+          <div className="flex flex-col items-center justify-center gap-4 border-y border-brand-muted/30 py-6 sm:flex-row">
             {post.author?.avatarUrl ? (
               <Image
                 src={post.author.avatarUrl}
@@ -116,7 +116,7 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
                 className="h-12 w-12 shrink-0 rounded-full object-cover"
               />
             ) : (
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#005243] text-base font-bold text-white">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-teal-dark text-base font-bold text-white">
                 {authorInitial}
               </div>
             )}
@@ -124,7 +124,7 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
               <p className="text-[14px] font-semibold leading-none text-[#121c2a]">
                 {post.author?.name ?? SITE_NAME}
               </p>
-              <p className="mt-1.5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[13px] leading-[1.5] text-[#3f4945] sm:justify-start">
+              <p className="mt-1.5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[13px] leading-normal text-[#3f4945] sm:justify-start">
                 <span>Published: {publishDate}</span>
                 <span aria-hidden="true">•</span>
                 <span>Last Updated: {updatedDate}</span>
@@ -141,8 +141,8 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
 
       {post.featuredImage && post.showFeaturedImage && (
         <section className="mb-20 px-6">
-          <div className="mx-auto max-w-[1000px]">
-            <figure className="h-[260px] overflow-hidden rounded-xl shadow-lg sm:h-[360px] lg:h-[500px]">
+          <div className="mx-auto max-w-250">
+            <figure className="h-65 overflow-hidden rounded-xl shadow-lg sm:h-90 lg:h-125">
               {/* Same Cloudinary rewrite as the body images. It matters most in
                   development, where next/image runs with `unoptimized` and would
                   otherwise serve the multi-megabyte original; in production it
@@ -206,11 +206,11 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
             )}
 
             {post.tags.length > 0 && (
-              <div className="mt-12 flex flex-wrap justify-center gap-2 border-t border-[#bec9c4] pt-6">
+              <div className="mt-12 flex flex-wrap justify-center gap-2 border-t border-brand-muted pt-6">
                 {post.tags.map((tag) => (
                   <span
                     key={tag.id}
-                    className="rounded-full border border-[#6f7975] px-4 py-1.5 text-xs font-medium text-[#3f4945] transition-colors hover:border-[#005243] hover:text-[#005243]"
+                    className="rounded-full border border-[#6f7975] px-4 py-1.5 text-xs font-medium text-[#3f4945] transition-colors hover:border-brand-teal-dark hover:text-brand-teal-dark"
                   >
                     {tag.name}
                   </span>
