@@ -198,9 +198,15 @@ function ManagePosts() {
   }
 
   // Mutations move posts between tabs, so both the list and counts refresh.
-  const refreshAfterMutation = () => {
+  // The mutated post's own cached detail goes too: ["posts"] does not match
+  // ["post", id], so leaving it behind means opening Edit next shows the
+  // pre-mutation status until the page is reloaded.
+  const refreshAfterMutation = (postId?: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.postsAll });
     queryClient.invalidateQueries({ queryKey: queryKeys.postStats });
+    if (postId) {
+      queryClient.removeQueries({ queryKey: queryKeys.post(postId) });
+    }
   };
 
   const selectTab = (tab: StatusTab) => {
@@ -235,7 +241,7 @@ function ManagePosts() {
       await transitionMutation.mutateAsync({ post, action });
       await revalidatePublicContent("posts", getAccessToken());
       toast.success(successMessage);
-      refreshAfterMutation();
+      refreshAfterMutation(post.id);
     } finally {
       setPendingId(null);
     }
@@ -277,13 +283,14 @@ function ManagePosts() {
 
   async function handleDeleteConfirm() {
     if (!deleteTarget) return;
-    setPendingId(deleteTarget.id);
+    const deletedId = deleteTarget.id;
+    setPendingId(deletedId);
     try {
-      await deleteMutation.mutateAsync(deleteTarget.id);
+      await deleteMutation.mutateAsync(deletedId);
       await revalidatePublicContent("posts", getAccessToken());
       toast.success("Post deleted successfully");
       setDeleteTarget(null);
-      refreshAfterMutation();
+      refreshAfterMutation(deletedId);
     } catch (err) {
       toast.error(
         err instanceof ApiRequestError ? err.message : "Failed to delete post.",
