@@ -315,6 +315,9 @@ export default function PostEditor({ postId }: PostEditorProps) {
     // reflect the change if the admin navigates back to them.
     queryClient.invalidateQueries({ queryKey: queryKeys.postsAll });
     queryClient.invalidateQueries({ queryKey: queryKeys.postStats });
+    if (postId) {
+      queryClient.removeQueries({ queryKey: queryKeys.post(postId) });
+    }
     toast.success(successMessage);
     reset(undefined, { keepValues: true });
     router.push("/admin/posts");
