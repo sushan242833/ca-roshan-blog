@@ -86,9 +86,9 @@ export default function ChapterView({
               {prev ? (
                 <Link
                   href={`${basePath}/${prev.id}`}
-                  className="group flex max-w-[48%] flex-col rounded-lg border border-brand-muted px-4 py-3 text-left transition-colors hover:border-brand-teal-dark"
+                  className="group flex max-w-[48%] flex-col text-left"
                 >
-                  <span className="flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wide text-[#566475]">
+                  <span className="flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wide text-[#566475] transition-colors group-hover:text-brand-teal-dark">
                     <ChevronLeft size={14} aria-hidden="true" />
                     Previous
                   </span>
@@ -103,9 +103,9 @@ export default function ChapterView({
               {next ? (
                 <Link
                   href={`${basePath}/${next.id}`}
-                  className="group flex max-w-[48%] flex-col rounded-lg border border-[#bec9c4] px-4 py-3 text-right transition-colors hover:border-brand-teal-dark"
+                  className="group flex max-w-[48%] flex-col text-right"
                 >
-                  <span className="flex items-center justify-end gap-1 text-[12px] font-semibold uppercase tracking-wide text-[#566475]">
+                  <span className="flex items-center justify-end gap-1 text-[12px] font-semibold uppercase tracking-wide text-[#566475] transition-colors group-hover:text-brand-teal-dark">
                     Next
                     <ChevronRight size={14} aria-hidden="true" />
                   </span>
