@@ -12,7 +12,7 @@ interface ChapterContentsProps {
 
 // A long guide has dozens of chapters, so the landing shows a readable preview
 // and reveals the rest on request rather than dumping the whole list.
-const PREVIEW_COUNT = 5;
+const PREVIEW_COUNT = 10;
 
 // The numbered contents rail on the article landing page. Client-side only for
 // the expand toggle; every entry is a plain <Link>, so all chapters remain
@@ -51,11 +51,11 @@ export default function ChapterContents({
               <h3 className="mb-1 text-[14px] font-semibold leading-snug text-[#121c2a] transition-colors group-hover:text-brand-teal-dark">
                 {chapter.title}
               </h3>
-              {chapter.excerpt && (
+              {/* {chapter.excerpt && (
                 <p className="text-[16px] leading-relaxed text-[#44474c] opacity-80 transition-opacity group-hover:opacity-100">
                   {chapter.excerpt}
                 </p>
-              )}
+              )} */}
             </Link>
           </li>
         ))}
