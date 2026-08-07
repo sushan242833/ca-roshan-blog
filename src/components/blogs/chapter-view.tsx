@@ -82,11 +82,11 @@ export default function ChapterView({
 
             {/* Previous / next chapter navigation. Links prefetch by default,
                 so once chapters are ISR-cached the next one loads instantly. */}
-            <nav className="mt-12 flex items-stretch justify-between gap-4 border-t border-[#bec9c4] pt-6">
+            <nav className="mt-12 flex items-stretch justify-between gap-4 border-t border-brand-muted pt-6">
               {prev ? (
                 <Link
                   href={`${basePath}/${prev.id}`}
-                  className="group flex max-w-[48%] flex-col rounded-lg border border-[#bec9c4] px-4 py-3 text-left transition-colors hover:border-brand-teal-dark"
+                  className="group flex max-w-[48%] flex-col rounded-lg border border-brand-muted px-4 py-3 text-left transition-colors hover:border-brand-teal-dark"
                 >
                   <span className="flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wide text-[#566475]">
                     <ChevronLeft size={14} aria-hidden="true" />
