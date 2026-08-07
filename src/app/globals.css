@@ -331,7 +331,7 @@
   display: block;
   max-width: 100%;
   height: auto;
-  margin: 1.5rem auto;
+  margin: 0 auto 1.5rem;
   border-radius: 0.5rem;
 }
 
@@ -427,16 +427,10 @@
   color: #121c2a;
 }
 .article-body-detail p {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 .article-body-detail > :last-child {
   margin-bottom: 0;
-}
-/* The first block (often an h2 with a large top margin) must sit flush with
-   the top of the article column — otherwise it leaves a big gap under the
-   author meta. */
-.article-body-detail > :first-child {
-  margin-top: 0;
 }
 .article-body-detail h2,
 .article-body-detail .heading-2 {
@@ -467,6 +461,18 @@
   font-weight: 600;
   line-height: 1.4;
   color: #121c2a;
+}
+
+/* The first block must sit flush with the top of the article column, or its own
+   top margin leaves a gap under the header — a chapter that opens on a heading
+   otherwise starts 3rem down.
+
+   This has to come AFTER the heading rules above: `.article-body-detail
+   .heading-3` and `.article-body-detail > :first-child` have identical
+   specificity (one class + one class/pseudo-class each), so source order is the
+   only tie-breaker and the flush-top rule must be last to win. */
+.article-body-detail > :first-child {
+  margin-top: 0;
 }
 .article-body-detail ul {
   margin: 2rem 0;

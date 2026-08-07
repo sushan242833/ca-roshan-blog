@@ -47,18 +47,13 @@ export default function WarmBackend() {
       return;
     }
 
-    // no-cors because the response is never read: the request still reaches the
-    // origin and wakes it, but the browser will not log a CORS error if the
-    // visitor's origin does not match the backend's configured FRONTEND_URL
-    // (e.g. the apex domain rather than www).
-    // keepalive so navigating away immediately does not cancel the wake-up.
     void fetch(url, {
       method: "GET",
-      mode: "no-cors",
+      mode: "cors",
       cache: "no-store",
       keepalive: true,
     }).catch(() => {
-      // Silent by design.
+      // Silent by design — a failed warm-up must never surface to the reader.
     });
   }, []);
 
