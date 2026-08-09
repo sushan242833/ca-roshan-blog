@@ -1,4 +1,6 @@
-export type RevalidateScope = "categories" | "tags" | "posts" | "about";
+// "about" is intentionally absent: /about is force-static content compiled from
+// @/content/about, so there is nothing to purge.
+export type RevalidateScope = "categories" | "tags" | "posts";
 
 // Asks our own /api/revalidate route to purge the Next cache for the public
 // pages affected by an admin mutation. Same-origin on purpose — do NOT route

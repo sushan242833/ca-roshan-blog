@@ -43,7 +43,6 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: "/admin/subscribers",
     icon: Users,
   },
-  { label: "Settings", href: "/admin/settings/about", icon: Settings },
 ];
 
 function getInitials(name: string): string {

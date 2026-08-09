@@ -2,47 +2,30 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { MapPin, Briefcase, BadgeCheck } from "lucide-react";
 import PostImagePlaceholder from "@/components/posts/post-image-placeholder";
-import { apiRequest } from "@/lib/api";
-import { STATIC_PAGE_REVALIDATE_SECONDS } from "@/lib/constants";
+import { ABOUT_CONTENT } from "@/content/about";
 import { SITE_NAME } from "@/config/site.config";
-import type { AboutPageResponse } from "@/types/about";
 
-const DEFAULT_BIO =
-  "CA Roshan brings over a decade of experience in tax " +
-  "advisory and financial consulting across Nepal.";
+export const dynamic = "force-static";
 
-async function getAboutPage(): Promise<AboutPageResponse | null> {
-  try {
-    return await apiRequest<AboutPageResponse>("/v1/auth/about", {
-      next: { revalidate: STATIC_PAGE_REVALIDATE_SECONDS },
-    });
-  } catch (err) {
-    console.error("Failed to fetch about page data:", err);
-    return null;
-  }
-}
+const about = ABOUT_CONTENT;
 
-export async function generateMetadata(): Promise<Metadata> {
-  const about = await getAboutPage();
+export function generateMetadata(): Metadata {
   const description =
-    about?.seoDescription ??
-    about?.bio?.split(/(?<=[.!?])\s/)[0] ??
-    DEFAULT_BIO;
+    about.seoDescription ?? about.bio?.split(/(?<=[.!?])\s/)[0];
 
   return {
-    title: about?.seoTitle ?? `About | ${SITE_NAME}`,
+    title: about.seoTitle ?? `About | ${SITE_NAME}`,
     description,
     alternates: { canonical: "/about" },
-    openGraph: about?.ogImageUrl
+    openGraph: about.ogImageUrl
       ? { images: [{ url: about.ogImageUrl }] }
       : undefined,
   };
 }
 
-export default async function AboutPage() {
-  const about = await getAboutPage();
-  const name = about?.name ?? SITE_NAME;
-  const bio = about?.bio ?? DEFAULT_BIO;
+export default function AboutPage() {
+  const name = about.name || SITE_NAME;
+  const bio = about.bio;
 
   return (
     <div className="bg-white">
@@ -51,7 +34,7 @@ export default async function AboutPage() {
           {/* Left column */}
           <div className="flex flex-col gap-6">
             <div className="relative aspect-square w-full overflow-hidden rounded-lg">
-              {about?.avatarUrl ? (
+              {about.avatarUrl ? (
                 <Image
                   src={about.avatarUrl}
                   alt={name}
@@ -69,26 +52,34 @@ export default async function AboutPage() {
                 {name}
               </h1>
               <p className="mt-1 text-xs font-semibold tracking-widest text-brand-teal uppercase">
-                {about?.title ?? "Chartered Accountant"}
+                {about.title ?? "Chartered Accountant"}
               </p>
 
-              {(about?.location || about?.yearsOfExperience || about?.qualification) && (
+              {(about.location ||
+                about.yearsOfExperience ||
+                about.qualification) && (
                 <div className="mt-5 space-y-3 text-sm text-gray-600">
-                  {about?.location && (
+                  {about.location && (
                     <div className="flex items-center gap-3">
                       <MapPin size={16} className="shrink-0 text-brand-teal" />
                       <span>{about.location}</span>
                     </div>
                   )}
-                  {about?.yearsOfExperience && (
+                  {about.yearsOfExperience && (
                     <div className="flex items-center gap-3">
-                      <Briefcase size={16} className="shrink-0 text-brand-teal" />
+                      <Briefcase
+                        size={16}
+                        className="shrink-0 text-brand-teal"
+                      />
                       <span>{about.yearsOfExperience}</span>
                     </div>
                   )}
-                  {about?.qualification && (
+                  {about.qualification && (
                     <div className="flex items-center gap-3">
-                      <BadgeCheck size={16} className="shrink-0 text-brand-teal" />
+                      <BadgeCheck
+                        size={16}
+                        className="shrink-0 text-brand-teal"
+                      />
                       <span>{about.qualification}</span>
                     </div>
                   )}
@@ -103,19 +94,19 @@ export default async function AboutPage() {
               Professional Background
             </h2>
             <p className="mt-4 leading-relaxed text-gray-600">{bio}</p>
-            {about?.bioParagraph2 && (
+            {about.bioParagraph2 && (
               <p className="mt-4 leading-relaxed text-gray-600">
                 {about.bioParagraph2}
               </p>
             )}
 
-            {about?.professionalQuote && (
+            {about.professionalQuote && (
               <blockquote className="my-8 border-l-4 border-brand-teal bg-gray-50 py-4 pr-4 pl-6 font-serif text-lg italic text-brand-navy">
                 &ldquo;{about.professionalQuote}&rdquo;
               </blockquote>
             )}
 
-            {about && about.expertise.length > 0 && (
+            {about.expertise.length > 0 && (
               <>
                 <h2 className="font-serif text-2xl font-bold text-brand-navy">
                   Areas of Expertise
@@ -139,7 +130,7 @@ export default async function AboutPage() {
               </>
             )}
 
-            {about?.closingMessage && (
+            {about.closingMessage && (
               <p className="mt-8 leading-relaxed text-gray-600">
                 {about.closingMessage}
               </p>
