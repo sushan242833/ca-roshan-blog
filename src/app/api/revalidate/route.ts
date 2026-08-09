@@ -27,7 +27,6 @@ const SCOPE_TARGETS: Record<RevalidateScope, RevalidateTarget[]> = {
     { path: "/blogs/[slug]", type: "page" },
     { path: "/categories/[slug]", type: "page" },
   ],
-  about: [{ path: "/about" }, { path: "/" }],
 };
 
 function isRevalidateScope(value: unknown): value is RevalidateScope {
