@@ -64,7 +64,7 @@ describe("revalidatePublicContent", () => {
     );
 
     await expect(
-      revalidatePublicContent("about", "token-1"),
+      revalidatePublicContent("posts", "token-1"),
     ).resolves.toBeUndefined();
     expect(console.error).toHaveBeenCalled();
   });
