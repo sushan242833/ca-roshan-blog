@@ -11,6 +11,10 @@ interface RevalidateTarget {
 
 // The scope-to-paths mapping lives server-side on purpose: clients may only
 // name a scope, never arbitrary paths.
+//
+// This map must cover EVERY public route that reads posts/chapters/categories/
+// tags. CONTENT_REVALIDATE_SECONDS is an hour, so anything missing here stays
+// stale for up to an hour after an edit rather than self-correcting in a minute.
 const SCOPE_TARGETS: Record<RevalidateScope, RevalidateTarget[]> = {
   categories: [
     { path: "/" },
@@ -18,14 +22,24 @@ const SCOPE_TARGETS: Record<RevalidateScope, RevalidateTarget[]> = {
     { path: "/categories/[slug]", type: "page" },
     // Category pills appear on post cards and filters.
     { path: "/blogs" },
+    // The article header (ArticleView/ChapterHub) links each of the post's
+    // categories by name, and the "Recommended for You" cards carry pills too.
+    { path: "/blogs/[slug]", type: "page" },
+    // The sitemap lists a URL per category.
+    { path: "/sitemap.xml" },
   ],
-  // Tags render on the post detail page.
+  // Tags render on the post detail page only — ChapterView shows no tags.
   tags: [{ path: "/blogs/[slug]", type: "page" }],
   posts: [
     { path: "/" },
     { path: "/blogs" },
     { path: "/blogs/[slug]", type: "page" },
+    // Chapters of a paginated post are cached as their own pages; revalidating
+    // the landing above does NOT reach this nested route.
+    { path: "/blogs/[slug]/[chapter]", type: "page" },
     { path: "/categories/[slug]", type: "page" },
+    // The sitemap walks every published post and stamps its updatedAt.
+    { path: "/sitemap.xml" },
   ],
 };
 

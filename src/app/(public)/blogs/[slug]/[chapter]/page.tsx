@@ -6,44 +6,28 @@ import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
 import { SITE_NAME, SITE_URL } from "@/config/site.config";
 import type {
   ChapterDetailResponse,
-  ChapterIndexResponse,
-  PaginatedResponse,
-  PostSummaryResponse,
+  ChapterManifestEntry,
 } from "@/types/post";
 
 interface PageProps {
   params: Promise<{ slug: string; chapter: string }>;
 }
 
-// Pre-render every chapter of every paginated post at build. Each fetch here is
-// the small chapter-index (no full content), so the build stays cheap.
+// Pre-render every chapter of every paginated post at build. The manifest is a
+// single call returning just slugs and chapter ids — no titles, no bodies — so
+// this costs one round trip regardless of how many posts are paginated.
 export async function generateStaticParams() {
   try {
-    const list = await apiRequest<PaginatedResponse<PostSummaryResponse>>(
-      `/v1/posts?limit=100`,
+    const manifest = await apiRequest<ChapterManifestEntry[]>(
+      `/v1/posts/chapter-manifest`,
       { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
     );
 
-    const params: { slug: string; chapter: string }[] = [];
-    await Promise.all(
-      list.items.map(async (post) => {
-        try {
-          const index = await apiRequest<ChapterIndexResponse>(
-            `/v1/posts/${post.slug}/chapters`,
-            { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
-          );
-          if (index.paginated) {
-            for (const chapter of index.chapters) {
-              params.push({ slug: post.slug, chapter: chapter.id });
-            }
-          }
-        } catch {
-          // skip this post; its chapters render on demand
-        }
-      }),
+    return manifest.flatMap(({ slug, chapterIds }) =>
+      chapterIds.map((chapter) => ({ slug, chapter })),
     );
-    return params;
   } catch {
+    // dynamicParams below still renders every chapter on demand.
     return [];
   }
 }

@@ -85,6 +85,14 @@ export interface ChapterIndexResponse extends PostSummaryResponse {
   content: string | null;
 }
 
+// GET /v1/posts/chapter-manifest — every published, paginated post's slug and
+// chapter ids, in reading order. Build-time only: it exists so
+// generateStaticParams can enumerate chapter URLs in one call.
+export interface ChapterManifestEntry {
+  slug: string;
+  chapterIds: string[];
+}
+
 // GET /v1/posts/:slug/chapters/:chapterId
 export interface ChapterDetailResponse extends PostSummaryResponse {
   totalChapters: number;
