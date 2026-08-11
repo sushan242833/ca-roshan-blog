@@ -1,5 +1,10 @@
 // ISR revalidation windows (seconds) for public pages fetched via the API.
-export const CONTENT_REVALIDATE_SECONDS = 60; // post lists & article pages
+// Admin mutations purge these pages on demand via revalidatePublicContent(), so
+// this window is only the safety net for edits that bypass the admin UI (a
+// direct DB change, a failed revalidate POST). It is deliberately long: at 60s
+// every cached page re-hit the API and the database once a minute for content
+// that changes a few times a week.
+export const CONTENT_REVALIDATE_SECONDS = 3600; // post lists & article pages
 export const STATIC_PAGE_REVALIDATE_SECONDS = 300; // about & category pages
 // The sitemap walks EVERY published post, and crawlers request it far more often
 // than the corpus changes — hence its own, much longer window.
