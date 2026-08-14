@@ -49,11 +49,8 @@ export default function AboutPage() {
 
             <div className="rounded-lg border border-gray-200 p-6">
               <h1 className="font-serif text-2xl font-bold text-brand-navy">
-                {name}
+                {about.title} {name}
               </h1>
-              <p className="mt-1 text-xs font-semibold tracking-widest text-brand-teal uppercase">
-                {about.title ?? "Chartered Accountant"}
-              </p>
 
               {(about.location ||
                 about.yearsOfExperience ||
