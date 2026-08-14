@@ -30,11 +30,11 @@ export const ABOUT_AVATAR_SRC = "/about/roshan-about.webp";
 
 export const ABOUT_CONTENT: AboutContent = {
   name: "Roshan Poudel",
-  title: " CA & Tax Advisor",
+  title: "CA",
   avatarUrl: ABOUT_AVATAR_SRC,
   location: "Kathmandu, Nepal",
-  yearsOfExperience: "10+ Years",
-  qualification: "Fellow Chartered Accountant (FCA)",
+  yearsOfExperience: "5+ Years",
+  qualification: "Chartered Accountant (CA)",
   bio: "I am a Chartered Accountant (CA) from the Institute of Chartered Accountants of Nepal (ICAN) with over five years of professional experience in taxation, auditing, financial reporting, regulatory compliance, and business advisory services. Throughout my career, I have advised domestic and multinational businesses across diverse industries, assisting them with complex tax matters, corporate structuring, regulatory compliance, financial due diligence, and strategic business decisions. My expertise spans direct and indirect taxation, transfer pricing, financial statement analysis, statutory and internal audits, and investment advisory.",
   bioParagraph2:
     "Beyond traditional professional practice, I have been actively involved in policy and regulatory initiatives. I have contributed to technical projects relating to Nepal's transfer pricing framework, including research and drafting recommendations on Advance Pricing Agreements (APA) and Safe Harbour Rules (SHR). My work combines international best practices with practical solutions tailored to Nepal's regulatory environment.",
