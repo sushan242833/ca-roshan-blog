@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import PostCard from "@/components/posts/post-card";
 import Pagination from "@/components/blogs/pagination";
 import { apiRequest } from "@/lib/api";
+import { notFoundOrRethrow } from "@/lib/route-errors";
 import {
   CONTENT_REVALIDATE_SECONDS,
   POSTS_PER_PAGE,
@@ -59,9 +60,13 @@ export default async function CategoryArchivePage({
     category = categories.find((c) => c.slug === slug);
     postsData = posts;
   } catch (err) {
+    // Reaching the "category not found" branch below because the API was
+    // unreachable would 404 a live category page. An upstream failure is a 500.
     console.error("Failed to fetch category archive:", err);
+    notFoundOrRethrow(err);
   }
 
+  // Genuinely absent from a successful response: this category does not exist.
   if (!category) notFound();
 
   return (

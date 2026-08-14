@@ -7,13 +7,12 @@ import { NAV_LINKS, SITE_NAME } from "@/config/site.config";
 import { MenuIcon, XIcon } from "@/components/icons";
 import HeaderSearch from "@/components/layout/header-search";
 
+const MOBILE_NAV_ID = "mobile-navigation";
+
 export default function Header() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Close the mobile menu when the route changes. Done via the "adjust state
-  // during render" pattern rather than a setState-in-effect, which cascades
-  // renders.
   const [lastPathname, setLastPathname] = useState(pathname);
   if (pathname !== lastPathname) {
     setLastPathname(pathname);
@@ -60,15 +59,13 @@ export default function Header() {
 
         {/* Right icons */}
         <div className="flex items-center gap-3">
-          {/* Search — shared by desktop and mobile (outside the md:hidden
-              split, so it appears in both layouts). Expands inline beside the
-              icon rather than opening a modal. */}
           <HeaderSearch />
 
           {/* Hamburger / Close — mobile only */}
           <button
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={isMenuOpen}
+            aria-controls={MOBILE_NAV_ID}
             onClick={() => setIsMenuOpen((prev) => !prev)}
             className="md:hidden text-brand-navy"
           >
@@ -80,7 +77,7 @@ export default function Header() {
       {/* Mobile dropdown */}
       {isMenuOpen && (
         <nav
-          role="navigation"
+          id={MOBILE_NAV_ID}
           aria-label="Mobile navigation"
           className="md:hidden w-full bg-white shadow-lg"
         >

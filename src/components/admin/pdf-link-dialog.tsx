@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Upload } from "lucide-react";
 import Spinner from "@/components/ui/spinner";
 import { toast } from "sonner";
@@ -14,12 +14,15 @@ import {
 } from "@/lib/constants";
 import { isValidPdfUrl } from "@/lib/pdf-url";
 import { ApiRequestError } from "@/lib/api";
-import { useAuth } from "@/components/providers/auth-provider";
 import { queryKeys } from "@/lib/query-keys";
 import {
   MediaValidationError,
   useMediaUpload,
 } from "@/components/admin/use-media-upload";
+import {
+  prependMediaToCache,
+  useMediaList,
+} from "@/components/admin/use-media-list";
 import MediaGridItem from "@/components/admin/media-grid-item";
 import FormMessage from "@/components/ui/form-message";
 import {
@@ -55,17 +58,21 @@ export default function PdfLinkDialog({
   const [url, setUrl] = useState(initial?.href ?? "");
   const [label, setLabel] = useState(initial?.label ?? "");
   const [error, setError] = useState("");
-  const { authedFetch } = useAuth();
-  const queryClient = useQueryClient();
+    const queryClient = useQueryClient();
   const { uploadFile, isUploading } = useMediaUpload("document");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Existing PDFs in storage, so the admin can reuse one without re-uploading.
-  const docsQuery = useQuery({
-    queryKey: queryKeys.mediaByType("document"),
-    queryFn: () => authedFetch<MediaResponse[]>("/v1/media?type=document"),
-  });
-  const documents = docsQuery.data ?? [];
+  // Paginated — the first page is enough for the reuse case, and `hasMore`
+  // drives the "Load more" control below.
+  const {
+    items: documents,
+    isLoading: isLoadingDocuments,
+    error: docsError,
+    hasMore: hasMoreDocuments,
+    isLoadingMore: isLoadingMoreDocuments,
+    loadMore: loadMoreDocuments,
+  } = useMediaList("document");
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -77,9 +84,10 @@ export default function PdfLinkDialog({
       setError("");
       // Show the freshly uploaded PDF in the existing-PDFs grid immediately,
       // and refresh the unfiltered Media Library.
-      queryClient.setQueryData<MediaResponse[]>(
+      prependMediaToCache(
+        queryClient,
         queryKeys.mediaByType("document"),
-        (previous) => [media, ...(previous ?? [])],
+        media,
       );
       queryClient.invalidateQueries({ queryKey: queryKeys.media, exact: true });
     } catch (err) {
@@ -110,12 +118,6 @@ export default function PdfLinkDialog({
       label: label.trim() || DEFAULT_PDF_LABEL,
     });
   }
-
-  const docsError = docsQuery.isError
-    ? docsQuery.error instanceof ApiRequestError
-      ? docsQuery.error.message
-      : "Failed to load PDFs."
-    : "";
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
@@ -200,7 +202,7 @@ export default function PdfLinkDialog({
           {docsError && (
             <FormMessage type="error" className="p-3" message={docsError} />
           )}
-          {docsQuery.isPending ? (
+          {isLoadingDocuments ? (
             <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-400">
               <Spinner size={18} />
               Loading PDFs…
@@ -211,7 +213,7 @@ export default function PdfLinkDialog({
             </p>
           ) : (
             <div className="grid max-h-56 min-h-0 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
-              {documents.map((media) => (
+              {documents.map((media: MediaResponse) => (
                 <div
                   key={media.id}
                   className={
@@ -229,6 +231,16 @@ export default function PdfLinkDialog({
                   />
                 </div>
               ))}
+              {hasMoreDocuments && (
+                <button
+                  type="button"
+                  onClick={loadMoreDocuments}
+                  disabled={isLoadingMoreDocuments}
+                  className="flex items-center justify-center rounded-md border border-dashed border-gray-300 p-3 text-xs font-medium text-gray-500 transition-colors hover:border-brand-teal hover:text-brand-teal disabled:opacity-60"
+                >
+                  {isLoadingMoreDocuments ? <Spinner size={16} /> : "Load more"}
+                </button>
+              )}
             </div>
           )}
         </div>
