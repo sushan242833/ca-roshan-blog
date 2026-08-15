@@ -4,7 +4,11 @@ import ChapterView from "@/components/blogs/chapter-view";
 import PreviewBanner from "@/components/blogs/preview-banner";
 import { apiRequest } from "@/lib/api";
 import { SITE_NAME } from "@/config/site.config";
-import type { ChapterDetailResponse } from "@/types/post";
+import type {
+  ChapterDetailResponse,
+  ChapterIndexResponse,
+  ChapterSummary,
+} from "@/types/post";
 
 export const metadata: Metadata = {
   title: `Chapter Preview | ${SITE_NAME}`,
@@ -36,6 +40,19 @@ export default async function PreviewChapterPage({ params }: PageProps) {
     notFound();
   }
 
+  // Best-effort, same as the published chapter page: the index only powers the
+  // jump menu and contents list, so losing it must not take the preview down.
+  let chapters: ChapterSummary[] | undefined;
+  try {
+    const index = await apiRequest<ChapterIndexResponse>(
+      `/v1/posts/preview/${encodeURIComponent(token)}/chapters`,
+      { cache: "no-store" },
+    );
+    chapters = index.chapters;
+  } catch {
+    chapters = undefined;
+  }
+
   return (
     <div className="bg-white">
       <PreviewBanner />
@@ -44,6 +61,7 @@ export default async function PreviewChapterPage({ params }: PageProps) {
       <ChapterView
         basePath={`/blogs/preview/${encodeURIComponent(token)}`}
         data={data}
+        chapters={chapters}
       />
     </div>
   );
