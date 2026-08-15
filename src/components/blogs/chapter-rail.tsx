@@ -5,23 +5,12 @@ import Link from "next/link";
 import type { ChapterSummary } from "@/types/post";
 
 interface ChapterRailProps {
-  /** Route these chapter links hang off — `/blogs/<slug>` or a preview path. */
   basePath: string;
   chapters: ChapterSummary[];
   currentChapterId: string;
-  /**
-   * "sidebar" — vertical card stack under the desktop table of contents.
-   * "strip"   — horizontally scrolling row, for the mobile layout where no
-   *             sidebar exists.
-   */
   variant: "sidebar" | "strip";
 }
 
-// Every chapter as a card, current one marked, so a reader on chapter 3 reaches
-// chapter 8 in one click instead of stepping through prev/next. Rendered twice
-// per page in two shapes rather than one reflowing list: the desktop rail is a
-// sticky column of full-width cards, the mobile strip a swipeable row, and the
-// two want different scroll axes and card widths.
 export default function ChapterRail({
   basePath,
   chapters,
@@ -30,11 +19,6 @@ export default function ChapterRail({
 }: ChapterRailProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const currentRef = useRef<HTMLAnchorElement>(null);
-
-  // A long guide runs to dozens of chapters, so the current one is usually
-  // outside the rail's visible window on load. Drive the scroller's own offset
-  // rather than scrollIntoView, which would scroll the page too and land the
-  // reader below the chapter title they just opened.
   useEffect(() => {
     const scroller = scrollerRef.current;
     const current = currentRef.current;
@@ -71,12 +55,8 @@ export default function ChapterRail({
         ref={scrollerRef}
         className={
           isStrip
-            ? // -mx-6/px-6 lets the row bleed to the screen edges, so the card
-              // clipped at the right reads as "swipe for more".
-              "relative -mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2"
-            : // Fills whatever height the aside allots it, scrolling on its own
-              // so the table of contents beside it keeps its share.
-              "relative min-h-0 flex-1 space-y-2 overflow-y-auto pr-1"
+            ? "relative -mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2"
+            : "relative min-h-0 flex-1 space-y-2 overflow-y-auto pr-1"
         }
       >
         {chapters.map((chapter) => {
