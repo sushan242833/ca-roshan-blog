@@ -6,16 +6,9 @@ import { shallowestLevel, tocIndentClass, type TocHeading } from "@/lib/toc";
 
 interface ArticleTocProps {
   headings: TocHeading[];
-  /**
-   * "inline" — collapsible "Contents" box in the article flow (used on mobile).
-   * "sidebar" — always-open list for the fixed desktop sidebar.
-   */
   variant?: "inline" | "sidebar";
-  /**
-   * Prefix each entry with its position (01, 02, …). Used by the chapter reader,
-   * where the rail doubles as a sense of progress through the chapter.
-   */
   numbered?: boolean;
+  fill?: boolean;
 }
 
 const MOBILE_QUERY = "(max-width: 767px)";
@@ -26,9 +19,6 @@ function subscribeMobile(callback: () => void): () => void {
   return () => mq.removeEventListener("change", callback);
 }
 
-// Highlight the section currently in view. The rootMargin biases toward the
-// heading nearest the top of the viewport (below the sticky header). Shared by
-// both variants so the mobile box and the desktop sidebar track scroll alike.
 function useActiveHeading(headings: TocHeading[]): string | null {
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -56,9 +46,6 @@ function useActiveHeading(headings: TocHeading[]): string | null {
   return activeId;
 }
 
-// The link rail. The wrapping <ul> carries a continuous hairline on its left
-// edge; each item's own 2px border sits on top (pulled over with -ml-px) so the
-// active section reads as a teal segment of that rail — the classic docs TOC.
 function TocLinks({
   headings,
   activeId,
@@ -104,27 +91,36 @@ function TocLinks({
   );
 }
 
-// Collapsible "Contents" box (mobile) and a fixed-sidebar list (desktop). The
-// sidebar's sticky position + independent scroll is applied by the parent
-// (ArticleView) so this component stays layout-agnostic.
 export default function ArticleToc({
   headings,
   variant = "inline",
   numbered = false,
+  fill = false,
 }: ArticleTocProps) {
   const activeId = useActiveHeading(headings);
 
   if (variant === "sidebar") {
     return (
-      <nav aria-label="Table of contents">
-        <h2 className="mb-6 font-serif text-xl font-bold text-brand-teal-dark">
+      <nav
+        aria-label="Table of contents"
+        className={fill ? "flex h-full min-h-0 flex-col" : undefined}
+      >
+        <h2
+          className={`mb-6 font-serif text-xl font-bold text-brand-teal-dark ${
+            fill ? "shrink-0" : ""
+          }`}
+        >
           Table of Contents
         </h2>
-        <TocLinks
-          headings={headings}
-          activeId={activeId}
-          numbered={numbered}
-        />
+        <div
+          className={fill ? "min-h-0 flex-1 overflow-y-auto pr-1" : undefined}
+        >
+          <TocLinks
+            headings={headings}
+            activeId={activeId}
+            numbered={numbered}
+          />
+        </div>
       </nav>
     );
   }
@@ -132,9 +128,6 @@ export default function ArticleToc({
   return <InlineToc headings={headings} activeId={activeId} />;
 }
 
-// Server-renders expanded (desktop default); useSyncExternalStore reads the
-// viewport on the client so it starts collapsed on mobile without a
-// setState-in-effect.
 function InlineToc({
   headings,
   activeId,

@@ -3,10 +3,12 @@ import { notFound } from "next/navigation";
 import ChapterView from "@/components/blogs/chapter-view";
 import { apiRequest, ApiRequestError } from "@/lib/api";
 import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
+import { fetchChapterIndex } from "@/lib/posts";
 import { SITE_NAME, SITE_URL } from "@/config/site.config";
 import type {
   ChapterDetailResponse,
   ChapterManifestEntry,
+  ChapterSummary,
 } from "@/types/post";
 
 interface PageProps {
@@ -81,11 +83,22 @@ export default async function ChapterPage({ params }: PageProps) {
     notFound();
   }
 
+  // Best-effort: the index only powers the jump menu and contents list, so a
+  // failure here must degrade to prev/next navigation, never 404 a chapter
+  // whose body already loaded fine.
+  let chapters: ChapterSummary[] | undefined;
+  try {
+    chapters = (await fetchChapterIndex(slug)).chapters;
+  } catch {
+    chapters = undefined;
+  }
+
   return (
     <ChapterView
       basePath={`/blogs/${slug}`}
       data={data}
       shareUrl={`${SITE_URL}/blogs/${slug}/${chapter}`}
+      chapters={chapters}
     />
   );
 }
