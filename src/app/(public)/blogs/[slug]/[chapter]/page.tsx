@@ -40,7 +40,7 @@ async function fetchChapter(
 ): Promise<ChapterDetailResponse> {
   return apiRequest<ChapterDetailResponse>(
     `/v1/posts/${slug}/chapters/${chapter}`,
-    { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
+    { next: { revalidate: CONTENT_REVALIDATE_SECONDS, tags: ["posts"] } },
   );
 }
 

@@ -36,7 +36,7 @@ export const dynamicParams = true;
 
 async function fetchIndex(slug: string): Promise<ChapterIndexResponse> {
   return apiRequest<ChapterIndexResponse>(`/v1/posts/${slug}/chapters`, {
-    next: { revalidate: CONTENT_REVALIDATE_SECONDS },
+    next: { revalidate: CONTENT_REVALIDATE_SECONDS, tags: ["posts"] },
   });
 }
 
