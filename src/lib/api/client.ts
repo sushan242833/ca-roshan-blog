@@ -14,7 +14,7 @@ interface ApiErrorResponse {
 type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 export type ApiRequestOptions = RequestInit & {
-  next?: { revalidate?: number | false };
+  next?: { revalidate?: number | false; tags?: string[] };
 };
 
 export type ValidationIssue = { field: string; message: string };
@@ -31,9 +31,9 @@ export class ApiRequestError extends Error {
   }
 }
 
-// error.details is untrusted (typed `unknown`), so validate each entry before
-// use; malformed entries are skipped and an empty result collapses to undefined.
-function parseValidationIssues(details: unknown): ValidationIssue[] | undefined {
+function parseValidationIssues(
+  details: unknown,
+): ValidationIssue[] | undefined {
   if (!Array.isArray(details)) {
     return undefined;
   }
@@ -57,8 +57,6 @@ function parseValidationIssues(details: unknown): ValidationIssue[] | undefined 
 }
 
 async function unwrapResponse<T>(res: Response): Promise<T> {
-  // 204 No Content (e.g. DELETE) has no JSON body to unwrap — treat it as
-  // success with no data instead of failing on res.json().
   if (res.status === 204) {
     return undefined as T;
   }
@@ -98,8 +96,6 @@ export async function apiRequest<T>(
   return unwrapResponse<T>(res);
 }
 
-// Multipart variant of authenticatedApiRequest. Content-Type is deliberately
-// NOT set: the browser must generate the multipart boundary itself.
 export async function authenticatedUploadRequest<T>(
   path: string,
   accessToken: string | null,
@@ -119,10 +115,6 @@ export async function authenticatedUploadRequest<T>(
   return unwrapResponse<T>(res);
 }
 
-// Injects the Authorization header for authenticated admin calls — the one
-// place that ever builds this header, so callers never build it by hand.
-// A null token fails fast instead of sending an unauthenticated request the
-// backend would reject with a less obvious 401 anyway.
 export function authenticatedApiRequest<T>(
   path: string,
   accessToken: string | null,
