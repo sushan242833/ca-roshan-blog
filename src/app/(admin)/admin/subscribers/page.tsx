@@ -2,13 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  CheckCircle2,
-  Clock,
-  Search,
-  UserMinus,
-  Users,
-} from "lucide-react";
+import { CheckCircle2, Search, UserMinus, Users } from "lucide-react";
 import Spinner from "@/components/ui/spinner";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -47,7 +41,6 @@ interface TabDefinition {
 const TABS: TabDefinition[] = [
   { key: "ALL", label: "All", count: (stats) => stats.total },
   { key: "ACTIVE", label: "Active", count: (stats) => stats.active },
-  { key: "PENDING", label: "Pending", count: (stats) => stats.pending },
   {
     key: "UNSUBSCRIBED",
     label: "Unsubscribed",
@@ -57,20 +50,17 @@ const TABS: TabDefinition[] = [
 
 const STATUS_LABEL: Record<SubscriberStatus, string> = {
   ACTIVE: "Active",
-  PENDING: "Pending",
   UNSUBSCRIBED: "Unsubscribed",
 };
 
 const STATUS_BADGE_CLASS: Record<SubscriberStatus, string> = {
   ACTIVE: "border-brand-teal/20 bg-brand-teal/10 text-brand-teal",
-  PENDING: "border-gray-200 bg-gray-100 text-gray-600",
   UNSUBSCRIBED: "border-amber-200 bg-amber-100 text-amber-700",
 };
 
 const EMPTY_MESSAGE: Record<StatusTab, string> = {
   ALL: "No subscribers yet.",
   ACTIVE: "No active subscribers.",
-  PENDING: "No pending subscribers.",
   UNSUBSCRIBED: "No unsubscribed subscribers.",
 };
 
@@ -94,12 +84,6 @@ function buildStatCards(stats: SubscriberStatsResponse): StatCard[] {
       value: stats.active,
       icon: CheckCircle2,
       iconClass: "bg-brand-teal/10 text-brand-teal",
-    },
-    {
-      label: "Pending",
-      value: stats.pending,
-      icon: Clock,
-      iconClass: "bg-gray-100 text-gray-500",
     },
     {
       label: "Unsubscribed",
@@ -287,9 +271,6 @@ export default function AdminSubscribersPage() {
                     <TableHead className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
                       Subscribed
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                      Verified
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -307,11 +288,6 @@ export default function AdminSubscribersPage() {
                       </TableCell>
                       <TableCell className="px-6 py-4 text-sm text-gray-500">
                         {formatPostDate(subscriber.createdAt)}
-                      </TableCell>
-                      <TableCell className="px-6 py-4 text-sm text-gray-500">
-                        {subscriber.verifiedAt
-                          ? formatPostDate(subscriber.verifiedAt)
-                          : "—"}
                       </TableCell>
                     </TableRow>
                   ))}
