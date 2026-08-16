@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Upload } from "lucide-react";
 import Spinner from "@/components/ui/spinner";
+import { ApiRequestError } from "@/lib/api";
+import { useAuth } from "@/components/providers/auth-provider";
 import { queryKeys } from "@/lib/query-keys";
 import {
   ALLOWED_DOCUMENT_TYPES,
@@ -12,10 +14,6 @@ import {
   MAX_IMAGE_SIZE_MB,
 } from "@/lib/constants";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
-import {
-  prependMediaToCache,
-  useMediaList,
-} from "@/components/admin/use-media-list";
 import MediaGridItem from "@/components/admin/media-grid-item";
 import FormMessage from "@/components/ui/form-message";
 import {
@@ -50,7 +48,8 @@ export default function MediaPickerDialog({
   title = "Select Featured Image",
   mediaType = "image",
 }: MediaPickerDialogProps) {
-    const queryClient = useQueryClient();
+  const { authedFetch } = useAuth();
+  const queryClient = useQueryClient();
   const { uploadFiles, isUploading } = useMediaUpload(mediaType);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,8 +57,21 @@ export default function MediaPickerDialog({
   const acceptTypes = isDocument ? ALLOWED_DOCUMENT_TYPES : ALLOWED_IMAGE_TYPES;
   // Always scope the listing to this picker's kind so the image picker never
   // shows PDFs (and vice versa). Each kind has its own cache key.
-  const { items, isLoading, error, hasMore, isLoadingMore, loadMore, queryKey: listKey } =
-    useMediaList(mediaType);
+  const listKey = queryKeys.mediaByType(mediaType);
+  const listPath = `/v1/media?type=${mediaType}`;
+
+  const mediaQuery = useQuery({
+    queryKey: listKey,
+    queryFn: () => authedFetch<MediaResponse[]>(listPath),
+  });
+
+  const items = mediaQuery.data ?? [];
+  const isLoading = mediaQuery.isPending;
+  const error = mediaQuery.isError
+    ? mediaQuery.error instanceof ApiRequestError
+      ? mediaQuery.error.message
+      : "Failed to load media."
+    : "";
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -69,7 +81,10 @@ export default function MediaPickerDialog({
     // auto-selected. Refresh the unfiltered Media Library ("all") too so it
     // reflects the new file without a reload.
     void uploadFiles([file], (media) => {
-      prependMediaToCache(queryClient, listKey, media);
+      queryClient.setQueryData<MediaResponse[]>(listKey, (previous) => [
+        media,
+        ...(previous ?? []),
+      ]);
       queryClient.invalidateQueries({ queryKey: queryKeys.media, exact: true });
       onSelect(media);
     });
@@ -138,25 +153,13 @@ export default function MediaPickerDialog({
           // implicit min-height:auto so max-h can take effect and overflow-y
           // actually scrolls instead of the grid growing to fit every item.
           <div className="grid max-h-104 min-h-0 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 md:grid-cols-4">
-            {items.map((media: MediaResponse) => (
+            {items.map((media) => (
               <MediaGridItem
                 key={media.id}
                 media={media}
                 onClick={() => onSelect(media)}
               />
             ))}
-            {/* The listing is paginated, so older files are one page down
-                rather than absent. */}
-            {hasMore && (
-              <button
-                type="button"
-                onClick={loadMore}
-                disabled={isLoadingMore}
-                className="flex aspect-square items-center justify-center rounded-md border border-dashed border-gray-300 text-xs font-medium text-gray-500 transition-colors hover:border-brand-teal hover:text-brand-teal disabled:opacity-60"
-              >
-                {isLoadingMore ? <Spinner size={16} /> : "Load more"}
-              </button>
-            )}
           </div>
         )}
       </DialogContent>

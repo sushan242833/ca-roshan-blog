@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckSquare2,
   Link as LinkIcon,
@@ -20,11 +20,6 @@ import { queryKeys } from "@/lib/query-keys";
 import { formatFileSize, formatPostDate } from "@/lib/format";
 import { ALLOWED_IMAGE_TYPES } from "@/lib/constants";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
-import {
-  prependMediaToCache,
-  removeMediaFromCache,
-  useMediaList,
-} from "@/components/admin/use-media-list";
 import MediaGridItem from "@/components/admin/media-grid-item";
 import DeleteEntityDialog from "@/components/admin/delete-entity-dialog";
 import { Input } from "@/components/ui/input";
@@ -38,12 +33,14 @@ const TYPE_FILTERS: { value: MediaTypeFilter; label: string }[] = [
   { value: "image", label: "Images" },
   { value: "document", label: "PDFs" },
 ];
+const EMPTY_MEDIA_ITEMS: MediaResponse[] = [];
+
 export default function AdminMediaPage() {
   const { authedFetch, getAccessToken } = useAuth();
   const queryClient = useQueryClient();
   const { uploadFiles, isUploading, progress } = useMediaUpload();
   // The backend has no search param on GET /v1/media — filtering is
-  // client-side over the pages fetched so far.
+  // client-side over the full list.
   const [search, setSearch] = useState("");
   // Kind filter uses the backend ?type param so each list is a separate cache.
   const [typeFilter, setTypeFilter] = useState<MediaTypeFilter>("all");
@@ -54,17 +51,23 @@ export default function AdminMediaPage() {
 
   // The API returns media newest-first (createdAt DESC) — no client sort
   // needed. "All" shares the ["media"] key with the picker dialog, so an
-  // upload from either surface shows in both. Paginated: pages accumulate
-  // behind the "Load more" control below.
-  const {
-    items,
-    total,
-    isLoading,
-    error,
-    hasMore,
-    isLoadingMore,
-    loadMore,
-  } = useMediaList(typeFilter);
+  // upload from either surface shows in both.
+  const mediaQuery = useQuery({
+    queryKey:
+      typeFilter === "all" ? queryKeys.media : queryKeys.mediaByType(typeFilter),
+    queryFn: () =>
+      authedFetch<MediaResponse[]>(
+        typeFilter === "all" ? "/v1/media" : `/v1/media?type=${typeFilter}`,
+      ),
+  });
+
+  const items = mediaQuery.data ?? EMPTY_MEDIA_ITEMS;
+  const isLoading = mediaQuery.isPending;
+  const error = mediaQuery.isError
+    ? mediaQuery.error instanceof ApiRequestError
+      ? mediaQuery.error.message
+      : "Failed to load media."
+    : "";
 
   const filteredItems = search.trim()
     ? items.filter((media) =>
@@ -103,7 +106,19 @@ export default function AdminMediaPage() {
   }
 
   function removeMediaFromCachedLists(ids: string[]) {
-    removeMediaFromCache(queryClient, ids);
+    const idSet = new Set(ids);
+    const withoutDeleted = (previous: MediaResponse[] | undefined) =>
+      previous?.filter((media) => !idSet.has(media.id));
+
+    queryClient.setQueryData<MediaResponse[]>(queryKeys.media, withoutDeleted);
+    queryClient.setQueryData<MediaResponse[]>(
+      queryKeys.mediaByType("image"),
+      withoutDeleted,
+    );
+    queryClient.setQueryData<MediaResponse[]>(
+      queryKeys.mediaByType("document"),
+      withoutDeleted,
+    );
   }
 
   function toggleMediaSelection(id: string, selected: boolean) {
@@ -142,7 +157,10 @@ export default function AdminMediaPage() {
     // prepending to the shared ["media"] cache (which the picker also reads).
     // Library uploads are images, so refresh the image-filtered list too.
     void uploadFiles(files, (media) => {
-      prependMediaToCache(queryClient, queryKeys.media, media);
+      queryClient.setQueryData<MediaResponse[]>(queryKeys.media, (previous) => [
+        media,
+        ...(previous ?? []),
+      ]);
       queryClient.invalidateQueries({ queryKey: queryKeys.mediaByType("image") });
     });
   }
@@ -407,31 +425,11 @@ export default function AdminMediaPage() {
         </div>
       )}
 
-      {/* The listing is paginated, so the grid above holds only the pages
-          fetched so far. Without this the library would silently stop at the
-          first 24 files and look like the whole library. */}
-      {!isLoading && hasMore && (
-        <div className="mt-8 flex flex-col items-center gap-2">
-          <button
-            type="button"
-            onClick={loadMore}
-            disabled={isLoadingMore}
-            className="inline-flex items-center gap-2 rounded-md border border-brand-teal px-6 py-2.5 text-sm font-semibold text-brand-teal transition-colors hover:bg-brand-teal hover:text-white disabled:opacity-60"
-          >
-            {isLoadingMore && <Spinner size={16} />}
-            {isLoadingMore ? "Loading…" : "Load more"}
-          </button>
-          <p className="text-xs text-gray-400">
-            Showing {items.length} of {total}
-          </p>
-        </div>
-      )}
-
       {deleteTarget && (
         <DeleteEntityDialog
           entityLabel="Media"
           entityName={deleteTarget.originalName}
-          warning="The file will be permanently removed from storage. If any post still uses it — as a featured image, inline in the body, or as a PDF link — the delete is refused and you'll be told which posts to update first."
+          warning="The file will be permanently removed from storage. Any post using this image will lose it and fall back to a placeholder."
           onOpenChange={(open) => {
             if (!open) setDeleteTarget(null);
           }}
