@@ -5,5 +5,4 @@ export interface DashboardStatsResponse {
   archived: number;
   totalSubscribers: number;
   activeSubscribers: number;
-  pendingSubscribers: number;
 }
