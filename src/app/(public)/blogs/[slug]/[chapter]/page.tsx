@@ -89,16 +89,6 @@ export default async function ChapterPage({ params }: PageProps) {
     chapters = undefined;
   }
 
-  // Best-effort: the index only powers the jump menu and contents list, so a
-  // failure here must degrade to prev/next navigation, never 404 a chapter
-  // whose body already loaded fine.
-  let chapters: ChapterSummary[] | undefined;
-  try {
-    chapters = (await fetchChapterIndex(slug)).chapters;
-  } catch {
-    chapters = undefined;
-  }
-
   return (
     <ChapterView
       basePath={`/blogs/${slug}`}

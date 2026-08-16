@@ -33,10 +33,10 @@ export default function Footer({
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Auto-dismiss the "verification link sent" message and restore the form.
+  // Auto-dismiss the success message and restore the form.
   useEffect(() => {
     if (newsletterState !== "sent") return;
-    const timer = setTimeout(() => setNewsletterState("idle"), 2000);
+    const timer = setTimeout(() => setNewsletterState("idle"), 3000);
     return () => clearTimeout(timer);
   }, [newsletterState]);
 
@@ -87,8 +87,8 @@ export default function Footer({
         >
           <CheckCircleIcon size={20} className="shrink-0 text-brand-mint" />
           <p className="text-sm leading-relaxed text-brand-mint-text">
-            Verification link sent to your inbox. Please check your email to
-            confirm your subscription.
+            You&apos;re subscribed to The Advisory Brief. New posts will arrive
+            in your inbox.
           </p>
         </div>
       );
