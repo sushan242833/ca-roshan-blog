@@ -22,21 +22,23 @@ export default async function HomePage() {
   let featuredPosts: PostSummaryResponse[] = [];
   let recentPosts: PostSummaryResponse[] = [];
 
+  let loadFailed = false;
+
   try {
     const [featuredData, recentData] = await Promise.all([
       apiRequest<PaginatedResponse<PostSummaryResponse>>(
         "/v1/posts/featured?limit=2",
         { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
       ),
-      apiRequest<PaginatedResponse<PostSummaryResponse>>(
-        "/v1/posts?limit=3",
-        { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
-      ),
+      apiRequest<PaginatedResponse<PostSummaryResponse>>("/v1/posts?limit=3", {
+        next: { revalidate: CONTENT_REVALIDATE_SECONDS },
+      }),
     ]);
     featuredPosts = featuredData.items;
     recentPosts = recentData.items;
   } catch (err) {
     console.error("Failed to fetch home page posts:", err);
+    loadFailed = true;
   }
 
   return (
@@ -57,6 +59,44 @@ export default async function HomePage() {
           </p>
         </div>
       </section>
+
+      {loadFailed && (
+        <section className="bg-gray-50 py-12 md:py-16">
+          <div className="mx-auto max-w-2xl px-6 text-center">
+            <h2 className="font-serif text-2xl font-bold text-brand-navy">
+              Articles could not be loaded
+            </h2>
+            <p className="mt-3 text-gray-600">
+              We could not reach the server just now, so the latest writing is
+              not showing. This is a problem on our side and is usually
+              temporary — please try again shortly.
+            </p>
+            <Link
+              href="/blogs"
+              className="mt-6 inline-flex items-center gap-2 rounded-md border border-brand-teal px-6 py-2.5 text-sm font-semibold text-brand-teal transition-colors hover:bg-brand-teal hover:text-white"
+            >
+              Try the articles page
+              <ArrowRightIcon size={14} />
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* Genuinely empty: the API answered, there is just nothing published. */}
+      {!loadFailed &&
+        featuredPosts.length === 0 &&
+        recentPosts.length === 0 && (
+          <section className="bg-gray-50 py-12 md:py-16">
+            <div className="mx-auto max-w-2xl px-6 text-center">
+              <h2 className="font-serif text-2xl font-bold text-brand-navy">
+                No articles published yet
+              </h2>
+              <p className="mt-3 text-gray-600">
+                New writing on tax, finance, and policy will appear here.
+              </p>
+            </div>
+          </section>
+        )}
 
       {/* Featured Insights */}
       {featuredPosts.length > 0 && (

@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import PostCard from "@/components/posts/post-card";
 import ArticleView from "@/components/blogs/article-view";
 import ChapterHub from "@/components/blogs/chapter-hub";
-import { apiRequest, ApiRequestError } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
+import { notFoundOrRethrow } from "@/lib/route-errors";
+import {
+  buildArticleSchema,
+  buildBreadcrumbSchema,
+  serializeJsonLd,
+} from "@/lib/structured-data";
 import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
 import { fetchChapterIndex } from "@/lib/posts";
 import { SITE_NAME, SITE_URL } from "@/config/site.config";
@@ -83,8 +88,7 @@ export default async function ArticlePage({ params }: PageProps) {
   try {
     index = await fetchChapterIndex(slug);
   } catch (err) {
-    if (err instanceof ApiRequestError && err.status === 404) notFound();
-    notFound();
+    notFoundOrRethrow(err);
   }
 
   // Related posts (same as before), from the same category.
@@ -116,11 +120,31 @@ export default async function ArticlePage({ params }: PageProps) {
     </section>
   );
 
+  const structuredData = [
+    buildArticleSchema(index),
+    buildBreadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Blogs", path: "/blogs" },
+      { name: index.title, path: `/blogs/${encodeURIComponent(slug)}` },
+    ]),
+  ];
+
+  const jsonLd = (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }}
+    />
+  );
+
   // Short post: render the whole article on one page, exactly as before.
   if (!index.paginated) {
-    const post = { ...index, content: index.content ?? "" } as PostDetailResponse;
+    const post = {
+      ...index,
+      content: index.content ?? "",
+    } as PostDetailResponse;
     return (
       <div>
+        {jsonLd}
         <WarmBackend />
         <ArticleView post={post} shareUrl={`${SITE_URL}/blogs/${slug}`} />
         {relatedSection}
@@ -128,11 +152,9 @@ export default async function ArticlePage({ params }: PageProps) {
     );
   }
 
-  // Large post: a hub with the chapter list. Each chapter is its own cached
-  // page. The hub markup lives in ChapterHub so the draft preview renders the
-  // exact same landing.
   return (
     <div className="bg-white text-[#121c2a]">
+      {jsonLd}
       <WarmBackend />
       <ChapterHub index={index} basePath={`/blogs/${slug}`} />
       {relatedSection}

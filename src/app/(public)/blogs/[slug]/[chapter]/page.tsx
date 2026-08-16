@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import ChapterView from "@/components/blogs/chapter-view";
-import { apiRequest, ApiRequestError } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
+import { notFoundOrRethrow } from "@/lib/route-errors";
 import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
 import { fetchChapterIndex } from "@/lib/posts";
 import { SITE_NAME, SITE_URL } from "@/config/site.config";
@@ -15,9 +15,6 @@ interface PageProps {
   params: Promise<{ slug: string; chapter: string }>;
 }
 
-// Pre-render every chapter of every paginated post at build. The manifest is a
-// single call returning just slugs and chapter ids — no titles, no bodies — so
-// this costs one round trip regardless of how many posts are paginated.
 export async function generateStaticParams() {
   try {
     const manifest = await apiRequest<ChapterManifestEntry[]>(
@@ -79,8 +76,17 @@ export default async function ChapterPage({ params }: PageProps) {
   try {
     data = await fetchChapter(slug, chapter);
   } catch (err) {
-    if (err instanceof ApiRequestError && err.status === 404) notFound();
-    notFound();
+    notFoundOrRethrow(err);
+  }
+
+  // Best-effort: the index only powers the jump menu and contents list, so a
+  // failure here must degrade to prev/next navigation, never 404 a chapter
+  // whose body already loaded fine.
+  let chapters: ChapterSummary[] | undefined;
+  try {
+    chapters = (await fetchChapterIndex(slug)).chapters;
+  } catch {
+    chapters = undefined;
   }
 
   // Best-effort: the index only powers the jump menu and contents list, so a

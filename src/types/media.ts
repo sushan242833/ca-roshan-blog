@@ -1,7 +1,5 @@
-// Image vs document, derived from the MIME type on the backend.
 export type MediaKind = "image" | "document";
 
-// Mirrors the backend's MediaResponseDto (media.controller.ts).
 export interface MediaResponse {
   id: string;
   fileName: string;
@@ -11,6 +9,24 @@ export interface MediaResponse {
   size: number;
   url: string;
   provider: string;
+  inUse: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export type MediaUsageRole = "featuredImage" | "content" | "pdf";
+
+export interface MediaUsagePostReference {
+  postId: string;
+  title: string;
+  slug: string;
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  trashed: boolean;
+  usedAs: MediaUsageRole[];
+}
+
+export interface MediaUsage {
+  inUse: boolean;
+  posts: MediaUsagePostReference[];
+  usedByAuthorAvatar: boolean;
 }

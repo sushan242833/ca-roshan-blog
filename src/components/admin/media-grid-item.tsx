@@ -2,28 +2,22 @@
 
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
-import { FileText, ImageOff } from "lucide-react";
+import { FileText, ImageOff, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MediaResponse } from "@/types/media";
 
 interface MediaGridItemProps {
   media: MediaResponse;
-  /** Renders the whole card as a select button (media picker dialog). */
   onClick?: () => void;
-  /** Extra line under the name, e.g. size · date (Media Library). */
   meta?: ReactNode;
-  /** Hover actions overlaid on the thumbnail (Media Library). */
   actions?: ReactNode;
-  /** Optional checkbox affordance for bulk selection in the Media Library. */
   selected?: boolean;
   onSelectionChange?: (selected: boolean) => void;
   selectionLabel?: string;
   selectionDisabled?: boolean;
+  showUsageBadge?: boolean;
 }
 
-// Media card shared by the picker dialog and the Media Library grid:
-// thumbnail with a neutral fallback when the image fails to load, plus a
-// truncated original file name.
 export default function MediaGridItem({
   media,
   onClick,
@@ -33,9 +27,11 @@ export default function MediaGridItem({
   onSelectionChange,
   selectionLabel,
   selectionDisabled = false,
+  showUsageBadge = false,
 }: MediaGridItemProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const isDocument = media.kind === "document";
+  const showInUse = showUsageBadge && media.inUse;
 
   const body = (
     <>
@@ -77,6 +73,15 @@ export default function MediaGridItem({
             className="object-cover"
             onError={() => setImageFailed(true)}
           />
+        )}
+        {showInUse && (
+          <span
+            title="Used by a post — this file is protected from deletion."
+            className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-brand-teal-dark/95 px-2 py-0.5 text-[11px] font-semibold text-white shadow"
+          >
+            <Link2 size={11} />
+            In use
+          </span>
         )}
         {actions && (
           <div className="absolute inset-0 flex items-center justify-center gap-2 bg-brand-navy/60 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">

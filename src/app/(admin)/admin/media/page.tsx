@@ -24,9 +24,62 @@ import MediaGridItem from "@/components/admin/media-grid-item";
 import DeleteEntityDialog from "@/components/admin/delete-entity-dialog";
 import { Input } from "@/components/ui/input";
 import FormMessage from "@/components/ui/form-message";
-import type { MediaKind, MediaResponse } from "@/types/media";
+import type {
+  MediaKind,
+  MediaResponse,
+  MediaUsage,
+  MediaUsagePostReference,
+  MediaUsageRole,
+} from "@/types/media";
 
 type MediaTypeFilter = "all" | MediaKind;
+
+const USAGE_ROLE_LABELS: Record<MediaUsageRole, string> = {
+  featuredImage: "featured image",
+  content: "in the article body",
+  pdf: "PDF link",
+};
+
+const MAX_LISTED_USAGE_POSTS = 5;
+
+function describeUsageReference(post: MediaUsagePostReference): string {
+  const roles = post.usedAs.map((role) => USAGE_ROLE_LABELS[role]).join(", ");
+  const state = post.trashed ? "trashed" : post.status.toLowerCase();
+  return `${roles} · ${state}`;
+}
+
+function renderUsageBlockReason(usage: MediaUsage) {
+  const listed = usage.posts.slice(0, MAX_LISTED_USAGE_POSTS);
+  const remaining = usage.posts.length - listed.length;
+
+  return (
+    <>
+      <p className="font-semibold">
+        This file is still in use, so it cannot be deleted.
+      </p>
+      <ul className="mt-1.5 list-disc space-y-1 pl-4">
+        {listed.map((post) => (
+          <li key={post.postId}>
+            <span className="font-medium">{post.title}</span>
+            <span className="text-red-600/80">
+              {" "}
+              — {describeUsageReference(post)}
+            </span>
+          </li>
+        ))}
+        {remaining > 0 && (
+          <li>
+            and {remaining} more {remaining === 1 ? "post" : "posts"}
+          </li>
+        )}
+        {usage.usedByAuthorAvatar && <li>The author profile picture</li>}
+      </ul>
+      <p className="mt-2">
+        Remove it there first — then this file can be deleted.
+      </p>
+    </>
+  );
+}
 
 const TYPE_FILTERS: { value: MediaTypeFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -39,22 +92,18 @@ export default function AdminMediaPage() {
   const { authedFetch, getAccessToken } = useAuth();
   const queryClient = useQueryClient();
   const { uploadFiles, isUploading, progress } = useMediaUpload();
-  // The backend has no search param on GET /v1/media — filtering is
-  // client-side over the full list.
   const [search, setSearch] = useState("");
-  // Kind filter uses the backend ?type param so each list is a separate cache.
   const [typeFilter, setTypeFilter] = useState<MediaTypeFilter>("all");
   const [deleteTarget, setDeleteTarget] = useState<MediaResponse | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // The API returns media newest-first (createdAt DESC) — no client sort
-  // needed. "All" shares the ["media"] key with the picker dialog, so an
-  // upload from either surface shows in both.
   const mediaQuery = useQuery({
     queryKey:
-      typeFilter === "all" ? queryKeys.media : queryKeys.mediaByType(typeFilter),
+      typeFilter === "all"
+        ? queryKeys.media
+        : queryKeys.mediaByType(typeFilter),
     queryFn: () =>
       authedFetch<MediaResponse[]>(
         typeFilter === "all" ? "/v1/media" : `/v1/media?type=${typeFilter}`,
@@ -77,9 +126,22 @@ export default function AdminMediaPage() {
 
   const selectedItems = items.filter((media) => selectedIds.has(media.id));
   const selectedCount = selectedItems.length;
+  const selectedInUseCount = selectedItems.filter(
+    (media) => media.inUse,
+  ).length;
   const allVisibleSelected =
     filteredItems.length > 0 &&
     filteredItems.every((media) => selectedIds.has(media.id));
+
+  const usageQuery = useQuery({
+    queryKey: queryKeys.mediaUsage(deleteTarget?.id ?? "none"),
+    queryFn: () =>
+      authedFetch<MediaUsage>(`/v1/media/${deleteTarget?.id}/usage`),
+    enabled: Boolean(deleteTarget),
+    staleTime: 0,
+  });
+
+  const deleteTargetUsage = deleteTarget ? usageQuery.data : undefined;
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteMediaById(id),
@@ -97,6 +159,10 @@ export default function AdminMediaPage() {
       return results.map((result, index) => ({
         id: targets[index].id,
         ok: result.status === "fulfilled",
+        inUse:
+          result.status === "rejected" &&
+          result.reason instanceof ApiRequestError &&
+          result.reason.status === 409,
       }));
     },
   });
@@ -153,15 +219,14 @@ export default function AdminMediaPage() {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
     if (files.length === 0) return;
-    // Each finished upload lands in the grid immediately, newest first, by
-    // prepending to the shared ["media"] cache (which the picker also reads).
-    // Library uploads are images, so refresh the image-filtered list too.
     void uploadFiles(files, (media) => {
       queryClient.setQueryData<MediaResponse[]>(queryKeys.media, (previous) => [
         media,
         ...(previous ?? []),
       ]);
-      queryClient.invalidateQueries({ queryKey: queryKeys.mediaByType("image") });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.mediaByType("image"),
+      });
     });
   }
 
@@ -178,7 +243,6 @@ export default function AdminMediaPage() {
     if (!deleteTarget) return;
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
-      // Public pages may render the removed image on cards/articles.
       await revalidatePublicContent("posts", getAccessToken());
       toast.success("Media deleted successfully");
       removeMediaFromCachedLists([deleteTarget.id]);
@@ -190,6 +254,11 @@ export default function AdminMediaPage() {
       });
       setDeleteTarget(null);
     } catch (err) {
+      if (err instanceof ApiRequestError && err.status === 409) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.mediaUsage(deleteTarget.id),
+        });
+      }
       toast.error(
         err instanceof ApiRequestError
           ? err.message
@@ -199,8 +268,15 @@ export default function AdminMediaPage() {
   }
 
   async function handleBulkDeleteConfirm() {
-    const targets = selectedItems;
+    const targets = selectedItems.filter((media) => !media.inUse);
+    const protectedCount = selectedItems.length - targets.length;
+
     if (targets.length === 0) {
+      toast.error(
+        protectedCount > 0
+          ? `Nothing deleted — ${protectedCount === 1 ? "that file is" : "those files are"} used by a post.`
+          : "Nothing to delete.",
+      );
       setBulkDeleteOpen(false);
       return;
     }
@@ -212,7 +288,6 @@ export default function AdminMediaPage() {
     const failedCount = results.length - deletedIds.length;
 
     if (deletedIds.length > 0) {
-      // Public pages may render removed images on cards/articles.
       await revalidatePublicContent("posts", getAccessToken());
       removeMediaFromCachedLists(deletedIds);
       queryClient.invalidateQueries({ queryKey: queryKeys.media });
@@ -223,10 +298,17 @@ export default function AdminMediaPage() {
       });
     }
 
-    if (failedCount > 0) {
-      toast.error(
-        `${deletedIds.length} deleted, ${failedCount} failed. Please try again.`,
-      );
+    const skippedCount =
+      protectedCount + results.filter((result) => result.inUse).length;
+    const erroredCount = failedCount - (skippedCount - protectedCount);
+
+    if (skippedCount > 0 || erroredCount > 0) {
+      const reasons = [
+        skippedCount > 0 ? `${skippedCount} kept (used by a post)` : null,
+        erroredCount > 0 ? `${erroredCount} failed` : null,
+      ].filter(Boolean);
+
+      toast.error(`${deletedIds.length} deleted, ${reasons.join(", ")}.`);
     } else {
       toast.success(
         `${deletedIds.length} media ${deletedIds.length === 1 ? "item" : "items"} deleted successfully`,
@@ -243,11 +325,7 @@ export default function AdminMediaPage() {
       disabled={isUploading}
       className="inline-flex items-center gap-2 rounded-md bg-brand-teal-dark px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-teal disabled:opacity-60"
     >
-      {isUploading ? (
-        <Spinner size={16} />
-      ) : (
-        <Upload size={16} />
-      )}
+      {isUploading ? <Spinner size={16} /> : <Upload size={16} />}
       {isUploading && progress
         ? `Uploading ${progress.current} of ${progress.total}…`
         : "Upload Image"}
@@ -367,9 +445,7 @@ export default function AdminMediaPage() {
         </div>
       )}
 
-      {error && (
-        <FormMessage type="error" className="mt-6" message={error} />
-      )}
+      {error && <FormMessage type="error" className="mt-6" message={error} />}
 
       {isLoading ? (
         <div className="mt-10 flex items-center justify-center gap-2 text-sm text-gray-400">
@@ -396,6 +472,7 @@ export default function AdminMediaPage() {
               }
               selectionLabel={`Select ${media.originalName}`}
               selectionDisabled={bulkDeleteMutation.isPending}
+              showUsageBadge
               actions={
                 <>
                   <button
@@ -412,9 +489,18 @@ export default function AdminMediaPage() {
                   <button
                     type="button"
                     onClick={() => setDeleteTarget(media)}
-                    aria-label={`Delete ${media.originalName}`}
-                    title="Delete"
-                    className="rounded-md bg-white p-2 text-brand-navy shadow transition-colors hover:text-red-600"
+                    disabled={media.inUse}
+                    aria-label={
+                      media.inUse
+                        ? `${media.originalName} is in use and cannot be deleted`
+                        : `Delete ${media.originalName}`
+                    }
+                    title={
+                      media.inUse
+                        ? "In use by a post — remove it there before deleting"
+                        : "Delete"
+                    }
+                    className="rounded-md bg-white p-2 text-brand-navy shadow transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:text-gray-300"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -429,7 +515,13 @@ export default function AdminMediaPage() {
         <DeleteEntityDialog
           entityLabel="Media"
           entityName={deleteTarget.originalName}
-          warning="The file will be permanently removed from storage. Any post using this image will lose it and fall back to a placeholder."
+          isChecking={usageQuery.isPending}
+          blockedReason={
+            deleteTargetUsage?.inUse
+              ? renderUsageBlockReason(deleteTargetUsage)
+              : null
+          }
+          warning="The file will be permanently removed from storage. Only media that no post uses can be deleted."
           onOpenChange={(open) => {
             if (!open) setDeleteTarget(null);
           }}
@@ -443,13 +535,28 @@ export default function AdminMediaPage() {
           entityName={`${selectedCount} selected ${
             selectedCount === 1 ? "item" : "items"
           }`}
-          warning={`The selected ${
-            selectedCount === 1 ? "file" : "files"
-          } will be permanently removed from storage. Any post using ${
-            selectedCount === 1 ? "it" : "these files"
-          } will lose ${
-            selectedCount === 1 ? "it" : "them"
-          } and fall back to a placeholder.`}
+          blockedReason={
+            selectedInUseCount === selectedCount ? (
+              <p>
+                {selectedCount === 1
+                  ? "The selected file is"
+                  : `All ${selectedCount} selected files are`}{" "}
+                used by a post, so nothing here can be deleted. Remove{" "}
+                {selectedCount === 1 ? "it" : "them"} from the post first.
+              </p>
+            ) : null
+          }
+          warning={
+            selectedInUseCount > 0
+              ? `${selectedInUseCount} of the ${selectedCount} selected files ${
+                  selectedInUseCount === 1 ? "is" : "are"
+                } used by a post and will be kept. The other ${
+                  selectedCount - selectedInUseCount
+                } will be permanently removed from storage.`
+              : `The selected ${
+                  selectedCount === 1 ? "file" : "files"
+                } will be permanently removed from storage.`
+          }
           onOpenChange={(open) => {
             if (!open) setBulkDeleteOpen(false);
           }}
