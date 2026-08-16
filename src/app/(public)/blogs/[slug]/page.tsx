@@ -10,6 +10,7 @@ import {
   serializeJsonLd,
 } from "@/lib/structured-data";
 import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
+import { fetchChapterIndex } from "@/lib/posts";
 import { SITE_NAME, SITE_URL } from "@/config/site.config";
 import { htmlToPlainText } from "@/lib/format";
 import WarmBackend from "@/components/warm-backend";
@@ -39,18 +40,12 @@ export async function generateStaticParams() {
 
 export const dynamicParams = true;
 
-async function fetchIndex(slug: string): Promise<ChapterIndexResponse> {
-  return apiRequest<ChapterIndexResponse>(`/v1/posts/${slug}/chapters`, {
-    next: { revalidate: CONTENT_REVALIDATE_SECONDS },
-  });
-}
-
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const post = await fetchIndex(slug);
+    const post = await fetchChapterIndex(slug);
     const title = `${post.metaTitle ?? post.title} | ${SITE_NAME}`;
     const description =
       post.metaDescription ??
@@ -91,7 +86,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
   let index: ChapterIndexResponse;
   try {
-    index = await fetchIndex(slug);
+    index = await fetchChapterIndex(slug);
   } catch (err) {
     notFoundOrRethrow(err);
   }

@@ -3,8 +3,13 @@ import ChapterView from "@/components/blogs/chapter-view";
 import { apiRequest } from "@/lib/api";
 import { notFoundOrRethrow } from "@/lib/route-errors";
 import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
+import { fetchChapterIndex } from "@/lib/posts";
 import { SITE_NAME, SITE_URL } from "@/config/site.config";
-import type { ChapterDetailResponse, ChapterManifestEntry } from "@/types/post";
+import type {
+  ChapterDetailResponse,
+  ChapterManifestEntry,
+  ChapterSummary,
+} from "@/types/post";
 
 interface PageProps {
   params: Promise<{ slug: string; chapter: string }>;
@@ -34,7 +39,7 @@ async function fetchChapter(
 ): Promise<ChapterDetailResponse> {
   return apiRequest<ChapterDetailResponse>(
     `/v1/posts/${slug}/chapters/${chapter}`,
-    { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
+    { next: { revalidate: CONTENT_REVALIDATE_SECONDS, tags: ["posts"] } },
   );
 }
 
@@ -74,11 +79,22 @@ export default async function ChapterPage({ params }: PageProps) {
     notFoundOrRethrow(err);
   }
 
+  // Best-effort: the index only powers the jump menu and contents list, so a
+  // failure here must degrade to prev/next navigation, never 404 a chapter
+  // whose body already loaded fine.
+  let chapters: ChapterSummary[] | undefined;
+  try {
+    chapters = (await fetchChapterIndex(slug)).chapters;
+  } catch {
+    chapters = undefined;
+  }
+
   return (
     <ChapterView
       basePath={`/blogs/${slug}`}
       data={data}
       shareUrl={`${SITE_URL}/blogs/${slug}/${chapter}`}
+      chapters={chapters}
     />
   );
 }

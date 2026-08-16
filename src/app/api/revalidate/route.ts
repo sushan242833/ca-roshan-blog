@@ -1,46 +1,34 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 import { API_BASE_URL } from "@/config/site.config";
 import type { RevalidateScope } from "@/lib/revalidate";
 
 interface RevalidateTarget {
   path: string;
-  /** Required for dynamic route patterns like "/blogs/[slug]". */
   type?: "page";
 }
 
-// The scope-to-paths mapping lives server-side on purpose: clients may only
-// name a scope, never arbitrary paths.
-//
-// This map must cover EVERY public route that reads posts/chapters/categories/
-// tags. CONTENT_REVALIDATE_SECONDS is an hour, so anything missing here stays
-// stale for up to an hour after an edit rather than self-correcting in a minute.
 const SCOPE_TARGETS: Record<RevalidateScope, RevalidateTarget[]> = {
   categories: [
     { path: "/" },
     { path: "/categories" },
     { path: "/categories/[slug]", type: "page" },
-    // Category pills appear on post cards and filters.
     { path: "/blogs" },
-    // The article header (ArticleView/ChapterHub) links each of the post's
-    // categories by name, and the "Recommended for You" cards carry pills too.
-    { path: "/blogs/[slug]", type: "page" },
-    // The sitemap lists a URL per category.
     { path: "/sitemap.xml" },
   ],
-  // Tags render on the post detail page only — ChapterView shows no tags.
-  tags: [{ path: "/blogs/[slug]", type: "page" }],
+  tags: [],
   posts: [
     { path: "/" },
     { path: "/blogs" },
-    { path: "/blogs/[slug]", type: "page" },
-    // Chapters of a paginated post are cached as their own pages; revalidating
-    // the landing above does NOT reach this nested route.
-    { path: "/blogs/[slug]/[chapter]", type: "page" },
     { path: "/categories/[slug]", type: "page" },
-    // The sitemap walks every published post and stamps its updatedAt.
     { path: "/sitemap.xml" },
   ],
+};
+
+const SCOPE_TAGS: Record<RevalidateScope, string[]> = {
+  categories: ["posts"],
+  tags: ["posts"],
+  posts: ["posts"],
 };
 
 function isRevalidateScope(value: unknown): value is RevalidateScope {
@@ -52,8 +40,6 @@ function isRevalidateScope(value: unknown): value is RevalidateScope {
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify the caller is the logged-in admin by forwarding the Bearer
-    // token to the backend — this route holds no secret of its own.
     const authorization = request.headers.get("authorization");
     if (!authorization?.startsWith("Bearer ")) {
       return NextResponse.json({ success: false }, { status: 401 });
@@ -76,7 +62,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false }, { status: 400 });
     }
 
-    const revalidated = SCOPE_TARGETS[scope].map(({ path, type }) => {
+    const revalidatedPaths = SCOPE_TARGETS[scope].map(({ path, type }) => {
       if (type) {
         revalidatePath(path, type);
       } else {
@@ -85,7 +71,20 @@ export async function POST(request: NextRequest) {
       return path;
     });
 
-    return NextResponse.json({ success: true, revalidated });
+    const revalidatedTags = SCOPE_TAGS[scope];
+    // { expire: 0 } means expire now. Next 16 requires the second argument,
+    // and a named profile such as "max" only marks the entry stale — it keeps
+    // serving the cached copy while it refreshes in the background, so an
+    // unpublished post would still be readable on the next request.
+    revalidatedTags.forEach((tag) => revalidateTag(tag, { expire: 0 }));
+
+    return NextResponse.json({
+      success: true,
+      revalidated: [
+        ...revalidatedPaths,
+        ...revalidatedTags.map((tag) => `tag:${tag}`),
+      ],
+    });
   } catch (err) {
     console.error("Revalidation failed:", err);
     return NextResponse.json({ success: false }, { status: 500 });
