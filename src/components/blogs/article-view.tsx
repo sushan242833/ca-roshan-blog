@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import ShareArticle from "@/components/blogs/share-article";
 import ArticleToc from "@/components/blogs/article-toc";
+import ReadingLayout from "@/components/blogs/reading-layout";
 import { EyeIcon } from "@/components/icons";
 import { buildToc } from "@/lib/toc";
 import { sanitizeArticleHtml } from "@/lib/sanitize-html";
@@ -165,62 +166,61 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
       )}
 
       <div className="px-6 pb-20">
-        <div className="mx-auto grid max-w-300 grid-cols-1 items-start gap-10 lg:grid-cols-4">
-          {/* Desktop: sticky Table of Contents on the left — stays in place
-              while the article column scrolls. */}
-          {headings.length > 0 && (
-            <aside className="hidden self-start lg:col-span-1 lg:block lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
-              <ArticleToc headings={headings} variant="sidebar" />
-            </aside>
+        <ReadingLayout
+          containerClassName="mx-auto max-w-300"
+          bodyClassName="max-w-180"
+          gapClassName="lg:gap-10"
+          left={
+            headings.length > 0
+              ? {
+                  key: "toc",
+                  label: "Contents",
+                  widthClassName: "lg:w-68",
+                  // Desktop: sticky Table of Contents on the left — stays in
+                  // place while the article column scrolls.
+                  sidebar: (
+                    <ArticleToc headings={headings} variant="sidebar" fill />
+                  ),
+                  // Mobile: collapsible TOC box in the article flow.
+                  inline: <ArticleToc headings={headings} />,
+                }
+              : undefined
+          }
+        >
+          <div
+            className="article-body article-body-detail"
+            dangerouslySetInnerHTML={{ __html: cleanContent }}
+          />
+
+          {showLegacyPdf && legacyPdfUrl && (
+            <div className="article-body article-body-detail mt-8">
+              <a
+                className="pdf-link-block"
+                href={legacyPdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-pdf-label={legacyPdfLabel}
+              >
+                {legacyPdfLabel}
+              </a>
+            </div>
           )}
 
-          <div
-            className={`mx-auto w-full min-w-0 max-w-180 ${
-              headings.length > 0 ? "lg:col-span-3 lg:mx-0" : "lg:col-span-4"
-            }`}
-          >
-            {/* Mobile: collapsible TOC box in the article flow. */}
-            {headings.length > 0 && (
-              <div className="lg:hidden">
-                <ArticleToc headings={headings} />
-              </div>
-            )}
-
-            <div
-              className="article-body article-body-detail"
-              dangerouslySetInnerHTML={{ __html: cleanContent }}
-            />
-
-            {showLegacyPdf && legacyPdfUrl && (
-              <div className="article-body article-body-detail mt-8">
-                <a
-                  className="pdf-link-block"
-                  href={legacyPdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-pdf-label={legacyPdfLabel}
+          {post.tags.length > 0 && (
+            <div className="mt-12 flex flex-wrap justify-center gap-2 border-t border-brand-muted pt-6">
+              {post.tags.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="rounded-full border border-[#6f7975] px-4 py-1.5 text-xs font-medium text-[#3f4945] transition-colors hover:border-brand-teal-dark hover:text-brand-teal-dark"
                 >
-                  {legacyPdfLabel}
-                </a>
-              </div>
-            )}
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
 
-            {post.tags.length > 0 && (
-              <div className="mt-12 flex flex-wrap justify-center gap-2 border-t border-brand-muted pt-6">
-                {post.tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="rounded-full border border-[#6f7975] px-4 py-1.5 text-xs font-medium text-[#3f4945] transition-colors hover:border-brand-teal-dark hover:text-brand-teal-dark"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {shareUrl && <ShareArticle title={post.title} url={shareUrl} />}
-          </div>
-        </div>
+          {shareUrl && <ShareArticle title={post.title} url={shareUrl} />}
+        </ReadingLayout>
       </div>
     </article>
   );
