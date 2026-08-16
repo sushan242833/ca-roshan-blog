@@ -31,15 +31,13 @@ export function tocIndentClass(
   return INDENT_BY_DEPTH[depth];
 }
 
-// Mirrors the backend slug algorithm (backend src/utils/index.ts `slugify`):
-// lowercase, runs of non-alphanumerics → single hyphen, trim edge hyphens.
-// Implemented standalone on the frontend — no backend call — but kept in
-// step so a heading and a slug derived from the same text look the same.
 function slugifyHeading(text: string): string {
   return text
+    .normalize("NFC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{L}\p{N}\p{M}]+/gu, "-")
     .replace(/^-+|-+$/g, "");
 }
 
@@ -47,8 +45,6 @@ function stripTags(html: string): string {
   return html.replace(/<[^>]+>/g, "");
 }
 
-// Decode the handful of named/numeric entities Tiptap emits, for the human
-// label. &amp; is decoded last so "&amp;lt;" does not collapse into "<".
 function decodeEntities(text: string): string {
   return text
     .replace(/&lt;/g, "<")
@@ -59,35 +55,24 @@ function decodeEntities(text: string): string {
     .replace(/&amp;/g, "&");
 }
 
-// Two forms of heading reach this function. The editor now writes them as
-// paragraphs carrying a `heading-<level>` class (see
-// lib/tiptap/heading-paragraph-extension.ts), while posts published before that
-// change still hold real h1–h4 tags, so both have to be recognised. Levels 1–3
-// go in the contents; h4 stays out, being a sub-sub-heading that would only make
-// the rail noisy.
-const HEADING_RE = /<(h1|h2|h3|p)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
+const HEADING_RE = /<(h[1-6]|p)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
 const HEADING_CLASS_RE = /\bheading-([1-6])\b/;
 const EXISTING_ID_RE = /\s+id\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
 const TOC_LEVELS: readonly number[] = [1, 2, 3];
 
-// The level a matched element contributes to the contents, or null when it is
-// not a heading at all (an ordinary paragraph) or is too deep to list.
-function headingLevelOf(tag: string, attrs: string): TocHeadingLevel | null {
+function authoredLevelOf(tag: string, attrs: string): number | null {
   const level =
     tag.toLowerCase() === "p"
       ? Number(HEADING_CLASS_RE.exec(attrs)?.[1])
       : Number(tag[1]);
 
-  return TOC_LEVELS.includes(level) ? (level as TocHeadingLevel) : null;
+  return Number.isInteger(level) && level >= 1 && level <= 6 ? level : null;
 }
 
-/**
- * Single-pass parse of already-sanitised article HTML: assigns a URL-safe,
- * collision-free id to every level 1–3 heading, in either the paragraph or the
- * legacy tag form, and returns the rewritten HTML together with the heading
- * list. Doing both in one pass guarantees the ids in the returned HTML match the
- * ids in the returned headings (used for TOC links).
- */
+function semanticTagFor(level: number): string {
+  return `h${Math.min(Math.max(level, 2), 6)}`;
+}
+
 export function buildToc(html: string): {
   html: string;
   headings: TocHeading[];
@@ -98,10 +83,18 @@ export function buildToc(html: string): {
   const rewritten = html.replace(
     HEADING_RE,
     (match: string, tag: string, attrs: string, inner: string) => {
-      const level = headingLevelOf(tag, attrs);
-      // Ordinary paragraphs and h4s pass straight through, unmodified.
+      const level = authoredLevelOf(tag, attrs);
+      // Ordinary paragraphs pass straight through, unmodified.
       if (level === null) {
         return match;
+      }
+
+      const semanticTag = semanticTagFor(level);
+      const cleanedAttrs = attrs.replace(EXISTING_ID_RE, "");
+
+      // Deep headings become real tags but get no anchor and no contents entry.
+      if (!TOC_LEVELS.includes(level)) {
+        return `<${semanticTag}${cleanedAttrs}>${inner}</${semanticTag}>`;
       }
 
       const text = decodeEntities(stripTags(inner)).replace(/\s+/g, " ").trim();
@@ -117,10 +110,9 @@ export function buildToc(html: string): {
       }
       usedIds.add(id);
 
-      headings.push({ id, text, level });
+      headings.push({ id, text, level: level as TocHeadingLevel });
 
-      const cleanedAttrs = attrs.replace(EXISTING_ID_RE, "");
-      return `<${tag}${cleanedAttrs} id="${id}">${inner}</${tag}>`;
+      return `<${semanticTag}${cleanedAttrs} id="${id}">${inner}</${semanticTag}>`;
     },
   );
 

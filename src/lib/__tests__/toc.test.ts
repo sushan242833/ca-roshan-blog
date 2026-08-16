@@ -136,18 +136,21 @@ describe("buildToc", () => {
     expect(buildToc(input).html).toBe(input);
   });
 
-  it("gives an h1 an id so the contents can link to it", () => {
+  it("demotes an in-body h1 to h2 so the article title keeps the only h1", () => {
     const { html } = buildToc("<h1>Opening</h1>");
-    expect(html).toContain('<h1 id="opening">Opening</h1>');
+    expect(html).toContain('<h2 id="opening">Opening</h2>');
+    expect(html).not.toContain("<h1");
   });
 
-  it("injects ids onto heading paragraphs, keeping their classes", () => {
+  it("renders heading paragraphs as real heading tags, keeping their classes", () => {
     const { html, headings } = buildToc(
       '<p class="heading-2">Section</p><p>Body</p>',
     );
 
+    // The class is retained so globals.css styles it identically — this is a
+    // semantic change, not a visual one.
     expect(html).toBe(
-      '<p class="heading-2" id="section">Section</p><p>Body</p>',
+      '<h2 class="heading-2" id="section">Section</h2><p>Body</p>',
     );
     expect(headings).toEqual([{ id: "section", text: "Section", level: 2 }]);
   });
@@ -175,5 +178,94 @@ describe("tocIndentClass", () => {
 
   it("treats an empty heading list as the deepest level", () => {
     expect(shallowestLevel([])).toBe(3);
+  });
+});
+
+// The editor serialises headings as <p class="heading-N">, so the public
+// article had no real heading elements at all — bad for search engines and for
+// screen-reader navigation. buildToc now converts both the paragraph form and
+// the legacy real-tag form into semantic tags.
+describe("semantic heading structure", () => {
+  it("produces real h2/h3 elements from the editor's paragraph form", () => {
+    const { html } = buildToc(
+      '<p class="heading-2">Section</p>' +
+        '<p class="heading-3">Subsection</p>' +
+        "<p>Body copy</p>",
+    );
+
+    expect(html).toContain("<h2");
+    expect(html).toContain("<h3");
+    expect(html).not.toContain('<p class="heading-2"');
+    expect(html).not.toContain('<p class="heading-3"');
+    // Ordinary paragraphs are still paragraphs.
+    expect(html).toContain("<p>Body copy</p>");
+  });
+
+  it("builds the H1 > H2 > H3 tree the article page needs", () => {
+    // The article title supplies the page's single H1 (ArticleView), so the
+    // body must contribute H2s and H3s beneath it and no second H1.
+    const { html } = buildToc(
+      '<p class="heading-2">Chapter One</p>' +
+        '<p class="heading-3">Part A</p>' +
+        '<p class="heading-3">Part B</p>' +
+        '<p class="heading-2">Chapter Two</p>',
+    );
+
+    const tags = [...html.matchAll(/<(h[1-6])\b/g)].map((m) => m[1]);
+    expect(tags).toEqual(["h2", "h3", "h3", "h2"]);
+    expect(html).not.toContain("<h1");
+  });
+
+  it("keeps legacy real-tag articles working and unchanged in level", () => {
+    const { html, headings } = buildToc(
+      "<h2>Legacy Section</h2><h3>Legacy Sub</h3>",
+    );
+
+    expect(html).toContain('<h2 id="legacy-section">Legacy Section</h2>');
+    expect(html).toContain('<h3 id="legacy-sub">Legacy Sub</h3>');
+    expect(headings.map((h) => h.level)).toEqual([2, 3]);
+  });
+
+  it("converts deep headings to real tags but leaves them out of the contents", () => {
+    const { html, headings } = buildToc('<p class="heading-4">Deep</p>');
+
+    expect(html).toBe('<h4 class="heading-4">Deep</h4>');
+    expect(headings).toEqual([]);
+  });
+
+  it("never emits a level it skipped over on the way down", () => {
+    const { html } = buildToc(
+      '<p class="heading-1">One</p><p class="heading-2">Two</p>',
+    );
+    const tags = [...html.matchAll(/<(h[1-6])\b/g)].map((m) => m[1]);
+
+    // Both flatten to h2 rather than producing a second page-level h1.
+    expect(tags).toEqual(["h2", "h2"]);
+  });
+
+  it("anchors Nepali headings on the heading text, not on 'section'", () => {
+    const { html, headings } = buildToc(
+      '<p class="heading-2">नेपाली कर कानून</p>',
+    );
+
+    expect(headings[0].id).toBe("नेपाली-कर-कानून");
+    expect(html).toContain('id="नेपाली-कर-कानून"');
+  });
+
+  it("gives two different Nepali headings two different anchors", () => {
+    const headings = parseHeadings(
+      '<p class="heading-2">आयकर</p><p class="heading-2">मूल्य अभिवृद्धि कर</p>',
+    );
+
+    expect(headings.map((h) => h.id)).toEqual(["आयकर", "मूल्य-अभिवृद्धि-कर"]);
+    expect(new Set(headings.map((h) => h.id)).size).toBe(2);
+  });
+
+  it("still de-duplicates identical Nepali headings", () => {
+    const headings = parseHeadings(
+      '<p class="heading-2">आयकर</p><p class="heading-2">आयकर</p>',
+    );
+
+    expect(headings.map((h) => h.id)).toEqual(["आयकर", "आयकर-1"]);
   });
 });

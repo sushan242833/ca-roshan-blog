@@ -119,3 +119,83 @@ describe("ArticleView featured image", () => {
     expect(container.querySelector("figure img")).toBeNull();
   });
 });
+
+// The rendered page, not just the HTML transform: the article must present one
+// H1 (its title) with real H2/H3 section headings beneath it. Before this, the
+// editor's `<p class="heading-2">` output meant the page had no <h2> at all.
+describe("ArticleView heading semantics", () => {
+  it("renders exactly one h1 — the article title", () => {
+    const { container } = render(
+      <ArticleView
+        post={makePost({
+          title: "Nepal Income Tax Act 2058",
+          content:
+            '<p class="heading-2">Overview</p><p>Body</p>' +
+            '<p class="heading-2">Compliance</p>',
+        })}
+      />,
+    );
+
+    const h1s = container.querySelectorAll("h1");
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0].textContent).toBe("Nepal Income Tax Act 2058");
+  });
+
+  it("renders body sections as real h2/h3 elements", () => {
+    const { container } = render(
+      <ArticleView
+        post={makePost({
+          content:
+            '<p class="heading-2">Chapter One</p>' +
+            '<p class="heading-3">Part A</p>' +
+            '<p class="heading-3">Part B</p>' +
+            '<p class="heading-2">Chapter Two</p>',
+        })}
+      />,
+    );
+
+    const body = container.querySelector(".article-body");
+    expect(body).not.toBeNull();
+
+    const levels = [...body!.querySelectorAll("h1,h2,h3,h4,h5,h6")].map(
+      (el) => el.tagName.toLowerCase(),
+    );
+    expect(levels).toEqual(["h2", "h3", "h3", "h2"]);
+    // No stray heading paragraphs left behind.
+    expect(body!.querySelectorAll("p.heading-2")).toHaveLength(0);
+  });
+
+  it("keeps the styling class so the visual result is unchanged", () => {
+    const { container } = render(
+      <ArticleView post={makePost({ content: '<p class="heading-2">Styled</p>' })} />,
+    );
+
+    const heading = container.querySelector(".article-body h2");
+    expect(heading?.classList.contains("heading-2")).toBe(true);
+  });
+
+  it("does not add a second h1 for a legacy article containing one", () => {
+    const { container } = render(
+      <ArticleView
+        post={makePost({ content: "<h1>Legacy top</h1><h2>Legacy sub</h2>" })}
+      />,
+    );
+
+    expect(container.querySelectorAll("h1")).toHaveLength(1);
+    const levels = [
+      ...container.querySelector(".article-body")!.querySelectorAll("h1,h2,h3"),
+    ].map((el) => el.tagName.toLowerCase());
+    expect(levels).toEqual(["h2", "h2"]);
+  });
+
+  it("anchors Nepali headings so the contents rail can link to them", () => {
+    const { container } = render(
+      <ArticleView
+        post={makePost({ content: '<p class="heading-2">नेपाली कर कानून</p>' })}
+      />,
+    );
+
+    const heading = container.querySelector(".article-body h2");
+    expect(heading?.id).toBe("नेपाली-कर-कानून");
+  });
+});
