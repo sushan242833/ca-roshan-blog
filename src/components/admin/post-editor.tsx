@@ -57,11 +57,7 @@ export const postFormSchema = z.object({
     ),
   categoryIds: z.array(z.string()),
   tagIds: z.array(z.string()),
-  // Required to PUBLISH (checked in requestPublish), but not to save a draft
-  // or edit an existing post — so fixing an excerpt never gets blocked by a
-  // missing image. The image is shown at the top of the published article.
   featuredImageId: z.string().nullable(),
-  // Whether the featured image is shown at the top of the blog detail page.
   showFeaturedImage: z.boolean(),
   metaTitle: z
     .string()
@@ -94,7 +90,6 @@ const EMPTY_FORM_VALUES: PostFormValues = {
   featured: false,
 };
 
-// Backend validation `field` names match the form field names 1:1.
 function isPostFormField(name: string): name is keyof PostFormValues {
   return name in EMPTY_FORM_VALUES;
 }
@@ -105,8 +100,6 @@ const STATUS_LABEL: Record<PostStatus, string> = {
   ARCHIVED: "Archived",
 };
 
-// Chip vocabulary shared with the public pages: the taxonomy pill for neutral
-// states, palette teal for live content, muted amber for retired content.
 const STATUS_BADGE_CLASS: Record<PostStatus, string> = {
   PUBLISHED:
     "border-brand-teal-dark/20 bg-brand-teal-dark/10 text-brand-teal-dark",
@@ -114,12 +107,11 @@ const STATUS_BADGE_CLASS: Record<PostStatus, string> = {
   ARCHIVED: "border-amber-200/70 bg-amber-50 text-amber-800",
 };
 
-// The article pages' small-caps label, reused for field labels and eyebrows.
 const LABEL_CAPS =
   "text-[12px] font-semibold uppercase tracking-[0.1em] text-[#566475]";
 
-// Serif teal card heading, matching "Contents" on the public chapter pages.
-const CARD_HEADING = "font-serif text-[18px] font-semibold text-brand-teal-dark";
+const CARD_HEADING =
+  "font-serif text-[18px] font-semibold text-brand-teal-dark";
 
 const HELP_TEXT = "mt-1.5 text-[13px] leading-relaxed text-[#566475]";
 
@@ -135,8 +127,6 @@ const cardClass =
 const checkboxClass =
   "h-4 w-4 shrink-0 rounded border-brand-muted accent-brand-teal-dark focus:ring-brand-teal-dark";
 
-// The dark pill from the public "Start reading" CTA, for the one action that
-// commits the post.
 const PRIMARY_BUTTON =
   "inline-flex items-center justify-center gap-2 rounded bg-[#121c2a] px-6 py-2.5 text-[14px] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60";
 
@@ -147,7 +137,6 @@ const SECONDARY_BUTTON =
   "inline-flex items-center justify-center gap-2 rounded border border-brand-muted bg-white px-5 py-2.5 text-[14px] font-medium text-[#121c2a] transition-colors hover:border-brand-teal-dark hover:text-brand-teal-dark disabled:opacity-50";
 
 interface PostEditorProps {
-  /** When set, the editor loads and edits an existing post. */
   postId?: string;
 }
 
@@ -156,11 +145,7 @@ function formValuesFromPost(post: PostDetailResponse): PostFormValues {
     title: post.title,
     slug: post.slug,
     content: post.content,
-    // Strip any HTML from a legacy excerpt (older posts stored the
-    // auto-generated excerpt with raw markup) so the field shows plain text.
     excerpt: post.excerpt ? htmlToPlainText(post.excerpt) : "",
-    // Prefer the many-to-many categories; fall back to the legacy single
-    // category so posts created before multi-category still load correctly.
     categoryIds:
       post.categories.length > 0
         ? post.categories.map((category) => category.id)
@@ -182,7 +167,6 @@ export default function PostEditor({ postId }: PostEditorProps) {
   const queryClient = useQueryClient();
   const isEditMode = Boolean(postId);
 
-  // Backend 400/409 messages surfaced above the form.
   const [formError, setFormError] = useState("");
   const [featuredImage, setFeaturedImage] =
     useState<FeaturedImageResponse | null>(null);
@@ -206,12 +190,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
     defaultValues: EMPTY_FORM_VALUES,
   });
 
-  // Wraps the rich-text editor so the outline can scroll to a heading by
-  // index. Headings render as `p.heading-<level>` (see
-  // lib/tiptap/heading-paragraph-extension.ts) and are in the same order as
-  // parseHeadings, so the two must cover the same set of levels.
   const editorWrapperRef = useRef<HTMLDivElement>(null);
-  // Lets a failed publish (missing featured image) scroll the field into view.
   const featuredImageRef = useRef<HTMLDivElement>(null);
 
   const titleValue = useWatch({ control, name: "title" });
@@ -222,9 +201,6 @@ export default function PostEditor({ postId }: PostEditorProps) {
   const selectedTagIds = useWatch({ control, name: "tagIds" });
   const selectedCategoryIds = useWatch({ control, name: "categoryIds" });
 
-  // Reference lists share the SAME query keys as the Manage Categories/Tags
-  // screens (see src/lib/query-keys.ts), so a create/edit there shows here
-  // without a reload, and inline tag creation here shows there.
   const categoriesQuery = useQuery({
     queryKey: queryKeys.categories,
     queryFn: () => authedFetch<CategoryResponse[]>("/v1/categories"),
@@ -243,8 +219,6 @@ export default function PostEditor({ postId }: PostEditorProps) {
   const tags = tagsQuery.data ?? [];
   const post = postQuery.data ?? null;
 
-  // The editor renders only once its reference data (and, in edit mode, the
-  // post) has loaded — same gate as the old single Promise.all.
   const isLoading =
     categoriesQuery.isPending ||
     tagsQuery.isPending ||
@@ -260,9 +234,6 @@ export default function PostEditor({ postId }: PostEditorProps) {
       : "Failed to load the editor."
     : "";
 
-  // Seed the form from the fetched post exactly once per loaded post. Guarded
-  // by id so a background refetch (refetchOnWindowFocus is on) never discards
-  // unsaved edits by re-running reset — matching the old one-shot fetch.
   const appliedPostIdRef = useRef<string | null>(null);
   useEffect(() => {
     const data = postQuery.data;
@@ -273,8 +244,6 @@ export default function PostEditor({ postId }: PostEditorProps) {
     }
   }, [postQuery.data, reset]);
 
-  // Warn before the tab closes with unsaved changes. Client-side router
-  // navigations are deliberately not intercepted (kept simple on purpose).
   useEffect(() => {
     if (!isDirty) return;
     const handler = (event: BeforeUnloadEvent) => {
@@ -288,18 +257,13 @@ export default function PostEditor({ postId }: PostEditorProps) {
     return {
       title: data.title,
       content: data.content,
-      // Blank slug/excerpt are omitted so the server keeps/derives them.
       slug: data.slug.trim() || undefined,
       excerpt: data.excerpt.trim() || undefined,
       featuredImageId: data.featuredImageId,
       showFeaturedImage: data.showFeaturedImage,
-      // Public category pages resolve posts through the post_categories
-      // join. Send the full set, and keep the legacy primary categoryId in
-      // sync (first selected) for any code path that still reads it.
       categoryId: data.categoryIds[0] ?? null,
       categoryIds: data.categoryIds,
       tagIds: data.tagIds,
-      // Empty meta fields reset to the server defaults (title / excerpt).
       metaTitle: data.metaTitle,
       metaDescription: data.metaDescription,
       featured: data.featured,
@@ -316,8 +280,6 @@ export default function PostEditor({ postId }: PostEditorProps) {
       }),
   });
 
-  // Status is never sent on updates — it is managed by the transition
-  // endpoints so the newsletter logic stays in one backend path.
   const updatePostMutation = useMutation({
     mutationFn: (vars: {
       id: string;
@@ -337,13 +299,10 @@ export default function PostEditor({ postId }: PostEditorProps) {
   });
 
   async function finishSave(successMessage: string) {
-    // Purge the PUBLIC site's Next.js cache exactly as before — React Query
-    // does not know about it and does not replace it.
     await revalidatePublicContent("posts", getAccessToken());
-    // Refresh the admin's own list and stats so Manage Posts / Dashboard
-    // reflect the change if the admin navigates back to them.
     queryClient.invalidateQueries({ queryKey: queryKeys.postsAll });
     queryClient.invalidateQueries({ queryKey: queryKeys.postStats });
+    queryClient.invalidateQueries({ queryKey: queryKeys.media });
     if (postId) {
       queryClient.removeQueries({ queryKey: queryKeys.post(postId) });
     }
@@ -445,18 +404,12 @@ export default function PostEditor({ postId }: PostEditorProps) {
     setValue("categoryIds", next, { shouldDirty: true });
   }
 
-  // Read the current selection via getValues (not the closed-over watch value)
-  // so async callbacks always append to the latest set.
   function selectTag(tagId: string) {
     const current = getValues("tagIds");
     if (current.includes(tagId)) return;
     setValue("tagIds", [...current, tagId], { shouldDirty: true });
   }
 
-  // Inline tag creation: POST /v1/tags, then add the tag to the shared
-  // ["tags"] cache (so Manage Tags reflects it too) and the selection. On a
-  // 409 (someone created a same-named tag between load and now) re-fetch the
-  // list and select the existing match instead of erroring.
   async function createTag(name: string) {
     setIsCreatingTag(true);
     try {
@@ -497,8 +450,6 @@ export default function PostEditor({ postId }: PostEditorProps) {
     }
   }
 
-  // True when the content field holds visible text (mirrors the zod check),
-  // used to warn before a Word import overwrites an in-progress draft.
   function hasContent() {
     return (
       getValues("content")
@@ -507,9 +458,6 @@ export default function PostEditor({ postId }: PostEditorProps) {
     );
   }
 
-  // Populate the form from a converted Word document, exactly as if typed:
-  // setValue on content flows through the Controller into the editor's
-  // setContent command. A leading H1 becomes the title, if present.
   function applyWordImport({ title, html }: WordImportResult) {
     setValue("content", html, { shouldDirty: true, shouldValidate: true });
     if (title) {
@@ -517,9 +465,6 @@ export default function PostEditor({ postId }: PostEditorProps) {
     }
   }
 
-  // Jump the editor to a heading picked in the outline. Headings carry no ids
-  // inside the editor (those are injected only at render time), so match by
-  // document order against the live h2/h3 elements.
   function scrollToHeading(index: number) {
     const headings = editorWrapperRef.current?.querySelectorAll<HTMLElement>(
       "p.heading-1, p.heading-2, p.heading-3",
@@ -543,9 +488,6 @@ export default function PostEditor({ postId }: PostEditorProps) {
     setValue("featuredImageId", null, { shouldDirty: true });
   }
 
-  // Validate first; the confirmation dialog only opens on a valid form. A
-  // featured image is required to publish (but not to save a draft/edit), so
-  // enforce it here with a visible message rather than failing silently.
   function requestPublish() {
     void handleSubmit((data) => {
       if (!data.featuredImageId) {
@@ -760,7 +702,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
               <button
                 type="button"
                 onClick={() => setShowMediaPicker(true)}
-                className="mt-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-brand-teal-dark underline-offset-2 hover:underline"
+                className="mt-3 text-[12px] font-semibold uppercase tracking-widest text-brand-teal-dark underline-offset-2 hover:underline"
               >
                 Change image
               </button>
@@ -895,7 +837,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
               }`}
             />
             <span
-              className={`text-[12px] font-semibold uppercase tracking-[0.1em] ${
+              className={`text-[12px] font-semibold uppercase tracking-widest ${
                 isDirty ? "text-amber-700" : "text-[#566475]"
               }`}
             >
@@ -991,8 +933,6 @@ export default function PostEditor({ postId }: PostEditorProps) {
       {showPublishConfirm && (
         <PublishPostDialog
           postTitle={titleValue || "Untitled post"}
-          // Only a DRAFT → PUBLISHED transition queues the newsletter; a new
-          // post created as PUBLISHED does too.
           showNewsletterWarning={!isEditMode || post?.status === "DRAFT"}
           onOpenChange={(open) => {
             if (!open) setShowPublishConfirm(false);

@@ -34,6 +34,8 @@ export const queryKeys = {
   // Kind-filtered media list (e.g. the PDF picker), kept separate from the
   // unfiltered ["media"] cache so the two lists never overwrite each other.
   mediaByType: (type: "image" | "document") => ["media", type] as const,
+  // Per-item usage lookup, read by the Media Library before offering a delete.
+  mediaUsage: (id: string) => ["media", "usage", id] as const,
 
   // Subscribers (read-only).
   subscribers: (filters: SubscriberListFilters) =>
