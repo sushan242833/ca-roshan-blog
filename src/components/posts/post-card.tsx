@@ -16,15 +16,13 @@ export type PostCardVariant =
   | "compact";
 
 interface VariantConfig {
-  // Root <Link> class — lets the compact variant read as a lightweight result
-  // row rather than a shadowed card.
   rootClassName: string;
-  // The compact variant drops the image entirely to stay light in the overlay.
   showImage: boolean;
   aspectClassName: string;
   imageSizes: string;
   imageClassName: string;
   bodyClassName: string;
+  showCategoryOnImage: boolean;
   showCategoryPill: boolean;
   showReadingTime: boolean;
   titleClassName: string;
@@ -43,11 +41,12 @@ const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
     imageSizes: "(max-width: 768px) 100vw, 50vw",
     imageClassName: "object-cover",
     bodyClassName: "gap-3 p-5",
+    showCategoryOnImage: false,
     showCategoryPill: true,
     showReadingTime: true,
     titleClassName:
       "font-serif text-xl font-bold text-brand-navy line-clamp-2 transition-colors group-hover:text-brand-teal",
-    excerptClassName: "flex-1 text-sm text-gray-600 line-clamp-3",
+    excerptClassName: "text-sm text-gray-600 line-clamp-3",
     footer: "cta",
   },
   recommended: {
@@ -58,6 +57,7 @@ const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
     imageClassName:
       "object-cover transition-transform duration-500 group-hover:scale-105",
     bodyClassName: "gap-0 p-0",
+    showCategoryOnImage: false,
     showCategoryPill: false,
     showReadingTime: false,
     titleClassName:
@@ -72,15 +72,14 @@ const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
     imageSizes: "(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw",
     imageClassName: "object-cover",
     bodyClassName: "gap-2 p-4",
-    showCategoryPill: true,
+    showCategoryOnImage: true,
+    showCategoryPill: false,
     showReadingTime: false,
     titleClassName:
-      "font-serif text-base font-bold text-brand-navy line-clamp-2 transition-colors group-hover:text-brand-teal",
-    excerptClassName: "flex-1 text-sm text-gray-600 line-clamp-2",
+      "font-serif text-base font-bold leading-snug text-brand-navy line-clamp-2 transition-colors group-hover:text-brand-teal",
+    excerptClassName: "text-sm leading-relaxed text-gray-600 line-clamp-2",
     footer: "author-date",
   },
-  // Text-only result row for the header search overlay: category pill, title,
-  // short excerpt — no image, no footer.
   compact: {
     rootClassName:
       "group flex flex-col gap-1 rounded-md px-3 py-2.5 transition-colors hover:bg-gray-50",
@@ -89,6 +88,7 @@ const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
     imageSizes: "",
     imageClassName: "",
     bodyClassName: "gap-1",
+    showCategoryOnImage: false,
     showCategoryPill: true,
     showReadingTime: false,
     titleClassName:
@@ -102,7 +102,6 @@ interface PostCardProps {
   post: PostSummaryResponse;
   variant: PostCardVariant;
   priority?: boolean;
-  /** Fired on navigation — used by the search overlay to close itself. */
   onClick?: () => void;
 }
 
@@ -115,11 +114,7 @@ export default function PostCard({
   const [imageError, setImageError] = useState(false);
   const showImage = post.featuredImage && !imageError;
   const config = VARIANT_CONFIG[variant];
-  // Excerpts may be auto-generated from HTML content — render as plain text,
-  // and drop it entirely if nothing but markup remains (e.g. image-only lead).
   const excerptText = post.excerpt ? htmlToPlainText(post.excerpt) : "";
-  // A post can belong to one or more categories. Prefer the full set; fall
-  // back to the legacy single category for posts saved before multi-category.
   const categoryList =
     post.categories && post.categories.length > 0
       ? post.categories
@@ -154,6 +149,16 @@ export default function PostCard({
               className={config.imageClassName}
               onError={() => setImageError(true)}
             />
+          )}
+          {config.showCategoryOnImage && categoryList.length > 0 && (
+            <span className="absolute bottom-3 left-3 flex max-w-[calc(100%-1.5rem)] items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-medium text-brand-teal shadow-sm">
+              <span className="truncate">{categoryList[0].name}</span>
+              {categoryList.length > 1 && (
+                <span className="text-brand-teal/70">
+                  +{categoryList.length - 1}
+                </span>
+              )}
+            </span>
           )}
         </div>
       )}
@@ -191,7 +196,6 @@ export default function PostCard({
         {/* Title */}
         <h3 className={config.titleClassName}>{post.title}</h3>
 
-        {/* Excerpt */}
         {excerptText && (
           <p className={config.excerptClassName}>{excerptText}</p>
         )}
@@ -204,7 +208,7 @@ export default function PostCard({
           </span>
         )}
         {config.footer === "author-date" && (
-          <div className="mt-auto flex items-center justify-between pt-2 text-xs text-gray-500">
+          <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
             <span>{post.author?.name ?? SITE_NAME}</span>
             <span>{formatPostDate(post.publishedAt ?? post.createdAt)}</span>
           </div>
