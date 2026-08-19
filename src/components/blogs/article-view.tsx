@@ -13,11 +13,11 @@ import {
 import { isValidPdfUrl } from "@/lib/pdf-url";
 import { DEFAULT_PDF_LABEL } from "@/lib/constants";
 import { SITE_NAME } from "@/config/site.config";
+import { ABOUT_AVATAR_SRC } from "@/content/about";
 import type { PostDetailResponse } from "@/types/post";
 
 interface ArticleViewProps {
   post: PostDetailResponse;
-  /** Public URL for the share buttons; omit to hide them (e.g. previews). */
   shareUrl?: string;
 }
 
@@ -43,13 +43,7 @@ function formatViewCount(count: number): string {
   return count.toLocaleString("en-US");
 }
 
-// The article presentation shared by the public post page and the admin
-// draft preview: centered editorial header, featured image, body, tags, share.
 export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
-  // Sanitise first, then inject heading ids from the sanitised HTML, then wrap
-  // tables in a horizontal-scroll container. Image optimisation comes last: it
-  // adds loading/decoding/fetchpriority attributes, which the sanitiser's img
-  // allowlist does not include and would strip if it ran afterwards.
   const sanitized = sanitizeArticleHtml(post.content ?? "");
   const { html: withHeadingIds, headings } = buildToc(sanitized);
   const cleanContent = optimizeArticleImages(
@@ -58,7 +52,8 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
       .replace(/<\/table>/g, "</table></div>"),
   );
 
-  const authorInitial = post.author?.name?.charAt(0).toUpperCase() ?? "A";
+  const authorInitial = post.author?.name?.charAt(0).toUpperCase() ?? "R";
+  const authorAvatar = post.author?.avatarUrl ?? ABOUT_AVATAR_SRC;
   const publishDate = formatArticleDate(post.publishedAt ?? post.createdAt);
   const updatedDate = formatArticleDate(post.updatedAt);
   const viewLabel = `${formatViewCount(post.viewCount)} ${
@@ -103,10 +98,10 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
           </h1>
 
           <div className="flex flex-col items-center justify-center gap-4 border-y border-brand-muted/30 py-6 sm:flex-row">
-            {post.author?.avatarUrl ? (
+            {authorAvatar ? (
               <Image
-                src={post.author.avatarUrl}
-                alt={post.author.name}
+                src={authorAvatar}
+                alt={post.author?.name ?? SITE_NAME}
                 width={48}
                 height={48}
                 className="h-12 w-12 shrink-0 rounded-full object-cover"
@@ -166,12 +161,9 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
                   key: "toc",
                   label: "Contents",
                   widthClassName: "lg:w-68",
-                  // Desktop: sticky Table of Contents on the left — stays in
-                  // place while the article column scrolls.
                   sidebar: (
                     <ArticleToc headings={headings} variant="sidebar" fill />
                   ),
-                  // Mobile: collapsible TOC box in the article flow.
                   inline: <ArticleToc headings={headings} />,
                 }
               : undefined
