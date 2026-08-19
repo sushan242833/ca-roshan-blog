@@ -65,8 +65,6 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
     post.viewCount === 1 ? "View" : "Views"
   }`;
 
-  // A post can belong to one or more categories. Prefer the full set; fall
-  // back to the legacy single category for posts saved before multi-category.
   const categoryList =
     post.categories && post.categories.length > 0
       ? post.categories
@@ -74,9 +72,6 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
         ? [post.category]
         : [];
 
-  // Backward compatibility: older posts stored the PDF link in post.pdfUrl and
-  // rendered a card at the bottom. If such a post has no inline pdf-link-block
-  // in its body, render the same compact chip at the end so the link survives.
   const contentHasPdfLink = /class="[^"]*\bpdf-link-block\b[^"]*"/.test(
     sanitized,
   );
@@ -143,19 +138,14 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
       {post.featuredImage && post.showFeaturedImage && (
         <section className="mb-20 px-6">
           <div className="mx-auto max-w-250">
-            <figure className="h-65 overflow-hidden rounded-xl shadow-lg sm:h-90 lg:h-125">
-              {/* Same Cloudinary rewrite as the body images. It matters most in
-                  development, where next/image runs with `unoptimized` and would
-                  otherwise serve the multi-megabyte original; in production it
-                  also means the optimizer fetches an already-compressed source
-                  instead of the full-size PNG. Above the fold, so eager. */}
+            <figure className="overflow-hidden rounded-xl bg-white shadow-lg">
               <Image
                 src={optimizeCloudinaryUrl(post.featuredImage.url)}
                 alt={post.title}
                 width={1200}
                 height={675}
                 sizes="(max-width: 768px) 100vw, 1000px"
-                className="h-full w-full object-cover"
+                className="h-auto max-h-140 w-full object-contain"
                 priority
                 loading="eager"
                 fetchPriority="high"

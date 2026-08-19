@@ -35,6 +35,9 @@ interface VariantConfig {
 const CARD_ROOT_CLASSNAME =
   "group flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md";
 
+// Every image-bearing variant frames at 16:9. Cards sit in grids, so the ratio
+// has to be uniform across a row — and matching the ratio the cover art is
+// actually authored at means `object-cover` has nothing left to crop away.
 const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
   featured: {
     rootClassName: CARD_ROOT_CLASSNAME,
@@ -53,7 +56,7 @@ const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
   recommended: {
     rootClassName: "group block cursor-pointer",
     showImage: true,
-    aspectClassName: "h-48",
+    aspectClassName: "aspect-video",
     imageSizes: "(max-width: 768px) 100vw, 33vw",
     imageClassName:
       "object-cover transition-transform duration-500 group-hover:scale-105",
@@ -68,7 +71,7 @@ const VARIANT_CONFIG: Record<PostCardVariant, VariantConfig> = {
   summary: {
     rootClassName: CARD_ROOT_CLASSNAME,
     showImage: true,
-    aspectClassName: "aspect-4/3",
+    aspectClassName: "aspect-video",
     imageSizes: "(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw",
     imageClassName: "object-cover",
     bodyClassName: "gap-2 p-4",
