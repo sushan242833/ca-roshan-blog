@@ -133,14 +133,14 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
       {post.featuredImage && post.showFeaturedImage && (
         <section className="mb-20 px-6">
           <div className="mx-auto max-w-250">
-            <figure className="h-65 overflow-hidden rounded-xl shadow-lg sm:h-90 lg:h-125">
+            <figure className="overflow-hidden rounded-xl bg-white shadow-lg">
               <Image
                 src={optimizeCloudinaryUrl(post.featuredImage.url)}
                 alt={post.title}
                 width={1200}
                 height={675}
                 sizes="(max-width: 768px) 100vw, 1000px"
-                className="h-full w-full object-cover"
+                className="h-auto max-h-140 w-full object-contain"
                 priority
                 loading="eager"
                 fetchPriority="high"

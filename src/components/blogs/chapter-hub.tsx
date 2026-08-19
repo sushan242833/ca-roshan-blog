@@ -98,14 +98,18 @@ export default function ChapterHub({ index, basePath }: ChapterHubProps) {
       {index.featuredImage && index.showFeaturedImage && (
         <section className="mb-20 px-6 md:px-0">
           <div className="mx-auto max-w-[1000px]">
-            <figure className="group relative aspect-[21/9] overflow-hidden rounded-xl border border-brand-muted bg-[#d5e4f8] shadow-[0_20px_40px_rgba(0,0,0,0.04)]">
+            {/* Cover art is usually a designed graphic with text baked in, so
+                the frame follows the image instead of cropping it into a fixed
+                ratio. `object-contain` plus the height cap keeps unusually tall
+                covers from dominating the page without slicing off artwork. */}
+            <figure className="relative overflow-hidden rounded-xl border border-brand-muted bg-white shadow-[0_20px_40px_rgba(0,0,0,0.04)]">
               <Image
                 src={optimizeCloudinaryUrl(index.featuredImage.url)}
                 alt={index.title}
                 width={1200}
                 height={675}
                 sizes="(max-width: 768px) 100vw, 1000px"
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className="h-auto max-h-[560px] w-full object-contain"
                 priority
                 loading="eager"
                 fetchPriority="high"
