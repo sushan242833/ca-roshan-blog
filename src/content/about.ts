@@ -1,7 +1,3 @@
-// The About page is static: this file IS the content. Nothing here comes from
-// the API or the database, and there is no admin editor for it — changing the
-// page means editing this file and redeploying.
-
 export interface ExpertiseItem {
   title: string;
   description: string;
@@ -59,9 +55,8 @@ export const ABOUT_CONTENT: AboutContent = {
   // ],
   closingMessage:
     "I am also passionate about knowledge sharing and professional education. Through articles, presentations, and educational content, I aim to simplify Nepal's tax and regulatory framework for businesses, professionals, and students.",
-  seoTitle: "Roshan Poudel | Expert CA in Nepal",
+  seoTitle: "Roshan Poudel | CA - Chartered Accountant",
   seoDescription:
-    "Discover the professional journey of Roshan Poudel, a leading Chartered " +
-    "Accountant specializing in tax planning and corporate advisory.",
+    "CA Roshan Poudel is a Chartered Accountant from Nepal specializing in taxation, audit, financial reporting, and compliance. He has professional experience in tax advisory, statutory audit, transfer pricing, and investment-related assignments, with a strong interest in corporate finance and investment banking.",
   ogImageUrl: null,
 };
