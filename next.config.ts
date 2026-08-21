@@ -51,6 +51,14 @@ const apiOrigin = parseOrigin(process.env.NEXT_PUBLIC_API_BASE_URL);
 const CLOUDINARY_HOSTNAME = "res.cloudinary.com";
 const CLOUDINARY_ORIGIN = `https://${CLOUDINARY_HOSTNAME}`;
 
+// Raw (non-image) assets — the article PDFs — are proxied through this site so
+// their links carry the blog's own domain instead of res.cloudinary.com. The
+// files stay on Cloudinary; only the URL the reader sees changes. Keep this
+// cloud name in sync with toPublicFileUrl() in src/lib/pdf-url.ts, which builds
+// the /files/ links that this rewrite resolves.
+const CLOUDINARY_CLOUD_NAME =
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "jsewsq7w";
+
 // ─── Remote image patterns ────────────────────────────────────────────────────
 // Authorise Next.js image optimisation to proxy images from the API server
 // and from Google (admin avatars may be served from Google accounts).
@@ -158,6 +166,19 @@ const nextConfig: NextConfig = {
     unoptimized: !isProduction,
     remotePatterns,
     contentDispositionType: "inline" as const,
+  },
+
+  // Serves /files/<version>/<folder>/<file>.pdf from Cloudinary's raw delivery
+  // URL with no redirect, so the reader only ever sees this domain. Next.js
+  // proxies rewrites whose destination is an absolute URL, which is why this
+  // works both under `next dev` and on Vercel.
+  async rewrites() {
+    return [
+      {
+        source: "/files/:path*",
+        destination: `${CLOUDINARY_ORIGIN}/${CLOUDINARY_CLOUD_NAME}/raw/upload/:path*`,
+      },
+    ];
   },
 
   async headers() {
