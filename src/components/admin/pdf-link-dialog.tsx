@@ -12,7 +12,7 @@ import {
   MAX_PDF_LABEL_LENGTH,
   MAX_PDF_URL_LENGTH,
 } from "@/lib/constants";
-import { isValidPdfUrl } from "@/lib/pdf-url";
+import { isValidPdfUrl, toPublicFileUrl } from "@/lib/pdf-url";
 import { ApiRequestError } from "@/lib/api";
 import { useAuth } from "@/components/providers/auth-provider";
 import { queryKeys } from "@/lib/query-keys";
@@ -73,7 +73,9 @@ export default function PdfLinkDialog({
     if (!file) return;
     try {
       const media = await uploadFile(file);
-      setUrl(media.url);
+      // Linked through this site's /files/ path rather than the raw Cloudinary
+      // URL, so published articles point at our own domain.
+      setUrl(toPublicFileUrl(media.url));
       setError("");
       // Show the freshly uploaded PDF in the existing-PDFs grid immediately,
       // and refresh the unfiltered Media Library.
@@ -102,11 +104,13 @@ export default function PdfLinkDialog({
       return;
     }
     if (!isValidPdfUrl(trimmedUrl)) {
-      setError("Enter a valid http(s) URL or a path starting with /uploads/.");
+      setError("Enter a valid http(s) URL or a path starting with /files/.");
       return;
     }
     onSubmit({
-      href: trimmedUrl,
+      // Normalised here as well as on the media-grid path, so a Cloudinary URL
+      // pasted into the field by hand is stored as a /files/ link too.
+      href: toPublicFileUrl(trimmedUrl),
       label: label.trim() || DEFAULT_PDF_LABEL,
     });
   }
@@ -145,7 +149,7 @@ export default function PdfLinkDialog({
                 setUrl(event.target.value);
                 if (error) setError("");
               }}
-              placeholder="https://… or /uploads/file.pdf"
+              placeholder="https://… or /files/file.pdf"
               className={`min-w-0 flex-1 ${inputClass}`}
             />
             <button
@@ -211,24 +215,27 @@ export default function PdfLinkDialog({
             </p>
           ) : (
             <div className="grid max-h-56 min-h-0 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
-              {documents.map((media) => (
-                <div
-                  key={media.id}
-                  className={
-                    url === media.url
-                      ? "rounded-md ring-2 ring-brand-teal"
-                      : undefined
-                  }
-                >
-                  <MediaGridItem
-                    media={media}
-                    onClick={() => {
-                      setUrl(media.url);
-                      setError("");
-                    }}
-                  />
-                </div>
-              ))}
+              {documents.map((media) => {
+                const publicUrl = toPublicFileUrl(media.url);
+                return (
+                  <div
+                    key={media.id}
+                    className={
+                      url === publicUrl
+                        ? "rounded-md ring-2 ring-brand-teal"
+                        : undefined
+                    }
+                  >
+                    <MediaGridItem
+                      media={media}
+                      onClick={() => {
+                        setUrl(publicUrl);
+                        setError("");
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

@@ -10,7 +10,11 @@ import {
   optimizeArticleImages,
   optimizeCloudinaryUrl,
 } from "@/lib/article-images";
-import { isValidPdfUrl } from "@/lib/pdf-url";
+import {
+  isValidPdfUrl,
+  toPublicFileLinks,
+  toPublicFileUrl,
+} from "@/lib/pdf-url";
 import { DEFAULT_PDF_LABEL } from "@/lib/constants";
 import { SITE_NAME } from "@/config/site.config";
 import { ABOUT_AVATAR_SRC } from "@/content/about";
@@ -46,10 +50,12 @@ function formatViewCount(count: number): string {
 export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
   const sanitized = sanitizeArticleHtml(post.content ?? "");
   const { html: withHeadingIds, headings } = buildToc(sanitized);
-  const cleanContent = optimizeArticleImages(
-    withHeadingIds
-      .replace(/<table(?=[\s>])/g, '<div class="table-scroll"><table')
-      .replace(/<\/table>/g, "</table></div>"),
+  const cleanContent = toPublicFileLinks(
+    optimizeArticleImages(
+      withHeadingIds
+        .replace(/<table(?=[\s>])/g, '<div class="table-scroll"><table')
+        .replace(/<\/table>/g, "</table></div>"),
+    ),
   );
 
   const authorInitial = post.author?.name?.charAt(0).toUpperCase() ?? "R";
@@ -71,7 +77,9 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
     sanitized,
   );
   const legacyPdfUrl =
-    post.pdfUrl && isValidPdfUrl(post.pdfUrl) ? post.pdfUrl : null;
+    post.pdfUrl && isValidPdfUrl(post.pdfUrl)
+      ? toPublicFileUrl(post.pdfUrl)
+      : null;
   const showLegacyPdf = Boolean(legacyPdfUrl) && !contentHasPdfLink;
   const legacyPdfLabel = post.pdfLabel?.trim() || DEFAULT_PDF_LABEL;
 
