@@ -10,7 +10,11 @@ import {
   optimizeArticleImages,
   optimizeCloudinaryUrl,
 } from "@/lib/article-images";
-import { isValidPdfUrl } from "@/lib/pdf-url";
+import {
+  isValidPdfUrl,
+  toPublicFileLinks,
+  toPublicFileUrl,
+} from "@/lib/pdf-url";
 import { DEFAULT_PDF_LABEL } from "@/lib/constants";
 import { SITE_NAME } from "@/config/site.config";
 import { ABOUT_AVATAR_SRC } from "@/content/about";
@@ -46,10 +50,12 @@ function formatViewCount(count: number): string {
 export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
   const sanitized = sanitizeArticleHtml(post.content ?? "");
   const { html: withHeadingIds, headings } = buildToc(sanitized);
-  const cleanContent = optimizeArticleImages(
-    withHeadingIds
-      .replace(/<table(?=[\s>])/g, '<div class="table-scroll"><table')
-      .replace(/<\/table>/g, "</table></div>"),
+  const cleanContent = toPublicFileLinks(
+    optimizeArticleImages(
+      withHeadingIds
+        .replace(/<table(?=[\s>])/g, '<div class="table-scroll"><table')
+        .replace(/<\/table>/g, "</table></div>"),
+    ),
   );
 
   const authorInitial = post.author?.name?.charAt(0).toUpperCase() ?? "R";
@@ -71,7 +77,9 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
     sanitized,
   );
   const legacyPdfUrl =
-    post.pdfUrl && isValidPdfUrl(post.pdfUrl) ? post.pdfUrl : null;
+    post.pdfUrl && isValidPdfUrl(post.pdfUrl)
+      ? toPublicFileUrl(post.pdfUrl)
+      : null;
   const showLegacyPdf = Boolean(legacyPdfUrl) && !contentHasPdfLink;
   const legacyPdfLabel = post.pdfLabel?.trim() || DEFAULT_PDF_LABEL;
 
@@ -133,14 +141,14 @@ export default function ArticleView({ post, shareUrl }: ArticleViewProps) {
       {post.featuredImage && post.showFeaturedImage && (
         <section className="mb-20 px-6">
           <div className="mx-auto max-w-250">
-            <figure className="h-65 overflow-hidden rounded-xl shadow-lg sm:h-90 lg:h-125">
+            <figure className="overflow-hidden rounded-xl bg-white shadow-lg">
               <Image
                 src={optimizeCloudinaryUrl(post.featuredImage.url)}
                 alt={post.title}
                 width={1200}
                 height={675}
                 sizes="(max-width: 768px) 100vw, 1000px"
-                className="h-full w-full object-cover"
+                className="h-auto max-h-140 w-full object-contain"
                 priority
                 loading="eager"
                 fetchPriority="high"

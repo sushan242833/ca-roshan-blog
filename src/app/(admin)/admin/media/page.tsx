@@ -19,6 +19,7 @@ import { revalidatePublicContent } from "@/lib/revalidate";
 import { queryKeys } from "@/lib/query-keys";
 import { formatFileSize, formatPostDate } from "@/lib/format";
 import { ALLOWED_IMAGE_TYPES } from "@/lib/constants";
+import { toPublicFileUrl } from "@/lib/pdf-url";
 import { useMediaUpload } from "@/components/admin/use-media-upload";
 import MediaGridItem from "@/components/admin/media-grid-item";
 import DeleteEntityDialog from "@/components/admin/delete-entity-dialog";
@@ -232,7 +233,9 @@ export default function AdminMediaPage() {
 
   async function handleCopyUrl(media: MediaResponse) {
     try {
-      await navigator.clipboard.writeText(media.url);
+      // PDFs are copied as their /files/ path on this domain; image URLs are
+      // unchanged by toPublicFileUrl and still copy as the Cloudinary URL.
+      await navigator.clipboard.writeText(toPublicFileUrl(media.url));
       toast.success("URL copied");
     } catch {
       toast.error("Failed to copy URL.");
