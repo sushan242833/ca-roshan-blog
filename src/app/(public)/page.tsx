@@ -9,6 +9,9 @@ import WarmBackend from "@/components/warm-backend";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 
 export const metadata: Metadata = {
+  title: "Home | CA Roshan",
+  description:
+    "Expert analysis and actionable insights designed for financial professionals, business owners, and corporate leaders navigating the evolving economic landscape in Nepal.",
   alternates: { canonical: "/" },
 };
 
