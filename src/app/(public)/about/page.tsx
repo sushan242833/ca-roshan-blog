@@ -86,7 +86,7 @@ export default function AboutPage() {
           </div>
 
           {/* Right column */}
-          <div className="rounded-lg border border-gray-200 p-8">
+          <div className="rounded-lg border border-gray-200 p-3 lg:p-8 ">
             <h2 className="font-serif text-2xl font-bold text-brand-navy">
               Professional Background
             </h2>
