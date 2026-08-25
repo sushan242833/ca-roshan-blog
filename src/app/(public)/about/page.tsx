@@ -86,13 +86,15 @@ export default function AboutPage() {
           </div>
 
           {/* Right column */}
-          <div className="rounded-lg border border-gray-200 p-8">
+          <div className="sm:rounded-lg sm:border sm:border-gray-200 lg:p-8  ">
             <h2 className="font-serif text-2xl font-bold text-brand-navy">
               Professional Background
             </h2>
-            <p className="mt-4 leading-relaxed text-gray-600">{bio}</p>
+            <p className="mt-4 leading-relaxed text-gray-600 text-justify">
+              {bio}
+            </p>
             {about.bioParagraph2 && (
-              <p className="mt-4 leading-relaxed text-gray-600">
+              <p className="mt-4 leading-relaxed text-gray-600 text-justify">
                 {about.bioParagraph2}
               </p>
             )}
@@ -128,7 +130,7 @@ export default function AboutPage() {
             )}
 
             {about.closingMessage && (
-              <p className="mt-8 leading-relaxed text-gray-600">
+              <p className="mt-8 leading-relaxed text-gray-600 text-justify">
                 {about.closingMessage}
               </p>
             )}
