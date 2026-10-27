@@ -72,6 +72,7 @@ export const postFormSchema = z.object({
       `Meta description must be ${MAX_META_DESCRIPTION_LENGTH} characters or fewer.`,
     ),
   featured: z.boolean(),
+  showInHero: z.boolean(),
 });
 
 type PostFormValues = z.infer<typeof postFormSchema>;
@@ -88,6 +89,7 @@ const EMPTY_FORM_VALUES: PostFormValues = {
   metaTitle: "",
   metaDescription: "",
   featured: false,
+  showInHero: false,
 };
 
 function isPostFormField(name: string): name is keyof PostFormValues {
@@ -158,6 +160,7 @@ function formValuesFromPost(post: PostDetailResponse): PostFormValues {
     metaTitle: post.metaTitle ?? "",
     metaDescription: post.metaDescription ?? "",
     featured: post.featured,
+    showInHero: post.showInHero,
   };
 }
 
@@ -267,6 +270,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
       metaTitle: data.metaTitle,
       metaDescription: data.metaDescription,
       featured: data.featured,
+      showInHero: data.showInHero,
     };
   }
 
@@ -821,6 +825,22 @@ export default function PostEditor({ postId }: PostEditorProps) {
               />
               <span className="text-[14px] font-medium text-[#121c2a]">
                 Feature this post on the home page
+              </span>
+            </label>
+
+            <label className="mt-5 flex cursor-pointer items-start gap-3 border-t border-brand-muted/50 pt-5">
+              <input
+                type="checkbox"
+                {...register("showInHero")}
+                className={`mt-0.5 ${checkboxClass}`}
+              />
+              <span className="text-[14px] text-[#121c2a]">
+                <span className="font-medium">Show in home page hero</span>
+                <span className={`block ${HELP_TEXT}`}>
+                  Headline this post over the hero video. Only one post can be
+                  in the hero, so this replaces the current one. When none is
+                  chosen, the newest featured post is used.
+                </span>
               </span>
             </label>
           </div>

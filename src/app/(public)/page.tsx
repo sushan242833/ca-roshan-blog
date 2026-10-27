@@ -6,6 +6,7 @@ import { apiRequest } from "@/lib/api";
 import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
 import { ArrowRightIcon } from "@/components/icons";
 import WarmBackend from "@/components/warm-backend";
+import HeroSection from "@/components/home/hero-section";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 
 export const metadata: Metadata = {
@@ -22,27 +23,43 @@ const HERO_SUBTEXT =
   "the evolving economic landscape in Nepal.";
 
 export default async function HomePage() {
+  let pinnedHeroPost: PostSummaryResponse | null = null;
   let featuredPosts: PostSummaryResponse[] = [];
   let recentPosts: PostSummaryResponse[] = [];
 
   let loadFailed = false;
 
   try {
-    const [featuredData, recentData] = await Promise.all([
+    const [heroData, featuredData, recentData] = await Promise.all([
       apiRequest<PaginatedResponse<PostSummaryResponse>>(
-        "/v1/posts/featured?limit=2",
+        "/v1/posts?hero=true&limit=1",
+        { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
+      ),
+      apiRequest<PaginatedResponse<PostSummaryResponse>>(
+        "/v1/posts/featured?limit=3",
         { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
       ),
       apiRequest<PaginatedResponse<PostSummaryResponse>>("/v1/posts?limit=3", {
         next: { revalidate: CONTENT_REVALIDATE_SECONDS },
       }),
     ]);
+    pinnedHeroPost = heroData.items[0] ?? null;
     featuredPosts = featuredData.items;
     recentPosts = recentData.items;
   } catch (err) {
     console.error("Failed to fetch home page posts:", err);
     loadFailed = true;
   }
+
+  // The hero shows the post the admin chose ("Show in home page hero"), else
+  // the newest featured post, else the newest post. Featured Insights skips
+  // the hero post so the same article is not shown twice, and keeps to two
+  // cards to fill its two-column row.
+  const heroPost =
+    pinnedHeroPost ?? featuredPosts[0] ?? recentPosts[0] ?? null;
+  const insightPosts = featuredPosts
+    .filter((post) => post.id !== heroPost?.id)
+    .slice(0, 2);
 
   return (
     <>
@@ -51,17 +68,11 @@ export default async function HomePage() {
       <WarmBackend />
 
       {/* Hero */}
-      <section className="bg-white py-16 md:py-20">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h1 className="font-serif text-4xl font-bold text-brand-navy md:text-5xl">
-            {HERO_HEADING}
-          </h1>
-          <div className="mx-auto my-5 h-0.5 w-12 bg-brand-teal" />
-          <p className="mx-auto max-w-xl text-center text-gray-600">
-            {HERO_SUBTEXT}
-          </p>
-        </div>
-      </section>
+      <HeroSection
+        post={heroPost}
+        fallbackHeading={HERO_HEADING}
+        fallbackSubtext={HERO_SUBTEXT}
+      />
 
       {loadFailed && (
         <section className="bg-gray-50 py-12 md:py-16">
@@ -102,12 +113,12 @@ export default async function HomePage() {
         )}
 
       {/* Featured Insights */}
-      {featuredPosts.length > 0 && (
+      {insightPosts.length > 0 && (
         <section className="bg-gray-50 py-12 md:py-16">
           <div className="mx-auto max-w-7xl px-6">
             <SectionHeading>Featured Insights</SectionHeading>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {featuredPosts.map((post, index) => (
+              {insightPosts.map((post, index) => (
                 <PostCard
                   key={post.id}
                   post={post}

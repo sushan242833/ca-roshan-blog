@@ -17,6 +17,7 @@ const validValues = {
   metaTitle: "",
   metaDescription: "",
   featured: false,
+  showInHero: false,
 };
 
 function issuePaths(values: unknown): string[] {
