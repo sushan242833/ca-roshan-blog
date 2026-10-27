@@ -34,6 +34,7 @@ function makePost(overrides: Partial<PostDetailResponse>): PostDetailResponse {
     metaDescription: null,
     featuredImage: null,
     showFeaturedImage: true,
+    showInHero: false,
     category: null,
     categories: [],
     tags: [],
