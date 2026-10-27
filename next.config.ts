@@ -183,6 +183,20 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [
+      // The hero photo is cached for one year and marked immutable, so browsers
+      // and the CDN never revalidate it. Replacing it means using a new file
+      // name (e.g. hero-v2.webp) and updating HERO_IMAGE in hero-section.tsx —
+      // overwriting a file in place would keep serving the old copy. The
+      // catch-all entry below still adds the security headers to these files.
+      {
+        source: "/hero/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
       {
         source: "/(.*)",
         headers: securityHeaders,

@@ -35,6 +35,8 @@ export interface PostSummaryResponse {
   featuredImage: FeaturedImageResponse | null;
   // Whether the featured image is rendered at the top of the detail page.
   showFeaturedImage: boolean;
+  // Whether this post headlines the home page hero. At most one post has it.
+  showInHero: boolean;
   category: TaxonomyResponse | null;
   categories: TaxonomyResponse[];
   tags: TaxonomyResponse[];
