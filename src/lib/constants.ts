@@ -24,6 +24,15 @@ export const SEARCH_DEBOUNCE_MS = 350;
 // Below this length a search fires no request — a 1-character ILIKE scans every
 // post and matches almost all of them. Mirrors the backend's 2-char minimum.
 export const MIN_SEARCH_LENGTH = 2;
+// The Featured Insights post picker searches on a slightly shorter delay than
+// the list pages: it is a small dropdown the admin is actively typing into.
+export const FEATURED_PICKER_DEBOUNCE_MS = 300;
+
+// Home page Featured Insights — must mirror the backend's slot range (1-6).
+export const FEATURED_SLOT_COUNT = 6;
+// Desktop carousel timing.
+export const FEATURED_CAROUSEL_INTERVAL_MS = 3500;
+export const FEATURED_CAROUSEL_TRANSITION_MS = 800;
 
 // Validation limits — must mirror the backend exactly
 export const MAX_META_TITLE_LENGTH = 60;

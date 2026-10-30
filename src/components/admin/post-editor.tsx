@@ -307,6 +307,7 @@ export default function PostEditor({ postId }: PostEditorProps) {
     queryClient.invalidateQueries({ queryKey: queryKeys.postsAll });
     queryClient.invalidateQueries({ queryKey: queryKeys.postStats });
     queryClient.invalidateQueries({ queryKey: queryKeys.media });
+    queryClient.invalidateQueries({ queryKey: queryKeys.featuredSlots });
     if (postId) {
       queryClient.removeQueries({ queryKey: queryKeys.post(postId) });
     }
@@ -817,32 +818,59 @@ export default function PostEditor({ postId }: PostEditorProps) {
           </div>
 
           <div className={cardClass}>
-            <label className="flex cursor-pointer items-center gap-3">
+            <label className="flex cursor-pointer items-start gap-3">
               <input
                 type="checkbox"
-                {...register("featured")}
-                className={checkboxClass}
+                {...register("featured", {
+                  // A post is in the hero or in Featured Insights, never both.
+                  onChange: (event) => {
+                    if (event.target.checked) {
+                      setValue("showInHero", false, { shouldDirty: true });
+                    }
+                  },
+                })}
+                className={`mt-0.5 ${checkboxClass}`}
               />
-              <span className="text-[14px] font-medium text-[#121c2a]">
-                Feature this post on the home page
+              <span className="text-[14px] text-[#121c2a]">
+                <span className="font-medium">
+                  Feature this post on the home page
+                </span>
+                <span className={`block ${HELP_TEXT}`}>
+                  Once published, it takes the first empty Featured Insights
+                  slot. Reorder it on the Featured Insights page. Takes the
+                  post out of the hero.
+                </span>
               </span>
             </label>
+            {errors.featured && (
+              <p className={ERROR_TEXT}>{errors.featured.message}</p>
+            )}
 
             <label className="mt-5 flex cursor-pointer items-start gap-3 border-t border-brand-muted/50 pt-5">
               <input
                 type="checkbox"
-                {...register("showInHero")}
+                {...register("showInHero", {
+                  onChange: (event) => {
+                    if (event.target.checked) {
+                      setValue("featured", false, { shouldDirty: true });
+                    }
+                  },
+                })}
                 className={`mt-0.5 ${checkboxClass}`}
               />
               <span className="text-[14px] text-[#121c2a]">
                 <span className="font-medium">Show in home page hero</span>
                 <span className={`block ${HELP_TEXT}`}>
                   Headline this post over the hero video. Only one post can be
-                  in the hero, so this replaces the current one. When none is
-                  chosen, the newest featured post is used.
+                  in the hero, so this replaces the current one, and the post
+                  leaves Featured Insights. When none is chosen, the newest
+                  post not in Featured Insights is used.
                 </span>
               </span>
             </label>
+            {errors.showInHero && (
+              <p className={ERROR_TEXT}>{errors.showInHero.message}</p>
+            )}
           </div>
         </div>
       </form>

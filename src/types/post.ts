@@ -37,6 +37,8 @@ export interface PostSummaryResponse {
   showFeaturedImage: boolean;
   // Whether this post headlines the home page hero. At most one post has it.
   showInHero: boolean;
+  // The home page Featured Insights slot (1-6) this post holds, or null.
+  featuredPosition: number | null;
   category: TaxonomyResponse | null;
   categories: TaxonomyResponse[];
   tags: TaxonomyResponse[];
@@ -107,4 +109,19 @@ export interface ChapterDetailResponse extends PostSummaryResponse {
   };
   prev: ChapterSummary | null;
   next: ChapterSummary | null;
+}
+
+// GET/PUT /v1/admin/featured-posts — always FEATURED_SLOT_COUNT entries, in
+// position order, with `post: null` for an empty slot.
+export interface FeaturedSlot {
+  position: number;
+  post: PostSummaryResponse | null;
+}
+
+export interface FeaturedSlotsResponse {
+  slots: FeaturedSlot[];
+}
+
+export interface UpdateFeaturedSlotsPayload {
+  slots: { position: number; postId: string | null }[];
 }
