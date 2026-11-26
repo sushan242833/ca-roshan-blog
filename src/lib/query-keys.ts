@@ -28,6 +28,8 @@ export const queryKeys = {
   postsAll: ["posts"] as const,
   postStats: ["postStats"] as const,
   post: (id: string) => ["post", id] as const,
+  // Home page Featured Insights slot layout (admin).
+  featuredSlots: ["featuredSlots"] as const,
 
   // Media — shared by the Media Library and the media picker dialog.
   media: ["media"] as const,

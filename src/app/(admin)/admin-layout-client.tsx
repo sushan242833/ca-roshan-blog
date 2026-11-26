@@ -12,6 +12,7 @@ import {
   Users,
   Settings,
   LogOut,
+  Star,
 } from "lucide-react";
 import { SITE_NAME } from "@/config/site.config";
 import QueryProvider from "@/components/providers/query-provider";
@@ -31,6 +32,7 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     href: "/admin/posts",
     icon: FileText,
   },
+  { label: "Featured Insights", href: "/admin/featured", icon: Star },
   {
     label: "Categories",
     href: "/admin/categories",

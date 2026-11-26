@@ -7,6 +7,7 @@ import { CONTENT_REVALIDATE_SECONDS } from "@/lib/constants";
 import { ArrowRightIcon } from "@/components/icons";
 import WarmBackend from "@/components/warm-backend";
 import HeroSection from "@/components/home/hero-section";
+import FeaturedCarousel from "@/components/home/featured-carousel";
 import type { PaginatedResponse, PostSummaryResponse } from "@/types/post";
 
 export const metadata: Metadata = {
@@ -36,7 +37,7 @@ export default async function HomePage() {
         { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
       ),
       apiRequest<PaginatedResponse<PostSummaryResponse>>(
-        "/v1/posts/featured?limit=3",
+        "/v1/posts/featured?limit=6",
         { next: { revalidate: CONTENT_REVALIDATE_SECONDS } },
       ),
       apiRequest<PaginatedResponse<PostSummaryResponse>>("/v1/posts?limit=3", {
@@ -51,15 +52,21 @@ export default async function HomePage() {
     loadFailed = true;
   }
 
-  // The hero shows the post the admin chose ("Show in home page hero"), else
-  // the newest featured post, else the newest post. Featured Insights skips
-  // the hero post so the same article is not shown twice, and keeps to two
-  // cards to fill its two-column row.
+  // A post is in the hero or in Featured Insights, never both. The hero shows
+  // the post the admin chose ("Show in home page hero"), which the backend
+  // keeps out of the featured slots, else the newest post that is not
+  // featured, else the plain heading. Featured Insights still drops the hero
+  // post in case cached responses disagree. Below lg it keeps to two cards to
+  // fill its two-column row; the desktop carousel shows the full ordered list.
+  const featuredIds = new Set(featuredPosts.map((post) => post.id));
   const heroPost =
-    pinnedHeroPost ?? featuredPosts[0] ?? recentPosts[0] ?? null;
-  const insightPosts = featuredPosts
-    .filter((post) => post.id !== heroPost?.id)
-    .slice(0, 2);
+    pinnedHeroPost ??
+    recentPosts.find((post) => !featuredIds.has(post.id)) ??
+    null;
+  const carouselPosts = featuredPosts.filter(
+    (post) => post.id !== heroPost?.id,
+  );
+  const insightPosts = carouselPosts.slice(0, 2);
 
   return (
     <>
@@ -113,19 +120,24 @@ export default async function HomePage() {
         )}
 
       {/* Featured Insights */}
-      {insightPosts.length > 0 && (
+      {carouselPosts.length > 0 && (
         <section className="bg-gray-50 py-12 md:py-16">
           <div className="mx-auto max-w-7xl px-6">
             <SectionHeading>Featured Insights</SectionHeading>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {insightPosts.map((post, index) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  variant="featured"
-                  priority={index === 0}
-                />
-              ))}
+            <div className="lg:hidden">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {insightPosts.map((post, index) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    variant="featured"
+                    priority={index === 0}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="hidden lg:block">
+              <FeaturedCarousel posts={carouselPosts} />
             </div>
           </div>
         </section>
